@@ -1,37 +1,80 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
-go test ./...
-scripts/generate-llms.py --check
+required=(
+  .gitattributes
+  .gitignore
+  .golangci.yml
+  AGENTS.md
+  CHANGELOG.md
+  CLAUDE.md
+  CODE_OF_CONDUCT.md
+  CONTRIBUTING.md
+  GOAL.md
+  GOAL_HARDEN.md
+  LICENSE
+  Makefile
+  NOTICE
+  README.md
+  ROADMAP.md
+  SECURITY.md
+  THIRD_PARTY_NOTICES.md
+  llms.txt
+  llms-full.txt
+  docs/README.md
+  docs/quickstart.md
+  docs/adoption.md
+  docs/api.md
+  docs/architecture.md
+  docs/examples.md
+  docs/cookbook.md
+  docs/faq.md
+  docs/troubleshooting.md
+  docs/migration.md
+  docs/compatibility.md
+  docs/performance.md
+  docs/hardening.md
+  docs/security.md
+  docs/releasing.md
+  docs/repository-standards.md
+  docs/dependencies.md
+  docs/evidence.md
+  docs/formats.md
+)
 
-status=0
+for file in "${required[@]}"; do
+  if [[ ! -s "$file" ]]; then
+    echo "required repository file is missing or empty: $file" >&2
+    exit 1
+  fi
+done
 
-while IFS=: read -r source link; do
-    case "$link" in
-        ""|http://*|https://*|mailto:*|\#*)
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+for document in Path(".").rglob("*.md"):
+    content = document.read_text(encoding="utf-8")
+    prose = []
+    in_fence = False
+    for line in content.splitlines():
+        if line.lstrip().startswith(("```", "~~~")):
+            in_fence = not in_fence
             continue
-            ;;
-    esac
+        if not in_fence:
+            prose.append(line)
+    for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", "\n".join(prose)):
+        if target.startswith(("http://", "https://", "mailto:", "#")):
+            continue
+        relative = target.split("#", 1)[0]
+        if relative.startswith("<") and relative.endswith(">"):
+            relative = relative[1:-1]
+        resolved = (document.parent / relative).resolve()
+        if not resolved.exists():
+            raise SystemExit(f"broken relative link in {document}: {target}")
 
-    link="${link%%#*}"
-    link="${link#<}"
-    link="${link%>}"
-    target="$(dirname "$source")/$link"
-    if [[ ! -e "$target" ]]; then
-        echo "$source: broken local link: $link" >&2
-        status=1
-    fi
-done < <(rg --glob '*.md' --no-heading --with-filename --only-matching \
-    --replace '$1' '\[[^]]+\]\(([^)[:space:]]+)(?:[[:space:]]+"[^"]+")?\)')
+print("all required files exist and relative Markdown links resolve")
+PY
 
-if rg --glob '*.md' --line-number '[[:blank:]]+$'; then
-    echo "Markdown files contain trailing whitespace" >&2
-    status=1
-fi
-
-if [[ "$status" -eq 0 ]]; then
-    echo "Markdown links and generated documentation are valid"
-fi
-
-exit "$status"
+python3 scripts/generate-llms.py --check
+go test ./... -run '^Example'

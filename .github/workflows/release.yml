@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
 permissions:
   contents: read
@@ -17,16 +17,17 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - name: Set up Go
+      - name: Set up minimum Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version-file: go.mod
+          go-version: 1.25.x
+          cache: false
       - name: Validate tag and changelog
         shell: bash
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          go run ./cmd/semvercheck "$tag"
+          [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$ ]]
           test "$(git rev-parse "${tag}^{commit}")" = "$(git rev-parse HEAD)"
           version="${tag#v}"
           grep -Eq "^## \\[${version//./\\.}\\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" CHANGELOG.md
@@ -39,8 +40,8 @@ jobs:
       - name: Run static analysis
         run: make vet
       - name: Run race tests
-        run: make test
-      - name: Enforce production coverage
+        run: make test-race
+      - name: Enforce meaningful coverage
         run: make coverage
       - name: Validate documentation
         run: make docs
@@ -49,7 +50,7 @@ jobs:
       - name: Smoke benchmarks
         run: make benchmark BENCH_TIME=1x
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
         with:
           version: v2.12.2
           args: --timeout=5m
@@ -57,7 +58,7 @@ jobs:
         uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
           repo-checkout: false
-          go-version-input: 1.26.x
+          go-version-input: 1.25.x
           go-package: ./...
 
   publish:
@@ -87,7 +88,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           awk -v version="$version" '
             $0 ~ "^## \\[" version "\\] - " { found = 1; capture = 1; next }
-            capture && /^## \[/ { exit }
+            capture && /^## \\[/ { exit }
             capture { print }
             END { if (!found) exit 1 }
           ' CHANGELOG.md > release-notes.md

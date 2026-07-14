@@ -280,7 +280,7 @@ func validateNumericPayload(payload []byte, target any, allowDuplicateKeys bool)
 	})
 	var source any
 	if err := decoder.Decode(&source); err != nil {
-		return nil
+		return nil //nolint:nilerr // the main decoder owns syntax errors
 	}
 	if !allowDuplicateKeys {
 		if err := rejectDuplicateKeys(source); err != nil {

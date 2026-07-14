@@ -720,7 +720,7 @@ func validateTokenDepth(payload []byte, options ParseOptions) error {
 		token, err := decoder.Token()
 		if err != nil {
 			// The main parser retains ownership of syntax and charset errors.
-			return nil
+			return nil //nolint:nilerr // syntax errors are classified later
 		}
 		switch token.(type) {
 		case xml.StartElement:

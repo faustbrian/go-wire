@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- The minimum Go version is now 1.25.8 so workflows using `go-version-file`
-  receive fixes for GO-2025-4010 and GO-2026-4601 instead of Go 1.25.0.
-
 ### Added
 
+- A standardized OSS repository skeleton covering policy, documentation,
+  legal notices, Go tooling, pinned CI, security, and release automation.
+- CI resolves the latest supported Go 1.25 patch while `go.mod` declares the
+  portable Go 1.25 minimum.
 - Evidence-driven audit and hardening goal covering every supported format,
   parser resource safety, codec dependencies, and read/write boundaries.
 - A shared `wire.Error` model with parse, validation, unsupported-format,

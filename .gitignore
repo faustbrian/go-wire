@@ -1,2 +1,5 @@
 /coverage.out
 /dist/
+*.prof
+*.test
+.DS_Store

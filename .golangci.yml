@@ -5,10 +5,30 @@ run:
 
 linters:
   default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - staticcheck
+    - unconvert
+  settings:
+    gosec:
+      excludes:
+        - G115
+  exclusions:
+    rules:
+      - path: '_test\.go'
+        linters:
+          - gosec
+          - noctx
 
 formatters:
   enable:
     - gofmt
+    - goimports
 
 issues:
   max-issues-per-linter: 0

@@ -1,65 +1,34 @@
-# Security policy
+# Security Policy
 
-## Supported versions
+## Supported Versions
 
-Before v1, only the latest commit on `main` receives security fixes. After v1,
-the latest minor line will be supported; additional maintained lines will be
-listed here if the policy changes.
+Before `v1.0.0`, security fixes are applied to the latest revision of
+`main`. After the first stable release, supported release lines and
+end-of-support dates will be documented here.
 
-## Reporting a vulnerability
+## Reporting A Vulnerability
 
-Use GitHub's private vulnerability reporting feature for this repository. Do
-not open a public issue containing exploit details, sensitive payloads, or a
-zero-day report.
+Use GitHub private vulnerability reporting for this repository. Include a
+minimal reproducer, expected and observed behavior, affected versions, impact,
+and any suggested mitigation. Do not include secrets or production data.
 
-Include:
+## Response Process
 
-- affected version or commit;
-- format and API involved;
-- a minimal redacted reproducer;
-- security impact and preconditions;
-- suggested mitigation, if known.
+Maintainers will acknowledge the report, reproduce and assess it privately,
+coordinate a fix and advisory, and credit the reporter when requested. Public
+disclosure should wait until a fix or agreed mitigation is available.
 
-Maintainers should acknowledge a report within seven days, coordinate a fix and
-advisory privately, and credit the reporter unless anonymity is requested.
+## Package Security Boundary
 
-## Security boundaries
+All supported text and binary formats are untrusted parser inputs. Byte, depth, collection, alias, extension, and output limits are part of the maintained security boundary.
 
-`go-wire` parses attacker-controlled bytes but does not provide authentication,
-authorization, transport security, schema validation, XML signatures, secret
-redaction, or safe logging policy. Callers must set appropriate payload limits
-and avoid logging raw payloads containing sensitive data.
+## Application Responsibilities
 
-All readers are byte-bounded. Safe defaults require exactly one top-level value
-or document and reject ambiguous or resource-amplifying features:
+Applications remain responsible for transport limits, authentication,
+authorization, rate limiting, deadlines, secret handling, deployment policy,
+and business-level validation. Package safeguards do not replace those
+controls.
 
-- JSON invalid UTF-8, malformed syntax, trailing values, and optionally unknown
-  fields; duplicate names retain documented `encoding/json` behavior;
-- XML and SOAP nesting beyond the configurable 1,000-element default;
-- YAML duplicate keys, excessive alias expansion, deep nesting, and multiple
-  documents; aliases and merge keys remain bounded and can be rejected
-  explicitly;
-- TOML duplicate keys, trailing documents, overflow, and invalid datetime
-  conversion;
-- MessagePack impossible or excessive collection lengths, nesting beyond 32
-  levels, duplicate keys, unknown extensions, non-string untyped map keys,
-  lossy numeric conversion, and trailing objects;
-- CBOR duplicate map keys, tags, indefinite-length values, excessive nesting or
-  collections, and trailing items;
-- BSON invalid length prefixes, trailing bytes, non-document top levels,
-  recursive duplicate keys, and lossy double-to-integer conversion.
-
-Options that relax a safe default or admit larger resource use must be enabled
-only from protocol evidence. They do not remove the overall byte limit.
-Dependency selection, update policy, and residual parser risks are documented
-in [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md).
-
-Decode targets are not transactional: discard the target after any error.
-Encode values are caller-owned and the current APIs do not impose an output
-byte quota; bound source collections when output size can be influenced by an
-untrusted party. See [`docs/HARDENING.md`](docs/HARDENING.md) for the threat
-model, findings, and per-format evidence matrix.
-
-All typed encode paths preflight application values and reject cycles or more
-than 1,000 traversed levels before invoking a recursive codec. Custom marshalers
-remain responsible for terminating their own method bodies.
+See [docs/security.md](docs/security.md) and
+[docs/hardening.md](docs/hardening.md) for adoption guidance and maintained
+evidence.

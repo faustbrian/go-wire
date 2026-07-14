@@ -1,9 +1,10 @@
 GO ?= go
+GOLANGCI_LINT ?= golangci-lint
 FUZZ_TIME ?= 2s
-BENCH_TIME ?= 1x
+BENCH_TIME ?= 100ms
 
 .PHONY: benchmark check coverage docs format format-check fuzz lint \
-	release-major release-minor release-patch test vet vuln
+	release-major release-minor release-patch test test-race vet vuln
 
 format:
 	gofmt -w .
@@ -12,6 +13,9 @@ format-check:
 	test -z "$$(gofmt -l .)"
 
 test:
+	$(GO) test ./...
+
+test-race:
 	$(GO) test -race ./...
 
 coverage:
@@ -21,30 +25,21 @@ vet:
 	$(GO) vet ./...
 
 lint:
-	golangci-lint run --timeout=5m
+	$(GOLANGCI_LINT) run --timeout=5m
 
 fuzz:
-	$(GO) test -run '^$$' -fuzz=FuzzRoundTrip -fuzztime=$(FUZZ_TIME) .
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./jsonwire
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./xmlwire
-	$(GO) test -run '^$$' -fuzz=FuzzParse -fuzztime=$(FUZZ_TIME) ./soap
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./yamlwire
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./tomlwire
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./msgpackwire
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./cborwire
-	$(GO) test -run '^$$' -fuzz=FuzzDecode -fuzztime=$(FUZZ_TIME) ./bsonwire
+	./scripts/check-fuzz.sh "$(FUZZ_TIME)"
 
 benchmark:
-	$(GO) test -run '^$$' -bench . -benchtime=$(BENCH_TIME) ./...
+	$(GO) test ./... -run '^$$' -bench . -benchmem -benchtime="$(BENCH_TIME)"
 
 docs:
 	./scripts/check-docs.sh
-	$(GO) test ./...
 
 vuln:
-	govulncheck ./...
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
 
-check: format-check vet lint test coverage fuzz benchmark docs vuln
+check: format-check vet lint test-race coverage fuzz benchmark docs vuln
 
 release-patch:
 	@scripts/release.sh patch

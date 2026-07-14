@@ -14,7 +14,7 @@ import (
 func TestPublicAPIReferenceInventoriesEveryExport(t *testing.T) {
 	t.Parallel()
 
-	documentation, err := os.ReadFile("docs/API.md")
+	documentation, err := os.ReadFile("docs/api.md")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestPublicAPIReferenceInventoriesEveryExport(t *testing.T) {
 			}
 			for identifier := range exported {
 				if !documentedIdentifier(section, identifier) {
-					t.Errorf("docs/API.md package %s does not inventory %s", name, identifier)
+					t.Errorf("docs/api.md package %s does not inventory %s", name, identifier)
 				}
 			}
 		})
@@ -120,7 +120,7 @@ func apiSection(t *testing.T, documentation, name string) string {
 	heading := "## Package `" + name + "`"
 	start := strings.Index(documentation, heading)
 	if start < 0 {
-		t.Fatalf("docs/API.md has no %s heading", heading)
+		t.Fatalf("docs/api.md has no %s heading", heading)
 	}
 	section := documentation[start:]
 	if end := strings.Index(section[len(heading):], "\n## Package `"); end >= 0 {

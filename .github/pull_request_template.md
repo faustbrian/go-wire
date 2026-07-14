@@ -1,32 +1,25 @@
 ## Why
 
-Explain the interoperability problem or maintenance need.
+Explain the user, protocol, interoperability, or maintenance problem.
 
-## Behavior and compatibility
+## Behavior And Compatibility
 
-- Formats and public APIs affected:
-- Accepted or rejected shapes changed:
-- Error classification changed:
-- Emitted bytes or normalization changed:
+- Public APIs or formats affected:
+- Behavior or guarantees changed:
 - Compatibility risk and migration path:
+- Dependency or provenance impact:
 
 ## Evidence
 
-- Fixtures added or updated:
-- Red-green regression demonstrated:
-- Coverage remains behavior-focused:
+- Regression or conformance tests:
+- Meaningful coverage:
+- Fuzz, fixture, integration, or benchmark evidence:
 
 ## Verification
 
-List the exact commands and results.
+List exact commands and results.
 
-- [ ] `make format-check`
-- [ ] `make vet`
-- [ ] `make lint`
-- [ ] `make test`
-- [ ] `make coverage`
-- [ ] `make fuzz`
-- [ ] `make benchmark`
-- [ ] `make docs`
-- [ ] `make vuln`
-- [ ] `CHANGELOG.md` and affected public docs are updated
+- [ ] `make check`
+- [ ] Package-specific integration checks, when required
+- [ ] `CHANGELOG.md` and affected public documentation updated
+- [ ] `NOTICE` and `THIRD_PARTY_NOTICES.md` reviewed

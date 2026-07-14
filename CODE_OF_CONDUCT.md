@@ -1,22 +1,30 @@
-# Code of conduct
+# Contributor Covenant Code of Conduct
 
-## Our standard
+## Our Pledge
 
-Project spaces must be respectful, technically rigorous, and welcoming.
-Participants must discuss ideas and evidence without harassment, threats,
-discrimination, personal attacks, or disclosure of another person's private
-information.
+We pledge to make participation in this project a harassment-free experience
+for everyone, regardless of age, body size, disability, ethnicity, sex
+characteristics, gender identity and expression, experience, education,
+socioeconomic status, nationality, personal appearance, race, caste, color,
+religion, sexual identity and orientation, or technical choices.
 
-Good-faith disagreement is welcome. Critique behavior, code, APIs, and evidence,
-not people. Respect maintainers' responsibility to protect compatibility,
-security, and project scope.
+## Our Standards
+
+Positive behavior includes empathy, constructive feedback, respect for
+different viewpoints, accountability, and focus on what is best for the
+community. Unacceptable behavior includes harassment, sexualized attention,
+trolling, insults, personal or political attacks, publishing private
+information, or other conduct reasonably considered inappropriate.
 
 ## Enforcement
 
-Report conduct concerns privately through the repository owner's GitHub contact
-channel. Maintainers may edit or remove content, close discussions, reject
-contributions, or temporarily or permanently restrict participation based on
-severity and pattern.
+Project maintainers may remove, edit, or reject contributions and may
+temporarily or permanently ban contributors whose behavior is inappropriate,
+threatening, offensive, or harmful. Report conduct privately through the
+repository's security contact. Maintainers will respect the reporter's privacy
+and apply consequences proportionately.
 
-Reports should be handled confidentially and without retaliation. Anyone with
-a conflict of interest in a report should recuse themselves from enforcement.
+## Attribution
+
+This code of conduct is adapted from Contributor Covenant 2.1:
+<https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>.

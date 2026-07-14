@@ -1,32 +1,29 @@
 # go-wire
 
-> `go-wire` is a transport-neutral Go package for explicit, auditable handling of JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON interoperability boundaries, with bounded read and symmetric write APIs.
+> Documentation map for package users, adopters, operators, and contributors.
 
-This index is generated from the repository's canonical Markdown documentation.
-
-## Documentation
-
-- [Quickstart](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/QUICKSTART.md): The project is currently unreleased. Until the first tag exists, pin a commit:
-- [Architecture](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/ARCHITECTURE.md): `go-wire` uses format-specific packages rather than a universal codec:
-- [Public API reference](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/API.md): This document describes every exported v1-candidate symbol. Go signatures and package comments remain authoritative; use `go doc` for locally installed source.
-- [Audit evidence and traceability](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/EVIDENCE.md): This ledger maps the 2026-07-14 hardening mission to implementation and test evidence. Test names are stable evidence pointers; source and `go doc` remain authoritative for signatures.
-- [Supported formats and behavior matrix](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/FORMATS.md): | Format | Read/write | Determinism | Strict defaults | Notable explicit options | | --- | --- | --- | --- | --- | | JSON | Bytes and reader/writer | Sorted map keys | One value | Unknown fields, indentation, HTML escaping | | XML | Bytes and reader/writer | Struct traversal, not canonical XML | One root, strict syntax, bounded depth | Expected root, charset, depth, non-strict recovery | | SOAP 1.1/1.2 | Bytes and reader/writer | Fixed envelope emission | Namespace, cardinality, bounded XML depth | Version, charset, depth, typed or raw sections | | YAML | Bytes and reader/writer | Sorted mappings through YAML v4 | One document, unique keys, bounded aliases/depth | Multi-document slice, aliases, merges, fields, indentation | | TOML | Bytes and reader/writer | Sorted map keys | Complete document, duplicate rejection | Unknown fields, indentation | | MessagePack | Bytes and reader/writer | Sorted map keys | One object, unique keys, bounded nesting/collections, string keys for untyped maps | Duplicate compatibility, resource limits, numeric normalization, compact values, array structs | | CBOR | Bytes and reader/writer | Canonical by default; Core and CTAP2 profiles | One item, duplicate/tag/indefinite rejection | Tags, time tags, indefinite values, collection limits | | BSON | Bytes and reader/writer | Struct and `D` order; not `M` maps | Complete document, recursive unique keys | ObjectID strings, double truncation, integer width, JSON tags |
-- [Codec dependencies](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/DEPENDENCIES.md): The standard library remains the implementation for JSON and XML. SOAP is built on `encoding/xml`. The five additional formats use focused codecs rather than incomplete local parsers.
-- [Security and interoperability hardening audit](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/HARDENING.md): Audit date: 2026-07-14. Audited tree: the pre-v1 `main` branch. This report distinguishes format requirements, dependency behavior, and package policy.
-- [Performance and allocation policy](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/PERFORMANCE.md): Benchmarks are smoke evidence and comparison tools, not pass/fail latency contracts. Run them with:
-- [Adoption guide](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/ADOPTION.md): Adopt `go-wire` where bytes enter or leave a service: an HTTP handler, carrier client, webhook consumer, file import, or RPC adapter. Keep domain mapping outside the package.
-- [End-to-end examples](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/EXAMPLES.md): These examples keep transport and domain policy outside `go-wire`. Replace the placeholder URLs and DTOs with the peer's documented contract.
-- [Scenario cookbook](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/COOKBOOK.md): Use this only when an upstream contract is intentionally closed:
-- [Frequently asked questions](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/FAQ.md): Do so when their defaults already satisfy the boundary. `go-wire` adds value when a service needs consistent bounds, single-document enforcement, structured errors, explicit normalization, namespace validation, charset policy, or SOAP semantics. It is not a replacement wrapper for every standard-library call.
-- [Troubleshooting](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/TROUBLESHOOTING.md): Use the cause for engineering diagnostics, but do not expose vendor payloads or internal parse details directly to untrusted clients.
-- [Migration notes](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/MIGRATION.md): The module is unreleased and APIs can change until v1.0.0. Pin a commit, keep the integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
-- [Versioning and release guide](https://raw.githubusercontent.com/faustbrian/go-wire/main/docs/VERSIONING.md): The project uses Semantic Versioning. Beginning with v1.0.0, compatibility includes more than Go signatures:
-- [Roadmap](https://raw.githubusercontent.com/faustbrian/go-wire/main/ROADMAP.md): The roadmap protects scope as much as it describes future work. Items are not promises or compatibility commitments until released.
-- [Contributing](https://raw.githubusercontent.com/faustbrian/go-wire/main/CONTRIBUTING.md): Thank you for helping improve `go-wire`. Interoperability changes can affect production payloads even when a diff looks small, so contributions must make behavior and compatibility impact explicit.
-- [Security policy](https://raw.githubusercontent.com/faustbrian/go-wire/main/SECURITY.md): Before v1, only the latest commit on `main` receives security fixes. After v1, the latest minor line will be supported; additional maintained lines will be listed here if the policy changes.
-- [Goal: `go-wire`](https://raw.githubusercontent.com/faustbrian/go-wire/main/GOAL.md): Build an open source Go package for structured wire-format handling with JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON as first-class concerns.
-- [Changelog](https://raw.githubusercontent.com/faustbrian/go-wire/main/CHANGELOG.md): All notable changes to this project will be documented in this file.
-
-## Complete documentation
-
-- [llms-full.txt](https://raw.githubusercontent.com/faustbrian/go-wire/main/llms-full.txt): All linked documentation in one file.
+- [Complete documentation bundle](llms-full.txt)
+- [go-wire](README.md)
+- [go-wire Documentation](docs/README.md)
+- [Quickstart](docs/quickstart.md)
+- [Adoption guide](docs/adoption.md)
+- [Public API reference](docs/api.md)
+- [Architecture](docs/architecture.md)
+- [End-to-end examples](docs/examples.md)
+- [Scenario cookbook](docs/cookbook.md)
+- [Frequently asked questions](docs/faq.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Migration notes](docs/migration.md)
+- [Versioning and release guide](docs/compatibility.md)
+- [Performance and allocation policy](docs/performance.md)
+- [Security and interoperability hardening audit](docs/hardening.md)
+- [Security](docs/security.md)
+- [Releasing](docs/releasing.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+- [Codec dependencies](docs/dependencies.md)
+- [Audit evidence and traceability](docs/evidence.md)
+- [Supported formats and behavior matrix](docs/formats.md)
+- [Repository Standards](docs/repository-standards.md)

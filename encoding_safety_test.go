@@ -29,7 +29,7 @@ func TestMessagePackCyclicEncodeReturnsError(t *testing.T) {
 		os.Exit(2)
 	}
 
-	command := exec.Command(os.Args[0], "-test.run=^TestMessagePackCyclicEncodeReturnsError$")
+	command := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestMessagePackCyclicEncodeReturnsError$")
 	command.Env = append(os.Environ(), "GO_WIRE_CYCLIC_MSGPACK=1")
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("cyclic encode did not return a classified error: %v\n%s", err, output)

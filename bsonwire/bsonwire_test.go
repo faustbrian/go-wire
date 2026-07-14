@@ -49,7 +49,7 @@ func TestRoundTripPreservesDecimalBinarySubtypeAndRegex(t *testing.T) {
 		t.Fatal(err)
 	}
 	value := bsonwire.D{
-		{Key: "decimal", Value: bsonwire.Decimal128(decimal)},
+		{Key: "decimal", Value: decimal},
 		{Key: "binary", Value: bsonwire.Binary{Subtype: 0x80, Data: []byte{0x01, 0x02}}},
 		{Key: "regex", Value: bsonwire.Regex{Pattern: "^wire$", Options: "i"}},
 	}

@@ -93,7 +93,7 @@ The release contains source only; consumers compile it with Go modules. The
 workflow records the tag, commit, Go version, source archive, and SHA-256
 checksum. Runtime dependencies are pinned through `go.mod` and recorded with
 their selection rationale and residual risks in
-[`DEPENDENCIES.md`](DEPENDENCIES.md). Dependency upgrades require full wire
+[`dependencies.md`](dependencies.md). Dependency upgrades require full wire
 compatibility, fuzz, benchmark, vulnerability, and license review.
 
 ## Emergency security releases
