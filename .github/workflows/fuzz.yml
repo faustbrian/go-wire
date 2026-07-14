@@ -1,0 +1,34 @@
+name: Fuzz
+
+on:
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: jsonwire
+            target: FuzzDecode
+          - package: xmlwire
+            target: FuzzDecode
+          - package: soap
+            target: FuzzParse
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run fuzz target
+        env:
+          FUZZ_TIME: ${{ github.event_name == 'schedule' && '2m' || '30s' }}
+        run: go test -run='^$' -fuzz='^${{ matrix.target }}$' -fuzztime="$FUZZ_TIME" ./${{ matrix.package }}
