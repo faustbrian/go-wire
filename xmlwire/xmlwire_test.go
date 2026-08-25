@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/xmlwire"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/xmlwire"
 )
 
 type shipment struct {

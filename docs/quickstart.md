@@ -2,10 +2,10 @@
 
 ## Install
 
-The project is currently unreleased. Until the first tag exists, pin a commit:
+Install the stable v1 release:
 
 ```sh
-go get github.com/faustbrian/golib/pkg/wire@<commit>
+go get github.com/faustbrian/go-wire@<commit>
 ```
 
 The module supports Go 1.25.8 and newer.

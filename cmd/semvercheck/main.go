@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/faustbrian/golib/pkg/wire/internal/semver"
+	"github.com/faustbrian/go-wire/internal/semver"
 )
 
 func main() {

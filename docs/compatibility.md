@@ -38,7 +38,7 @@ pinned in [`../specification/manifest.tsv`](../specification/manifest.tsv).
 - Minor releases add backward-compatible APIs or capabilities.
 - Major releases can change or remove compatibility-governed behavior and must
   include migration notes.
-- Pre-v1 versions can change APIs, but every change remains documented.
+- Breaking API changes require a new major release and remain documented.
 
 ## Deprecation policy
 

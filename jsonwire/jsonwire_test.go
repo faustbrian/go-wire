@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/jsonwire"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/jsonwire"
 )
 
 type message struct {

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/wire"
+	"github.com/faustbrian/go-wire"
 )
 
 func TestExactBoundaryPredicates(t *testing.T) {

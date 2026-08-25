@@ -1,4 +1,4 @@
-module github.com/faustbrian/golib/pkg/wire
+module github.com/faustbrian/go-wire
 
 go 1.26.6
 

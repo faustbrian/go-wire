@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
 ### Documentation
 
 - Replace obsolete standalone-repository links and workflow claims with
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Publish the module from its standalone `github.com/faustbrian/go-wire` identity while preserving its documented API and behavior.
 - Hardened codec boundary coverage with exact byte, depth, numeric, charset,
   alias, fragment, and SOAP fault assertions, and bounded mutation execution
   for malformed XML and SOAP parser mutants.
@@ -222,4 +225,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/golib/commits/main/pkg/wire
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0

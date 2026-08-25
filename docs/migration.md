@@ -1,10 +1,9 @@
 # Migration notes
 
-## Before v1
+## Version 1 compatibility
 
-The module is unreleased and APIs can change until v1.0.0. Pin a commit, keep
-the integration behind boundary adapters, and review `CHANGELOG.md` whenever
-updating.
+The module follows stable v1 compatibility. Pin a released version, keep the
+integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
 ## From direct `encoding/json`
 

@@ -200,6 +200,6 @@ source.
 
 ## Compatibility note
 
-These symbols are release candidates until v1.0.0. After v1, exported names,
+These symbols are stable at v1. Exported names,
 signatures, default limits, error classifications, wire output, and documented
 normalization behavior are SemVer-governed.

@@ -1,65 +1,55 @@
 # Contributing
 
-## Before Opening A Change
+## Before Editing
 
-Use an issue for changes affecting wire formats, interoperability, limits, deterministic encoding, and format-specific semantics. Explain the user problem,
-compatibility impact, and why the behavior belongs in this generic package.
+1. Read [`AGENTS.md`](AGENTS.md) and the affected module's goals and docs.
+2. Run `make inventory` and the narrow baseline gate for the module.
+3. Identify owned dependencies and reverse dependants in `modules.json`.
+4. Preserve unrelated work and generated/corpus provenance.
 
-## Development Setup
+## Changes
 
-Requirements:
+Keep commits focused and conventional. Update every affected changelog with
+the behavior and migration impact. Public API changes require compatibility
+evidence and documentation. Specification behavior requires a decision record,
+fixture coverage, and interoperability evidence.
 
-- Go 1.26.6 or later
-- Git
-- `golangci-lint` v2
+New direct dependencies and dependency updates must follow the
+[dependency governance policy](docs/dependency-governance.md). Package-local
+update bots are forbidden; the root policy owns every module and action update.
 
-```sh
-go mod download
-make check
+Specification-backed changes must follow the
+[specification governance contract](docs/specification-governance.md), update
+the affected stable decision entries, and complete the Specification Decisions
+section of the pull request template. An unresolved interpretation or stale
+source pin is release-blocking; peer behavior cannot silently select policy.
+
+Do not add package-local workflows, permanent replacements, machine-specific
+paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
+that hide a failing package.
+
+## Verification
+
+Run during development:
+
+```bash
+make inventory
+make specification-decisions
+make check MODULES=pkg/<library>
 ```
 
-## Change Requirements
+Before submitting a repository-wide change:
 
-- Add regression coverage before fixing a defect.
-- Maintain meaningful 100% production-code coverage.
-- Update public examples and documentation with behavior changes.
-- Update `.ai/GOAL.md` or `.ai/GOAL_HARDEN.md` when scope or acceptance criteria
-  change.
-- Add an `Unreleased` entry to `CHANGELOG.md`.
-- Explain every dependency addition, upgrade, or removal.
-- Update `NOTICE` when project ownership changes and
-  `THIRD_PARTY_NOTICES.md` when third-party attribution changes.
-
-## Package-Specific Review
-
-Document the exact format semantics and interoperability tradeoffs. Parser
-changes MUST include malformed fixtures, limit tests, and differential evidence
-where an authoritative implementation exists. Changes to parsing, encoding,
-normalization, format detection, error classification, or a codec dependency
-MUST review and update the
-[specification decision register](docs/specification-decisions.md), pinned
-[source manifest](specification/manifest.tsv), executable evidence, public
-documentation, and changelog. Superseded decisions remain in the register with
-a replacement link.
-
-## Local Verification
-
-Run the complete local gate:
-
-```sh
-make check
+```bash
+make ci-changed BASE=origin/main
 ```
 
-Run `make conformance` for a focused specification-map and behavioral-evidence
-check.
+The full scheduled and release gate is `make ci`. Report every unavailable or
+failing command; do not describe partial results as release-ready.
 
-## Commits And Pull Requests
+## Adding A Module
 
-Use focused conventional commits with a body explaining why the change is
-needed. Pull requests must describe compatibility impact, tests, verification
-commands and results, documentation updates, and changelog updates.
-
-## Reporting Security Issues
-
-Do not open a public issue for a suspected vulnerability. Follow
-[SECURITY.md](SECURITY.md).
+Follow [module lifecycle procedures](docs/module-lifecycle.md). New modules
+require an explicit purpose, ownership boundary, dependency review, package
+catalog entry, full quality gates, documentation, changelog, license, security
+policy, compatibility plan, and release dry-run.

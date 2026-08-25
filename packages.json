@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "packages": [
+    {
+      "module_directory": ".",
+      "directory": ".",
+      "name": "wire",
+      "import_path": "github.com/faustbrian/go-wire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "bsonwire",
+      "name": "bsonwire",
+      "import_path": "github.com/faustbrian/go-wire/bsonwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "cborwire",
+      "name": "cborwire",
+      "import_path": "github.com/faustbrian/go-wire/cborwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "cmd/semvercheck",
+      "name": "main",
+      "import_path": "github.com/faustbrian/go-wire/cmd/semvercheck",
+      "kind": "tooling",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "internal/outputlimit",
+      "name": "outputlimit",
+      "import_path": "github.com/faustbrian/go-wire/internal/outputlimit",
+      "kind": "internal",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "internal/semver",
+      "name": "semver",
+      "import_path": "github.com/faustbrian/go-wire/internal/semver",
+      "kind": "tooling",
+      "production": false,
+      "executable": true,
+      "coverage_required": false,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "internal/valuecheck",
+      "name": "valuecheck",
+      "import_path": "github.com/faustbrian/go-wire/internal/valuecheck",
+      "kind": "internal",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "jsonwire",
+      "name": "jsonwire",
+      "import_path": "github.com/faustbrian/go-wire/jsonwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "msgpackwire",
+      "name": "msgpackwire",
+      "import_path": "github.com/faustbrian/go-wire/msgpackwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "soap",
+      "name": "soap",
+      "import_path": "github.com/faustbrian/go-wire/soap",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "tomlwire",
+      "name": "tomlwire",
+      "import_path": "github.com/faustbrian/go-wire/tomlwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "xmlwire",
+      "name": "xmlwire",
+      "import_path": "github.com/faustbrian/go-wire/xmlwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    },
+    {
+      "module_directory": ".",
+      "directory": "yamlwire",
+      "name": "yamlwire",
+      "import_path": "github.com/faustbrian/go-wire/yamlwire",
+      "kind": "public",
+      "production": true,
+      "executable": true,
+      "coverage_required": true,
+      "build_required": true,
+      "build_tags": []
+    }
+  ]
+}

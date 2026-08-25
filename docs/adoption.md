@@ -112,7 +112,7 @@ explain which real interoperability behavior it protects.
 
 ## 8. Upgrade deliberately
 
-Pin tagged versions after v1. Read `CHANGELOG.md` and
+Pin tagged versions. Read `CHANGELOG.md` and
 [`dependencies.md`](dependencies.md) before every upgrade. Defaults,
 normalization, SOAP fault mapping, accepted syntax, numeric conversion, emitted
 bytes, and error classification are compatibility-sensitive even if function

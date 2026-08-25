@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/msgpackwire"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/msgpackwire"
 )
 
 func TestEncodeEnforcesOutputLimit(t *testing.T) {

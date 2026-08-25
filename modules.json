@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "go_version": "1.26.6",
+  "modules": [
+    {
+      "directory": ".",
+      "module_path": "github.com/faustbrian/go-wire",
+      "go_version": "1.26.6",
+      "packages": [
+        {
+          "module_directory": ".",
+          "directory": ".",
+          "name": "wire",
+          "import_path": "github.com/faustbrian/go-wire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "bsonwire",
+          "name": "bsonwire",
+          "import_path": "github.com/faustbrian/go-wire/bsonwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "cborwire",
+          "name": "cborwire",
+          "import_path": "github.com/faustbrian/go-wire/cborwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "cmd/semvercheck",
+          "name": "main",
+          "import_path": "github.com/faustbrian/go-wire/cmd/semvercheck",
+          "kind": "tooling",
+          "production": false,
+          "executable": true,
+          "coverage_required": false,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "internal/outputlimit",
+          "name": "outputlimit",
+          "import_path": "github.com/faustbrian/go-wire/internal/outputlimit",
+          "kind": "internal",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "internal/semver",
+          "name": "semver",
+          "import_path": "github.com/faustbrian/go-wire/internal/semver",
+          "kind": "tooling",
+          "production": false,
+          "executable": true,
+          "coverage_required": false,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "internal/valuecheck",
+          "name": "valuecheck",
+          "import_path": "github.com/faustbrian/go-wire/internal/valuecheck",
+          "kind": "internal",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "jsonwire",
+          "name": "jsonwire",
+          "import_path": "github.com/faustbrian/go-wire/jsonwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "msgpackwire",
+          "name": "msgpackwire",
+          "import_path": "github.com/faustbrian/go-wire/msgpackwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "soap",
+          "name": "soap",
+          "import_path": "github.com/faustbrian/go-wire/soap",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "tomlwire",
+          "name": "tomlwire",
+          "import_path": "github.com/faustbrian/go-wire/tomlwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "xmlwire",
+          "name": "xmlwire",
+          "import_path": "github.com/faustbrian/go-wire/xmlwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        },
+        {
+          "module_directory": ".",
+          "directory": "yamlwire",
+          "name": "yamlwire",
+          "import_path": "github.com/faustbrian/go-wire/yamlwire",
+          "kind": "public",
+          "production": true,
+          "executable": true,
+          "coverage_required": true,
+          "build_required": true,
+          "build_tags": []
+        }
+      ],
+      "purpose": "`wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON interoperability boundaries with bounded read and write APIs.",
+      "lifecycle": "stable",
+      "kind": "public library",
+      "releasable": true,
+      "family": "protocols-and-descriptions",
+      "family_label": "Protocols And Descriptions",
+      "family_description": "Standards, envelopes, schemas, descriptions, signatures, and wire interoperability.",
+      "family_order": 3,
+      "version": "v1.0.0",
+      "tag_prefix": "v",
+      "owned_dependencies": [],
+      "reverse_owned_dependencies": [
+        "github.com/faustbrian/go-international",
+        "github.com/faustbrian/go-localized",
+        "github.com/faustbrian/go-measurement",
+        "github.com/faustbrian/go-opening-hours",
+        "github.com/faustbrian/go-temporal",
+        "github.com/faustbrian/go-wsdl"
+      ],
+      "external_runtime_dependencies": [
+        "github.com/BurntSushi/toml",
+        "github.com/fxamacker/cbor/v2",
+        "github.com/vmihailenco/msgpack/v5",
+        "go.mongodb.org/mongo-driver/v2",
+        "go.yaml.in/yaml/v4"
+      ],
+      "required_services": [],
+      "build_tags": [],
+      "test_tags": [],
+      "interoperability_tools": [],
+      "specifications": [
+        "Go 1.26.6 encoding/json and encoding/xml contracts",
+        "RFC 8259 JSON",
+        "XML 1.0 Fifth Edition and Namespaces in XML 1.0 Third Edition",
+        "SOAP 1.1 and SOAP 1.2 Part 1 Second Edition",
+        "YAML 1.2.2",
+        "TOML 1.1.0",
+        "MessagePack format at 8aa09e2a6a91",
+        "RFC 7049 and RFC 8949 CBOR",
+        "CTAP 2.2 deterministic CBOR profile",
+        "BSON 1.1"
+      ],
+      "conformance_corpora": [
+        "Pinned normative-source matrix and format-specific decision evidence",
+        "Codec differential, hostile-input, round-trip, and official format fixtures"
+      ],
+      "provenance": [
+        "specification/manifest.tsv"
+      ],
+      "goal_files": [
+        ".ai/GOAL.md",
+        ".ai/GOAL_HARDEN.md"
+      ],
+      "goal_status": "implementation-evidence-inventoried",
+      "goal_evidence": [
+        {
+          "file": ".ai/GOAL.md",
+          "requirements_sha256": "4dbb985a8e1447b944eea65d38130f9471778c697558b9bf92f8dae47364bc5f",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/README.md",
+            "docs/api.md",
+            "docs/architecture.md",
+            "docs/compatibility.md",
+            "docs/hardening.md",
+            "docs/performance.md",
+            "docs/security.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        },
+        {
+          "file": ".ai/GOAL_HARDEN.md",
+          "requirements_sha256": "b448762eefea3846a7bfc118f25a33de433219c79c7585b96f63421683397e2a",
+          "implementation_evidence": [
+            "CHANGELOG.md",
+            "README.md",
+            "docs/README.md",
+            "docs/api.md",
+            "docs/architecture.md",
+            "docs/compatibility.md",
+            "docs/hardening.md",
+            "docs/performance.md",
+            "docs/security.md"
+          ],
+          "verification_gates": [
+            "format-check",
+            "tidy-check",
+            "safety",
+            "vet",
+            "test",
+            "race",
+            "coverage",
+            "lint",
+            "staticcheck",
+            "vulnerability",
+            "secrets",
+            "licenses",
+            "sbom",
+            "fuzz",
+            "mutation",
+            "nilaway",
+            "docs",
+            "api",
+            "conformance",
+            "interoperability",
+            "benchmark"
+          ],
+          "implementation_status": "implemented-requires-fresh-verification"
+        }
+      ],
+      "gates": {
+        "api_compatibility": true,
+        "benchmarks": true,
+        "conformance": true,
+        "coverage": true,
+        "documentation": true,
+        "fuzz": true,
+        "lint": true,
+        "mutation": true,
+        "race": true,
+        "security": true,
+        "tests": true
+      }
+    }
+  ]
+}

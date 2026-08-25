@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/faustbrian/golib/pkg/wire"
+	"github.com/faustbrian/go-wire"
 	"go.yaml.in/yaml/v4"
 )
 

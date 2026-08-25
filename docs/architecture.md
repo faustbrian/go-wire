@@ -5,7 +5,7 @@
 `wire` uses format-specific packages rather than a universal codec:
 
 ```text
-github.com/faustbrian/golib/pkg/wire        shared Format and Error vocabulary
+github.com/faustbrian/go-wire        shared Format and Error vocabulary
 ├── jsonwire                         JSON boundary policy
 ├── xmlwire                          XML boundary policy and charsets
 ├── soap                             SOAP envelope and fault semantics

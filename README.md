@@ -1,12 +1,22 @@
 # wire
 
+[![CI](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
+[![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
+[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 `wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML,
 MessagePack, CBOR, and BSON interoperability boundaries with bounded read and
 write APIs.
 
 ## Status
 
-The package is pre-v1. Supported format behavior is fixture-backed, fuzzed,
+The package has a stable v1 API. Supported format behavior is fixture-backed, fuzzed,
 benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
@@ -16,12 +26,12 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/golib/pkg/wire
+go get github.com/faustbrian/go-wire
 ```
 
 Import format packages explicitly, such as
-`github.com/faustbrian/golib/pkg/wire/jsonwire` or
-`github.com/faustbrian/golib/pkg/wire/soap`.
+`github.com/faustbrian/go-wire/jsonwire` or
+`github.com/faustbrian/go-wire/soap`.
 
 ## Quickstart
 

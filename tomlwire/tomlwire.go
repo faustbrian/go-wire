@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/internal/outputlimit"
-	"github.com/faustbrian/golib/pkg/wire/internal/valuecheck"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/internal/outputlimit"
+	"github.com/faustbrian/go-wire/internal/valuecheck"
 )
 
 // DefaultMaxBytes is the default maximum TOML document size.

@@ -8,15 +8,15 @@ import (
 	"log"
 	"strings"
 
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/bsonwire"
-	"github.com/faustbrian/golib/pkg/wire/cborwire"
-	"github.com/faustbrian/golib/pkg/wire/jsonwire"
-	"github.com/faustbrian/golib/pkg/wire/msgpackwire"
-	"github.com/faustbrian/golib/pkg/wire/soap"
-	"github.com/faustbrian/golib/pkg/wire/tomlwire"
-	"github.com/faustbrian/golib/pkg/wire/xmlwire"
-	"github.com/faustbrian/golib/pkg/wire/yamlwire"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/bsonwire"
+	"github.com/faustbrian/go-wire/cborwire"
+	"github.com/faustbrian/go-wire/jsonwire"
+	"github.com/faustbrian/go-wire/msgpackwire"
+	"github.com/faustbrian/go-wire/soap"
+	"github.com/faustbrian/go-wire/tomlwire"
+	"github.com/faustbrian/go-wire/xmlwire"
+	"github.com/faustbrian/go-wire/yamlwire"
 )
 
 func ExampleDetectFormat() {

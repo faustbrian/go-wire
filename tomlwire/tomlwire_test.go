@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/golib/pkg/wire"
-	"github.com/faustbrian/golib/pkg/wire/tomlwire"
+	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/tomlwire"
 )
 
 type service struct {
