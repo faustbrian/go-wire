@@ -1,8 +1,18 @@
-# wire Complete Documentation
+# go-wire Complete Documentation
 
 ## Source: README.md
 
 # wire
+
+[![CI](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
+[![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
+[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML,
 MessagePack, CBOR, and BSON interoperability boundaries with bounded read and
@@ -10,7 +20,7 @@ write APIs.
 
 ## Status
 
-The package is pre-v1. Supported format behavior is fixture-backed, fuzzed,
+The package has a stable v1 API. Supported format behavior is fixture-backed, fuzzed,
 benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
@@ -146,7 +156,7 @@ Use this index to select an explicit wire format and understand its limits.
 
 ## Install
 
-The project is currently unreleased. Until the first tag exists, pin a commit:
+Install the stable v1 release:
 
 ```sh
 go get github.com/faustbrian/go-wire@<commit>
@@ -495,7 +505,7 @@ explain which real interoperability behavior it protects.
 
 ## 8. Upgrade deliberately
 
-Pin tagged versions after v1. Read `CHANGELOG.md` and
+Pin tagged versions. Read `CHANGELOG.md` and
 [`dependencies.md`](dependencies.md) before every upgrade. Defaults,
 normalization, SOAP fault mapping, accepted syntax, numeric conversion, emitted
 bytes, and error classification are compatibility-sensitive even if function
@@ -706,7 +716,7 @@ source.
 
 ## Compatibility note
 
-These symbols are release candidates until v1.0.0. After v1, exported names,
+These symbols are stable at v1. Exported names,
 signatures, default limits, error classifications, wire output, and documented
 normalization behavior are SemVer-governed.
 
@@ -1533,11 +1543,10 @@ only execute a line without proving its contract.
 
 # Migration notes
 
-## Before v1
+## Version 1 compatibility
 
-The module is unreleased and APIs can change until v1.0.0. Pin a commit, keep
-the integration behind boundary adapters, and review `CHANGELOG.md` whenever
-updating.
+The module follows stable v1 compatibility. Pin a released version, keep the
+integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
 ## From direct `encoding/json`
 
@@ -1740,7 +1749,7 @@ pinned in [`../specification/manifest.tsv`](../specification/manifest.tsv).
 - Minor releases add backward-compatible APIs or capabilities.
 - Major releases can change or remove compatibility-governed behavior and must
   include migration notes.
-- Pre-v1 versions can change APIs, but every change remains documented.
+- Breaking API changes require a new major release and remain documented.
 
 ## Deprecation policy
 
@@ -2042,69 +2051,60 @@ notes.
 
 # Contributing
 
-## Before Opening A Change
+## Before Editing
 
-Use an issue for changes affecting wire formats, interoperability, limits, deterministic encoding, and format-specific semantics. Explain the user problem,
-compatibility impact, and why the behavior belongs in this generic package.
+1. Read [`AGENTS.md`](AGENTS.md) and the affected module's goals and docs.
+2. Run `make inventory` and the narrow baseline gate for the module.
+3. Identify owned dependencies and reverse dependants in `modules.json`.
+4. Preserve unrelated work and generated/corpus provenance.
 
-## Development Setup
+## Changes
 
-Requirements:
+Keep commits focused and conventional. Update every affected changelog with
+the behavior and migration impact. Public API changes require compatibility
+evidence and documentation. Specification behavior requires a decision record,
+fixture coverage, and interoperability evidence.
 
-- Go 1.26.6 or later
-- Git
-- `golangci-lint` v2
+New direct dependencies and dependency updates must follow the
+[dependency governance policy](AGENTS.md#dependencies-and-supply-chain). Package-local
+update bots are forbidden; the root policy owns every module and action update.
 
-```sh
-go mod download
+Specification-backed changes must follow the
+[specification governance contract](AGENTS.md#design), update
+the affected stable decision entries, and complete the Specification Decisions
+section of the pull request template. An unresolved interpretation or stale
+source pin is release-blocking; peer behavior cannot silently select policy.
+
+Required mutation gates must finish with zero surviving viable mutants.
+
+Do not add package-local workflows, permanent replacements, machine-specific
+paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
+that hide a failing package.
+
+## Verification
+
+Run during development:
+
+```bash
+make inventory
 make check
 ```
 
-## Change Requirements
+Before submitting a repository-wide change:
 
-- Add regression coverage before fixing a defect.
-- Maintain meaningful 100% production-code coverage.
-- Update public examples and documentation with behavior changes.
-- Update `.ai/GOAL.md` or `.ai/GOAL_HARDEN.md` when scope or acceptance criteria
-  change.
-- Add an `Unreleased` entry to `CHANGELOG.md`.
-- Explain every dependency addition, upgrade, or removal.
-- Update `NOTICE` when project ownership changes and
-  `THIRD_PARTY_NOTICES.md` when third-party attribution changes.
-
-## Package-Specific Review
-
-Document the exact format semantics and interoperability tradeoffs. Parser
-changes MUST include malformed fixtures, limit tests, and differential evidence
-where an authoritative implementation exists. Changes to parsing, encoding,
-normalization, format detection, error classification, or a codec dependency
-MUST review and update the
-[specification decision register](docs/specification-decisions.md), pinned
-[source manifest](specification/manifest.tsv), executable evidence, public
-documentation, and changelog. Superseded decisions remain in the register with
-a replacement link.
-
-## Local Verification
-
-Run the complete local gate:
-
-```sh
-make check
+```bash
+make ci
 ```
 
-Run `make conformance` for a focused specification-map and behavioral-evidence
-check.
+The full scheduled and release gate is `make ci`. Report every unavailable or
+failing command; do not describe partial results as release-ready.
 
-## Commits And Pull Requests
+## Adding A Module
 
-Use focused conventional commits with a body explaining why the change is
-needed. Pull requests must describe compatibility impact, tests, verification
-commands and results, documentation updates, and changelog updates.
-
-## Reporting Security Issues
-
-Do not open a public issue for a suspected vulnerability. Follow
-[SECURITY.md](SECURITY.md).
+Follow [repository structure policy](AGENTS.md#repository-structure). New modules
+require an explicit purpose, ownership boundary, dependency review, package
+catalog entry, full quality gates, documentation, changelog, license, security
+policy, compatibility plan, and release dry-run.
 
 ## Source: SECURITY.md
 
@@ -2112,9 +2112,9 @@ Do not open a public issue for a suspected vulnerability. Follow
 
 ## Supported Versions
 
-Before `v1.0.0`, security fixes are applied to the latest revision of
-`main`. After the first stable release, supported release lines and
-end-of-support dates will be documented here.
+Security fixes are applied to the latest stable v1 release and `main`.
+Additional supported release lines and end-of-support dates will be documented
+here when offered.
 
 ## Reporting A Vulnerability
 
@@ -2201,6 +2201,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
 ### Documentation
 
 - Replace obsolete standalone-repository links and workflow claims with
@@ -2215,6 +2217,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Publish the module from its standalone `github.com/faustbrian/go-wire` identity while preserving its documented API and behavior.
 - Hardened codec boundary coverage with exact byte, depth, numeric, charset,
   alias, fragment, and SOAP fault assertions, and bounded mutation execution
   for malformed XML and SOAP parser mutants.
@@ -2416,7 +2419,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/commits/main
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
 
 ## Source: docs/dependencies.md
 
