@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Clarify how shared safety-policy updates are coordinated across standalone
+  repositories.
+
 - Replace archived monorepo links and completed execution artifacts with a
   standalone, human-oriented documentation structure.
 
