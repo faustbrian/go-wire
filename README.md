@@ -72,12 +72,10 @@ codec seams are recorded in the
 
 Start with the [documentation index](docs/README.md), [quickstart](docs/quickstart.md),
 [adoption guide](docs/adoption.md), and [API reference](docs/api.md). Review
-[dependencies](docs/dependencies.md), [evidence](docs/evidence.md), and
-[hardening](docs/hardening.md) before processing hostile input. Normative
+[dependencies](docs/dependencies.md), [security](docs/security.md), and
+[formats](docs/formats.md) before processing hostile input. Normative
 source pins and the conformance update process live in
 [specification/README.md](specification/README.md).
-
-AI tools can use [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
 ## Development
@@ -102,8 +100,3 @@ Review [docs/security.md](docs/security.md) before decoding untrusted payloads.
 `wire` is available under the [MIT License](LICENSE). Attribution and
 third-party policy are recorded in [NOTICE](NOTICE) and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Ecosystem
-
-Use the [Golib documentation portal](https://github.com/faustbrian/golib/blob/main/docs/index.md)
-to choose companion packages, supported stacks, recipes, and operations guidance.

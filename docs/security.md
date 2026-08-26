@@ -19,5 +19,5 @@ rate limits before decoding. Do not expose raw parser errors when they may
 contain sensitive input.
 
 See [dependencies](dependencies.md), [formats](formats.md), and
-[hardening](hardening.md) for the maintained boundary evidence. Report
+[formats](formats.md) for the maintained boundary contract. Report
 vulnerabilities through [SECURITY.md](../SECURITY.md).

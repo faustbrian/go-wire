@@ -1,28 +1,26 @@
-# wire Documentation
+# Documentation
 
 Use this index to select an explicit wire format and understand its limits.
 
-## Start Here
+## Getting started
 
 - [Quickstart](quickstart.md)
-- [Adoption guide](adoption.md)
+- [When to use this package](adoption.md)
 - [API reference](api.md)
 - [Examples](examples.md)
 
-## Design And Operations
+## Formats and operations
 
 - [Architecture](architecture.md)
 - [Go safety and concurrency](go-safety-and-concurrency.md)
 - [Formats](formats.md)
 - [Dependencies](dependencies.md)
-- [Evidence](evidence.md)
 - [Specification decisions](specification-decisions.md)
 - [Compatibility](compatibility.md)
 - [Performance](performance.md)
 - [Security](security.md)
-- [Hardening](hardening.md)
 
-## Maintain And Troubleshoot
+## Troubleshooting and migration
 
 - [Cookbook](cookbook.md)
 - [FAQ](faq.md)
@@ -30,6 +28,8 @@ Use this index to select an explicit wire format and understand its limits.
 - [Migration](migration.md)
 - [Releasing](releasing.md)
 
-## Repository Maintenance
+## Maintainers
 
-- [Shared repository standards](repository-standards.md)
+- [Repository standards](repository-standards.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Release history](../CHANGELOG.md)
