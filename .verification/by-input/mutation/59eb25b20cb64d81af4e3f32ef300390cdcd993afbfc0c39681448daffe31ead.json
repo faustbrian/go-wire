@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "module": ".",
+  "package": "xmlwire",
+  "gate": "mutation",
+  "input_digest": "sha256:59eb25b20cb64d81af4e3f32ef300390cdcd993afbfc0c39681448daffe31ead",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:563c5c9c6b577b7df5c6bc3ea3eb8d6ea8c3897acaf550462cda7df1ddb5469a",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "gremlins_binary_sha256": "sha256:e05bf25d661b16ab96d6f2e17aed481d393930e0f24205cc341b010f887368a0"
+  },
+  "completed_at": "2026-08-29T08:34:10.57697Z"
+}

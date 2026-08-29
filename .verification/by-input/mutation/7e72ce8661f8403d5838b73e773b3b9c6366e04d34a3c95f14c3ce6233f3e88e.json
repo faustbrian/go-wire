@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "module": ".",
+  "package": "yamlwire",
+  "gate": "mutation",
+  "input_digest": "sha256:7e72ce8661f8403d5838b73e773b3b9c6366e04d34a3c95f14c3ce6233f3e88e",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:48c910975b9dd7a9cffc5602cdbe660553ccede9a7d7af56cd309c34c95d9a82",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "gremlins_binary_sha256": "sha256:e05bf25d661b16ab96d6f2e17aed481d393930e0f24205cc341b010f887368a0"
+  },
+  "completed_at": "2026-08-29T08:36:14.880187Z"
+}
