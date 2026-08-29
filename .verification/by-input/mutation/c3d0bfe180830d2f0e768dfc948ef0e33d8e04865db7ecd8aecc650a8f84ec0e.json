@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "module": ".",
+  "package": "bsonwire",
+  "gate": "mutation",
+  "input_digest": "sha256:c3d0bfe180830d2f0e768dfc948ef0e33d8e04865db7ecd8aecc650a8f84ec0e",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:5349febaf22215b8a3bcf353da3e60994b7de974416b7c889a44f68e4fa14105",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "gremlins_binary_sha256": "sha256:e05bf25d661b16ab96d6f2e17aed481d393930e0f24205cc341b010f887368a0"
+  },
+  "completed_at": "2026-08-29T08:27:14.847391Z"
+}

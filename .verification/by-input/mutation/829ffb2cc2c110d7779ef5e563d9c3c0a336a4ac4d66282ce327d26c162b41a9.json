@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "module": ".",
+  "package": "tomlwire",
+  "gate": "mutation",
+  "input_digest": "sha256:829ffb2cc2c110d7779ef5e563d9c3c0a336a4ac4d66282ce327d26c162b41a9",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:121cd783d48b5e5fee50f0d91f2a9b51965ac4dc5db0b6e29fb59bacec7bfed8",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "gremlins_binary_sha256": "sha256:e05bf25d661b16ab96d6f2e17aed481d393930e0f24205cc341b010f887368a0"
+  },
+  "completed_at": "2026-08-29T08:33:22.805369Z"
+}

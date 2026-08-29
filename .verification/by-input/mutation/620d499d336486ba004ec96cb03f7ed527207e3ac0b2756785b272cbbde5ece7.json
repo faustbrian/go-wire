@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "github.com/faustbrian/go-wire",
+  "module": ".",
+  "package": "soap",
+  "gate": "mutation",
+  "input_digest": "sha256:620d499d336486ba004ec96cb03f7ed527207e3ac0b2756785b272cbbde5ece7",
+  "verifier_digest": "sha256:9a9499ff68a8dfd49a0be7995590297a8ee563a1aa226bfd8b9361dc53058108",
+  "result": "passed",
+  "report_digest": "sha256:04175a63c2d1b45d9e269e286c0ed6097c1f2bc969ccb332719cd9460fcd6bfb",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOVERSION": "go1.26.6",
+    "gremlins_binary_sha256": "sha256:e05bf25d661b16ab96d6f2e17aed481d393930e0f24205cc341b010f887368a0"
+  },
+  "completed_at": "2026-08-29T08:32:55.543579Z"
+}
