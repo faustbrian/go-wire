@@ -1,5 +1,8 @@
 id	version	sections	role	url	sha256	status
-go-encoding	Go-1.26.6	encoding/json,encoding/xml	JSON-XML-and-SOAP-codec-contracts	https://go.dev/dl/go1.26.6.src.tar.gz	a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1	pinned
+go-json	Go-1.26.6	encoding/json	JSON-codec-contract	https://dl.google.com/go/go1.26.6.src.tar.gz	a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1	pinned
+go-xml	Go-1.26.6	encoding/xml	XML-and-SOAP-codec-contract	https://dl.google.com/go/go1.26.6.src.tar.gz	a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1	pinned
+go-errors	Go-1.26.6	src/errors	Go-error-wrapping-and-classification-contract	https://dl.google.com/go/go1.26.6.src.tar.gz	a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1	pinned
+go-language	Go-1.26.6	doc/go_spec.html	Go-value-and-recursion-contract	https://dl.google.com/go/go1.26.6.src.tar.gz	a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1	pinned
 rfc8259	RFC-8259	all	JSON-data-interchange	https://www.rfc-editor.org/rfc/rfc8259.txt	61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7	pinned
 xml10	XML-1.0-Fifth-Edition	all	XML-well-formedness-and-document-syntax	https://www.w3.org/TR/2008/REC-xml-20081126/	f58a4b9e1e5b8bac13fb55c4e5c7c8c5e2c176aa45ee68e2f1ab2498511927ec	pinned
 xml-names	Namespaces-in-XML-1.0-Third-Edition	all	XML-expanded-name-semantics	https://www.w3.org/TR/2009/REC-xml-names-20091208/	b4a649e5fdab9852d68eca21442481599164949bcdee5549f2ec7e38fb3cd3a8	pinned
@@ -12,3 +15,4 @@ rfc7049	RFC-7049	3.9	legacy-canonical-CBOR	https://www.rfc-editor.org/rfc/rfc704
 rfc8949	RFC-8949	3-5	CBOR-and-core-deterministic-encoding	https://www.rfc-editor.org/rfc/rfc8949.txt	f1164a5b31a39350ad46abe29b83575eb933ca6c45366989c118b6b1058a214a	pinned
 ctap22	CTAP-2.2-PS-2025-07-14	8	CTAP2-canonical-CBOR	https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.pdf	2ef853c63fd0835e609e16fbe6a7fcd5965fd6a21d86752f46df54c5cfb81f73	pinned
 bson11	BSON-1.1	all	BSON-document-grammar-and-types	https://bsonspec.org/spec.html	4eeb35dbd4f2d1767343bc984638d98f3fdd0abd8fd1f2995ae64fbbb8eba731	pinned
+rfc9110	RFC-9110	all	HTTP-semantics-and-media-boundaries	https://www.rfc-editor.org/rfc/rfc9110.txt	21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a	pinned

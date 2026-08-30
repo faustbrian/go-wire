@@ -196,7 +196,10 @@
       "test_tags": [],
       "interoperability_tools": [],
       "specifications": [
-        "Go 1.26.6 encoding/json and encoding/xml contracts",
+        "Go 1.26.6 encoding/json contract",
+        "Go 1.26.6 encoding/xml contract",
+        "Go 1.26.6 errors package contract",
+        "Go 1.26.6 language specification",
         "RFC 8259 JSON",
         "XML 1.0 Fifth Edition and Namespaces in XML 1.0 Third Edition",
         "SOAP 1.1 and SOAP 1.2 Part 1 Second Edition",
@@ -205,7 +208,8 @@
         "MessagePack format at 8aa09e2a6a91",
         "RFC 7049 and RFC 8949 CBOR",
         "CTAP 2.2 deterministic CBOR profile",
-        "BSON 1.1"
+        "BSON 1.1",
+        "RFC 9110 HTTP Semantics"
       ],
       "conformance_corpora": [
         "Pinned normative-source matrix and format-specific decision evidence",

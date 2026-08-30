@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Make the [specification decision register](docs/specification-decisions.md)
+  machine-auditable with exact source and change-authority monitoring,
+  attributable conformance evidence, classified maintained-peer results, and
+  durable decision history.
+
+  - WIRE-DEC-001 sha256:f1fc52ef8464874e7b8cebcae98161f7c9296128e9a8913fcf918b97fe2f0728
+  - WIRE-DEC-002 sha256:f4dee326c94a5de595cbd5e0aea03414fd8ec444be92fd1ca25adcaef4a46f6d
+  - WIRE-DEC-003 sha256:1dd67beed03dbeb91bdef10c77f6f8c21cd0c8326720861437f9ce1ae179ee98
+  - WIRE-DEC-004 sha256:162b1cb67101d82b7732701b50193d49f2702908450227ecae9068777b5c91f5
+  - WIRE-DEC-005 sha256:74528fbf1f9dae53b31e20152c679fe0614de1d4a3f45c1fa19179b6a99cb620
+  - WIRE-DEC-006 sha256:a283308985c948563734b7f69e182e97ca844068e43e1cc9f5b09fcceb419e98
+  - WIRE-DEC-007 sha256:c781bb6f45e052079ba1b1dbdb37b3184606c72abae012848ab23a1d7cc2d73c
+  - WIRE-DEC-008 sha256:c5ce0457d9c8f828dfebef5c5d4467760836fcd58bb2b4b6291fe4bc76df4953
+  - WIRE-DEC-009 sha256:3739785c9c34062134e2cbe7d38b974da151e1711ced5e16119184b7c0060e91
+  - WIRE-DEC-010 sha256:57459c19b8ef283a3891ef4bc4d44efa1f1f4d211af4a9e74a533721c08f03f9
+  - WIRE-DEC-011 sha256:78340a1b77fad0a94fdd12875dd851446ff46fea84d92f4eb1766f9fb6637909
+  - WIRE-DEC-012 sha256:bbf48898109b852fe1b5784511c0bb5aa308162ceacd10b8777023fa391f9491
+  - WIRE-DEC-013 sha256:4a7375048cd8a95c1b37ecaae2e5d21c7dbb97b5e95c544d12fd2db1ccb29b7b
+  - WIRE-DEC-014 sha256:26d5aafc3d7e2bbf9304d04d9c0e1bf435968260b18dd05043fef4d1666596bd
+  - WIRE-DEC-015 sha256:a78c203aaf7314a61baa093d7e80e87171e8695c570f7e0b443b4ddda227be66
+  - WIRE-DEC-016 sha256:977cc72dfe7abd290dff31fa27f8150c26c0c27b4704e31427aabca3e7dffd52
+
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
 

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {"id":"WIRE-DEC-001","digests":["f1fc52ef8464874e7b8cebcae98161f7c9296128e9a8913fcf918b97fe2f0728"]},
+    {"id":"WIRE-DEC-002","digests":["f4dee326c94a5de595cbd5e0aea03414fd8ec444be92fd1ca25adcaef4a46f6d"]},
+    {"id":"WIRE-DEC-003","digests":["1dd67beed03dbeb91bdef10c77f6f8c21cd0c8326720861437f9ce1ae179ee98"]},
+    {"id":"WIRE-DEC-004","digests":["162b1cb67101d82b7732701b50193d49f2702908450227ecae9068777b5c91f5"]},
+    {"id":"WIRE-DEC-005","digests":["74528fbf1f9dae53b31e20152c679fe0614de1d4a3f45c1fa19179b6a99cb620"]},
+    {"id":"WIRE-DEC-006","digests":["a283308985c948563734b7f69e182e97ca844068e43e1cc9f5b09fcceb419e98"]},
+    {"id":"WIRE-DEC-007","digests":["c781bb6f45e052079ba1b1dbdb37b3184606c72abae012848ab23a1d7cc2d73c"]},
+    {"id":"WIRE-DEC-008","digests":["c5ce0457d9c8f828dfebef5c5d4467760836fcd58bb2b4b6291fe4bc76df4953"]},
+    {"id":"WIRE-DEC-009","digests":["3739785c9c34062134e2cbe7d38b974da151e1711ced5e16119184b7c0060e91"]},
+    {"id":"WIRE-DEC-010","digests":["57459c19b8ef283a3891ef4bc4d44efa1f1f4d211af4a9e74a533721c08f03f9"]},
+    {"id":"WIRE-DEC-011","digests":["78340a1b77fad0a94fdd12875dd851446ff46fea84d92f4eb1766f9fb6637909"]},
+    {"id":"WIRE-DEC-012","digests":["bbf48898109b852fe1b5784511c0bb5aa308162ceacd10b8777023fa391f9491"]},
+    {"id":"WIRE-DEC-013","digests":["4a7375048cd8a95c1b37ecaae2e5d21c7dbb97b5e95c544d12fd2db1ccb29b7b"]},
+    {"id":"WIRE-DEC-014","digests":["26d5aafc3d7e2bbf9304d04d9c0e1bf435968260b18dd05043fef4d1666596bd"]},
+    {"id":"WIRE-DEC-015","digests":["a78c203aaf7314a61baa093d7e80e87171e8695c570f7e0b443b4ddda227be66"]},
+    {"id":"WIRE-DEC-016","digests":["977cc72dfe7abd290dff31fa27f8150c26c0c27b4704e31427aabca3e7dffd52"]}
+  ]
+}
