@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Adopt the versioned shared `golib` repository contract while keeping
+  format-specific conformance, interoperability, mutation, and benchmark
+  evidence in this repository.
+
 ### Documentation
 
 - Remove the archived monorepo documentation link; package guidance remains in
