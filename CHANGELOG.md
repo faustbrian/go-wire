@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Adopt checksum-pinned `go-library-tools` v1.2.0 and its immutable workflow
+  so CI executes specification governance while keeping format-specific
+  conformance, interoperability, mutation, and benchmark evidence in this
+  repository.
+
 ### Documentation
 
 - Make the [specification decision register](docs/specification-decisions.md)
