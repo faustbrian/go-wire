@@ -1,0 +1,7 @@
+decision_id	peer_or_corpus	observed_behavior	classification	executable_evidence
+WIRE-DEC-005	Go encoding/json	The peer replaces invalid UTF-8 while this package rejects it.	deliberate policy difference	TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary
+WIRE-DEC-008	go.yaml.in/yaml/v4	The wrapper repairs invalid block-scalar indentation emitted for a known input.	peer defect	TestYAMLRepairsDependencyBlockIndentDifferential
+WIRE-DEC-010	github.com/vmihailenco/msgpack/v5	The peer accepts duplicate map keys while the wrapper rejects them by default.	deliberate policy difference	TestMessagePackRejectsDuplicateAcceptedByDependency
+WIRE-DEC-011	github.com/fxamacker/cbor/v2	The peer default accepts duplicate keys while the wrapper rejects them.	deliberate policy difference	TestCBORRejectsDuplicateAcceptedByDependencyDefault
+WIRE-DEC-012	go.mongodb.org/mongo-driver/v2/bson	The peer preserves duplicate ordered elements while the wrapper rejects them by default.	deliberate policy difference	TestBSONRejectsDuplicatePreservedByDependency
+WIRE-DEC-015	Pinned maintained codec dependencies	Known package-policy differences remain executable and classified.	deliberate policy difference	TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary

@@ -29,7 +29,7 @@ while IFS=$'\t' read -r id version sections role url digest status; do
 	count=$((count + 1))
 done < <(tail -n +2 "${manifest}")
 
-required=(go-encoding rfc8259 xml10 xml-names soap11 soap12 yaml122 toml110 msgpack rfc7049 rfc8949 ctap22 bson11)
+required=(go-json go-xml go-errors go-language rfc8259 xml10 xml-names soap11 soap12 yaml122 toml110 msgpack rfc7049 rfc8949 ctap22 bson11 rfc9110)
 [[ "${count}" -eq "${#required[@]}" ]] || exit 1
 for id in "${required[@]}"; do
 	[[ "${seen}" == *"|${id}|"* ]] || { printf 'missing wire source: %s\n' "${id}" >&2; exit 1; }
