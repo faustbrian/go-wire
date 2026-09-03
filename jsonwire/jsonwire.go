@@ -113,10 +113,7 @@ func validateUniqueValue(decoder *json.Decoder) error {
 			}
 		}
 		_, err = decoder.Token()
-		if err != nil {
-			return decodeError(err)
-		}
-		return nil
+		return decodeError(err)
 	}
 	// A delimiter returned at the beginning of a JSON value can only be '[' or
 	// '{'; the object case is handled above.
@@ -126,10 +123,7 @@ func validateUniqueValue(decoder *json.Decoder) error {
 		}
 	}
 	_, err = decoder.Token()
-	if err != nil {
-		return decodeError(err)
-	}
-	return nil
+	return decodeError(err)
 }
 
 // Encode serializes value deterministically. Map keys are ordered according to
@@ -285,6 +279,10 @@ func requireEOFWithOp(decoder *json.Decoder, op string) error {
 }
 
 func decodeError(err error) error {
+	if err == nil {
+		return nil
+	}
+
 	return decodeErrorWithOp("decode", err)
 }
 
