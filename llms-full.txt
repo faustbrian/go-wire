@@ -84,6 +84,10 @@ source pins and the conformance update process live in
 AI tools can use [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
+For ecosystem-wide selection and ownership guidance, see the versioned
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md)
+and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/design-language.md#package-families-and-selection).
+
 ## Development
 
 Run `make check` before submitting a change. This enforces formatting, static
@@ -2200,11 +2204,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Adopt the versioned shared `golib` repository contract while keeping
-  format-specific conformance, interoperability, mutation, and benchmark
-  evidence in this repository.
+- Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
+  `make cohesion` gate without changing wire APIs or runtime behavior.
+- Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
+  metadata in the repository's required CI contract.
+
+- Adopt checksum-pinned `go-library-tools` v1.2.0 and its immutable workflow
+  so CI executes specification governance while keeping format-specific
+  conformance, interoperability, mutation, and benchmark evidence in this
+  repository.
 
 ### Documentation
+
+- Publish the module's family, capabilities, ownership, lifecycle, supported
+  environments, package selection, and delivery status, and link the README to
+  the immutable v1.3.0 ecosystem index and family guidance.
 
 - Make the [specification decision register](docs/specification-decisions.md)
   machine-auditable with exact source and change-authority monitoring,

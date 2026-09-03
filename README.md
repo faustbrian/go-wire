@@ -80,6 +80,10 @@ source pins and the conformance update process live in
 AI tools can use [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
 Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
+For ecosystem-wide selection and ownership guidance, see the versioned
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md)
+and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/design-language.md#package-families-and-selection).
+
 ## Development
 
 Run `make check` before submitting a change. This enforces formatting, static

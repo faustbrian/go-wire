@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository": "github.com/faustbrian/go-wire",
   "go_version": "1.26.6",
   "modules": [
@@ -169,7 +169,7 @@
       "lifecycle": "stable",
       "kind": "public library",
       "releasable": true,
-      "family": "protocols-and-descriptions",
+      "family": "integration-and-data-movement",
       "family_label": "Protocols And Descriptions",
       "family_description": "Standards, envelopes, schemas, descriptions, signatures, and wire interoperability.",
       "family_order": 3,
@@ -303,6 +303,101 @@
           "implementation_status": "implemented-requires-fresh-verification"
         }
       ],
+      "cohesion": {
+        "family": "integration-and-data-movement",
+        "secondary_capabilities": [
+          "data-encoding",
+          "protocols-and-schemas"
+        ],
+        "responsibility": "Provide explicit, bounded JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON encoding and decoding boundaries.",
+        "non_goals": [
+          "Provide a universal codec interface or auto-detect ambiguous text and binary formats.",
+          "Own HTTP transport, schemas, signing, compression, persistence, retries, or application mapping.",
+          "Claim lossless conversion or one canonical data model across distinct wire formats."
+        ],
+        "public_package_identifier": "wire",
+        "primary_entry_packages": [
+          "github.com/faustbrian/go-wire"
+        ],
+        "package_selection": {
+          "github.com/faustbrian/go-wire": "Use for shared format identifiers, stable error categories, and explicit JSON-or-XML detection.",
+          "github.com/faustbrian/go-wire/bsonwire": "Use for bounded BSON document encoding and decoding with explicit duplicate-key and numeric policies.",
+          "github.com/faustbrian/go-wire/cborwire": "Use for bounded CBOR processing with explicit deterministic profiles, tag policy, and structural limits.",
+          "github.com/faustbrian/go-wire/jsonwire": "Use for bounded JSON encoding, decoding, and deterministic normalization with explicit strictness options.",
+          "github.com/faustbrian/go-wire/msgpackwire": "Use for bounded MessagePack encoding and decoding with explicit map, extension, and numeric policies.",
+          "github.com/faustbrian/go-wire/soap": "Use for bounded SOAP 1.1 and 1.2 envelope, body, and fault processing independent of HTTP policy.",
+          "github.com/faustbrian/go-wire/tomlwire": "Use for bounded TOML document encoding and decoding with native datetime and strict-field options.",
+          "github.com/faustbrian/go-wire/xmlwire": "Use for bounded XML document encoding and decoding with namespace, charset, and depth policy.",
+          "github.com/faustbrian/go-wire/yamlwire": "Use for bounded YAML document encoding and decoding with explicit alias, merge, and duplicate-key policy."
+        },
+        "lifecycle_status": "active",
+        "maturity": "stable",
+        "construction_styles": [
+          "plain-function"
+        ],
+        "lifecycle_styles": [
+          "stateless"
+        ],
+        "ownership": {
+          "configuration": "caller",
+          "mutable_inputs": [
+            "borrow",
+            "copy"
+          ],
+          "runtime_resources": "none",
+          "background_work": "none"
+        },
+        "optional_owned_dependencies": [],
+        "adapters": [],
+        "companions": [
+          "github.com/faustbrian/go-json-schema",
+          "github.com/faustbrian/go-schema-registry",
+          "github.com/faustbrian/go-wsdl",
+          "github.com/faustbrian/go-xsd"
+        ],
+        "supported_go": {
+          "minimum": "1.26.6",
+          "tested": [
+            "1.26.6"
+          ]
+        },
+        "supported_platforms": [
+          "portable-go"
+        ],
+        "supported_backends": [],
+        "supported_protocols": [
+          "bson-1-1",
+          "cbor-rfc-7049",
+          "cbor-rfc-8949",
+          "ctap-2-2",
+          "json-rfc-8259",
+          "messagepack",
+          "soap-1-1",
+          "soap-1-2",
+          "toml-1-1-0",
+          "xml-1-0",
+          "yaml-1-2-2"
+        ],
+        "documentation": {
+          "readme": "README.md",
+          "api": "docs/api.md",
+          "adoption": "docs/adoption.md",
+          "security": "docs/security.md",
+          "compatibility": "docs/compatibility.md",
+          "performance": "docs/performance.md",
+          "examples": "docs/examples.md",
+          "faq": "docs/faq.md",
+          "changelog": "CHANGELOG.md",
+          "pkg_go_dev": "https://pkg.go.dev/github.com/faustbrian/go-wire",
+          "ecosystem_index": "https://github.com/faustbrian/go-library-tools/blob/v1.3.0/docs/ecosystem/README.md"
+        },
+        "known_good_compatibility_sets": [],
+        "delivery": {
+          "implementation": "not-started",
+          "hardening": "not-started",
+          "release": "not-started"
+        }
+      },
       "gates": {
         "api_compatibility": true,
         "benchmarks": true,
