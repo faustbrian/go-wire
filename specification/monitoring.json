@@ -28,10 +28,10 @@
     {"id":"rfc8949-source","kind":"specification","version":"RFC 8949","url":"https://www.rfc-editor.org/rfc/rfc8949.txt","sha256":"f1164a5b31a39350ad46abe29b83575eb933ca6c45366989c118b6b1058a214a","specifications":["RFC 7049 and RFC 8949 CBOR"]},
     {"id":"rfc8949-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=8949&presentation=records","sha256":"bdbf8cf7ae6ae95a238e2fbd45c98a58904aeb7e8ada5d7f748257a22cbd65fe","specifications":["RFC 7049 and RFC 8949 CBOR"]},
     {"id":"ctap22-source","kind":"specification","version":"CTAP 2.2 Proposed Standard 2025-07-14","url":"https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.pdf","sha256":"2ef853c63fd0835e609e16fbe6a7fcd5965fd6a21d86752f46df54c5cfb81f73","specifications":["CTAP 2.2 deterministic CBOR profile"]},
-    {"id":"ctap-releases","kind":"releases","version":"","url":"https://fidoalliance.org/feed/","sha256":"cfcdcbebc4149e0a2a10a11e3c428c7e5819c3696a89905b932c8fd943f63adf","specifications":["CTAP 2.2 deterministic CBOR profile"]},
+    {"id":"ctap-releases","kind":"releases","version":"","url":"https://fidoalliance.org/feed/","sha256":"0a4f5ac58a20f05d92074b4222de33736d38e40e4746bc7f50c9bf2469836989","specifications":["CTAP 2.2 deterministic CBOR profile"]},
     {"id":"bson11-source","kind":"specification","version":"BSON 1.1","url":"https://bsonspec.org/spec.html","sha256":"4eeb35dbd4f2d1767343bc984638d98f3fdd0abd8fd1f2995ae64fbbb8eba731","specifications":["BSON 1.1"]},
     {"id":"bson-releases","kind":"releases","version":"","url":"https://bsonspec.org/spec.html","sha256":"4eeb35dbd4f2d1767343bc984638d98f3fdd0abd8fd1f2995ae64fbbb8eba731","specifications":["BSON 1.1"]},
     {"id":"rfc9110-source","kind":"specification","version":"RFC 9110","url":"https://www.rfc-editor.org/rfc/rfc9110.txt","sha256":"21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a","specifications":["RFC 9110 HTTP Semantics"]},
-    {"id":"rfc9110-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=9110&presentation=records","sha256":"38bd006c96f8963d58573f704c5313a5f81968b90738c03ade0b036ec7bbdf4b","specifications":["RFC 9110 HTTP Semantics"]}
+    {"id":"rfc9110-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=9110&presentation=records","sha256":"1f6790054c0cdb2f2a70a94fa2b9c73b09a4ee0578a32b4a3006ed0ecfaac86d","specifications":["RFC 9110 HTTP Semantics"]}
   ]
 }
