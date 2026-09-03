@@ -17,6 +17,12 @@ The canonical
 records every material interpretation, consequence, and condition for
 reconsideration behind this conformance matrix.
 
+## Upstream review history
+
+The append-only [upstream authority review history](upstream-reviews.md)
+records each monitored authority delta, its exact decision applicability, and
+the disposition required before its reviewed digest changes.
+
 | Decision | Conformance scope |
 | --- | --- |
 | WIRE-DEC-001 | Specification editions and codec delegation |
