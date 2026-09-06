@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Replace commit-pinned installation and pre-v1 guidance with the published
+  v1.0.0 release, exact Go 1.26.6 minimum, stable compatibility contract, and
+  a package-level compiler-checked example.
+
 - Record the reviewed Go release-feed change through Go 1.27.1 as
   behavior-neutral for the pinned Go 1.26.6 JSON, XML, errors, and language
   contracts; Go 1.27 adoption remains a separate decision review.

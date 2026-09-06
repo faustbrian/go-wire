@@ -28,7 +28,7 @@ func ExampleDetectFormat() {
 	// Output: json
 }
 
-func Example_json() {
+func Example() {
 	var response struct {
 		Status string `json:"status"`
 	}

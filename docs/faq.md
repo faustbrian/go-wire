@@ -72,11 +72,11 @@ Functions allocate per call and do not use mutable package state. An `Envelope`
 is safe for concurrent reads if the caller does not mutate exported fields such
 as `Fault`. Raw accessors return copies.
 
-## What is stable before v1?
+## What is stable in v1?
 
-Nothing is covered by a v1 compatibility promise until v1.0.0 is tagged. The
-current docs describe the candidate contract so changes can be reviewed
-explicitly.
+The v1 compatibility contract covers the exported API and the documented
+format behavior, limits, defaults, error classifications, and deterministic
+output guarantees. Incompatible changes require a new major release.
 
 ## Why are YAML, TOML, and binary formats not auto-detected?
 

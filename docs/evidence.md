@@ -19,8 +19,9 @@ authoritative for signatures.
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
-`TestRepositoryRequiresPatchedGo125OrNewer` locks the module and documentation
-to Go 1.25.8 or newer so CI does not select a vulnerable initial toolchain.
+Repository metadata and documentation declare Go 1.26.6 as the exact minimum
+toolchain. Package examples in `examples_test.go` are compiled and executed by
+the Go test gate.
 
 ## Cross-format boundary evidence
 
