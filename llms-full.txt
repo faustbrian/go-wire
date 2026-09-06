@@ -158,10 +158,11 @@ Use this index to select an explicit wire format and understand its limits.
 Install the stable v1 release:
 
 ```sh
-go get github.com/faustbrian/go-wire@<commit>
+go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
-The module supports Go 1.25.8 and newer.
+The module supports Go 1.26.6 and newer. The
+[package example](../examples_test.go) is compiled and executed by `go test`.
 
 ## Decode JSON
 
@@ -1339,11 +1340,11 @@ Functions allocate per call and do not use mutable package state. An `Envelope`
 is safe for concurrent reads if the caller does not mutate exported fields such
 as `Fault`. Raw accessors return copies.
 
-## What is stable before v1?
+## What is stable in v1?
 
-Nothing is covered by a v1 compatibility promise until v1.0.0 is tagged. The
-current docs describe the candidate contract so changes can be reviewed
-explicitly.
+The v1 compatibility contract covers the exported API and the documented
+format behavior, limits, defaults, error classifications, and deterministic
+output guarantees. Incompatible changes require a new major release.
 
 ## Why are YAML, TOML, and binary formats not auto-detected?
 
@@ -1874,8 +1875,9 @@ multiple runs and `benchstat` outside the release gate.
 
 # Security and interoperability hardening audit
 
-Audit date: 2026-07-14. Audited tree: the pre-v1 `main` branch. This report
-distinguishes format requirements, dependency behavior, and package policy.
+Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
+published its stable v1 contract. This report distinguishes format
+requirements, dependency behavior, and package policy.
 
 ## Threat model
 
@@ -1974,15 +1976,14 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The audited pre-v1 tree is release-ready. It requires Go 1.25.8 or newer and has
-bounded reader and writer APIs for all eight formats, including typed, raw, and
-fault SOAP output. There are no open high findings or unmitigated medium
-package defects. Retained compatibility choices and caller responsibilities are
-explicit in the findings and format matrix; no stronger guarantee is claimed.
-Because the new MessagePack defaults change acceptance and error
-classification, use a minor pre-v1 release; if this policy were introduced
-after v1, use a major release unless a security exception policy explicitly
-permits the correction.
+The package is now available as stable v1.0.0. The current module requires Go
+1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+including typed, raw, and fault SOAP output. There are no open high findings or
+unmitigated medium package defects. Retained compatibility choices and caller
+responsibilities are explicit in the findings and format matrix; no stronger
+guarantee is claimed. A future change to the MessagePack acceptance or error
+classification contract requires a major release unless a documented security
+exception policy explicitly permits the correction.
 
 Exact final gate output and benchmark samples are recorded in the handoff for
 the release commit. The direct codec modules are at their latest versions
@@ -2215,6 +2216,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
+
+- Record the reviewed Go releases-feed representation change as
+  behavior-neutral for the unchanged immutable Go 1.26.6 source contracts.
+
+- Replace commit-pinned installation and pre-v1 guidance with the published
+  v1.0.0 release, exact Go 1.26.6 minimum, stable compatibility contract, and
+  a package-level compiler-checked example.
 
 - Record the reviewed Go release-feed change through Go 1.27.1 as
   behavior-neutral for the pinned Go 1.26.6 JSON, XML, errors, and language
@@ -2554,8 +2562,9 @@ authoritative for signatures.
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
-`TestRepositoryRequiresPatchedGo125OrNewer` locks the module and documentation
-to Go 1.25.8 or newer so CI does not select a vulnerable initial toolchain.
+Repository metadata and documentation declare Go 1.26.6 as the exact minimum
+toolchain. Package examples in `examples_test.go` are compiled and executed by
+the Go test gate.
 
 ## Cross-format boundary evidence
 

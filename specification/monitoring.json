@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-09-03",
+  "reviewed_at": "2026-09-06",
   "review_interval_days": 90,
   "authorities": [
     {"id":"go-json-source","kind":"specification","version":"Go 1.26.6","url":"https://api.github.com/repos/golang/go/contents/src/encoding/json?ref=go1.26.6","sha256":"4d6b3ec46ab8b690edf951816858ecb7d2dbd12ed930df1d6c12ece04c180828","specifications":["Go 1.26.6 encoding/json contract"]},
     {"id":"go-xml-source","kind":"specification","version":"Go 1.26.6","url":"https://api.github.com/repos/golang/go/contents/src/encoding/xml?ref=go1.26.6","sha256":"68865bb9f2ea8f13d5d2076f5150832f9427d0bf9aae2fbbff8961d5558ff81a","specifications":["Go 1.26.6 encoding/xml contract"]},
     {"id":"go-errors-source","kind":"specification","version":"Go 1.26.6","url":"https://api.github.com/repos/golang/go/contents/src/errors?ref=go1.26.6","sha256":"e98136a6d5c51708cd346d604a7f78bf6ed083b3202a754055bfbbf0f7634474","specifications":["Go 1.26.6 errors package contract"]},
     {"id":"go-language-source","kind":"specification","version":"Go 1.26.6","url":"https://raw.githubusercontent.com/golang/go/go1.26.6/doc/go_spec.html","sha256":"e5806989624c1e9dd32bddaedd2f70a1dd208295cb6d0ff72b02625b2cd6f592","specifications":["Go 1.26.6 language specification"]},
-    {"id":"go-releases","kind":"releases","version":"","url":"https://go.dev/dl/?mode=json&include=all","sha256":"638127a053a86576fc235aa196b26145c6f2fce8ce839ded767212a18d1c9415","specifications":["Go 1.26.6 encoding/json contract","Go 1.26.6 encoding/xml contract","Go 1.26.6 errors package contract","Go 1.26.6 language specification"]},
+    {"id":"go-releases","kind":"releases","version":"","url":"https://go.dev/dl/?mode=json&include=all","sha256":"1ed915f72633d0a72eaa2f462740153db4fe347cb56f7d1e25ec44868568f13e","specifications":["Go 1.26.6 encoding/json contract","Go 1.26.6 encoding/xml contract","Go 1.26.6 errors package contract","Go 1.26.6 language specification"]},
     {"id":"rfc8259-source","kind":"specification","version":"RFC 8259","url":"https://www.rfc-editor.org/rfc/rfc8259.txt","sha256":"61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7","specifications":["RFC 8259 JSON"]},
     {"id":"rfc8259-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=8259&presentation=records","sha256":"5819db2e0233addf17ed540db88cf92cbefda5a60c38877e0d4cbf6b876b7cf4","specifications":["RFC 8259 JSON"]},
     {"id":"xml10-source","kind":"specification","version":"XML 1.0 Fifth Edition","url":"https://www.w3.org/TR/2008/REC-xml-20081126/","sha256":"f58a4b9e1e5b8bac13fb55c4e5c7c8c5e2c176aa45ee68e2f1ab2498511927ec","specifications":["XML 1.0 Fifth Edition and Namespaces in XML 1.0 Third Edition"]},

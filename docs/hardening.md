@@ -1,7 +1,8 @@
 # Security and interoperability hardening audit
 
-Audit date: 2026-07-14. Audited tree: the pre-v1 `main` branch. This report
-distinguishes format requirements, dependency behavior, and package policy.
+Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
+published its stable v1 contract. This report distinguishes format
+requirements, dependency behavior, and package policy.
 
 ## Threat model
 
@@ -100,15 +101,14 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The audited pre-v1 tree is release-ready. It requires Go 1.25.8 or newer and has
-bounded reader and writer APIs for all eight formats, including typed, raw, and
-fault SOAP output. There are no open high findings or unmitigated medium
-package defects. Retained compatibility choices and caller responsibilities are
-explicit in the findings and format matrix; no stronger guarantee is claimed.
-Because the new MessagePack defaults change acceptance and error
-classification, use a minor pre-v1 release; if this policy were introduced
-after v1, use a major release unless a security exception policy explicitly
-permits the correction.
+The package is now available as stable v1.0.0. The current module requires Go
+1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+including typed, raw, and fault SOAP output. There are no open high findings or
+unmitigated medium package defects. Retained compatibility choices and caller
+responsibilities are explicit in the findings and format matrix; no stronger
+guarantee is claimed. A future change to the MessagePack acceptance or error
+classification contract requires a major release unless a documented security
+exception policy explicitly permits the correction.
 
 Exact final gate output and benchmark samples are recorded in the handoff for
 the release commit. The direct codec modules are at their latest versions
