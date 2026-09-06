@@ -5,6 +5,26 @@ by [`monitoring.json`](monitoring.json). A monitoring digest changes only after
 the corresponding upstream delta has been classified against the applicable
 specification decisions.
 
+## 2026-09-06: Go releases feed
+
+- **Authority:** `go-releases`
+- **URL:** https://go.dev/dl/?mode=json&include=all
+- **Previous SHA-256:**
+  `638127a053a86576fc235aa196b26145c6f2fce8ce839ded767212a18d1c9415`
+- **Reviewed SHA-256:**
+  `1ed915f72633d0a72eaa2f462740153db4fe347cb56f7d1e25ec44868568f13e`
+- **Retrieved and reviewed:** 2026-09-06
+- **Applicability:** `WIRE-DEC-001`, `WIRE-DEC-014`, and `WIRE-DEC-015`
+- **Disposition:** Behavior-neutral for the selected Go 1.26.6 contracts.
+
+Three consecutive retrievals produced the reviewed digest. The release
+inventory still begins with Go 1.27.1 and Go 1.26.8, so no newer release was
+added after the previous review. The prior response body was not retained, so
+the byte-level representation change cannot be reconstructed. This feed is a
+release-discovery authority: the immutable Go 1.26.6 JSON, XML, errors, and
+language source URLs and their selected digests remain unchanged. No newer Go
+behavior is adopted by this monitoring refresh.
+
 ## 2026-09-03: Go releases feed
 
 - **Authority:** `go-releases`

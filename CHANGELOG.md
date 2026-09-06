@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Record the reviewed Go releases-feed representation change as
+  behavior-neutral for the unchanged immutable Go 1.26.6 source contracts.
+
 - Replace commit-pinned installation and pre-v1 guidance with the published
   v1.0.0 release, exact Go 1.26.6 minimum, stable compatibility contract, and
   a package-level compiler-checked example.
