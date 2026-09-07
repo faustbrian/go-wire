@@ -27,6 +27,7 @@ Use this index to select an explicit wire format and understand its limits.
 - [Cookbook](cookbook.md)
 - [FAQ](faq.md)
 - [Troubleshooting](troubleshooting.md)
+- [Support](../SUPPORT.md)
 - [Migration](migration.md)
 - [Releasing](releasing.md)
 

@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Link the support policy from the root documentation entry points.
+
 - Record the reviewed Go releases-feed representation change as
   behavior-neutral for the unchanged immutable Go 1.26.6 source contracts.
 
