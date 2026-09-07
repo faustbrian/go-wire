@@ -78,7 +78,8 @@ source pins and the conformance update process live in
 [specification/README.md](specification/README.md).
 
 AI tools can use [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
-Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
+Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
+maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)

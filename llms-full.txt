@@ -82,7 +82,8 @@ source pins and the conformance update process live in
 [specification/README.md](specification/README.md).
 
 AI tools can use [llms.txt](llms.txt) and [llms-full.txt](llms-full.txt).
-Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
+Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
+maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
 [Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
@@ -142,6 +143,7 @@ Use this index to select an explicit wire format and understand its limits.
 - [Cookbook](cookbook.md)
 - [FAQ](faq.md)
 - [Troubleshooting](troubleshooting.md)
+- [Support](../SUPPORT.md)
 - [Migration](migration.md)
 - [Releasing](releasing.md)
 
@@ -2216,6 +2218,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
+
+- Link the support policy from the root documentation entry points.
 
 - Record the reviewed Go releases-feed representation change as
   behavior-neutral for the unchanged immutable Go 1.26.6 source contracts.
