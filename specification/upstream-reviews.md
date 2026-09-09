@@ -5,6 +5,35 @@ by [`monitoring.json`](monitoring.json). A monitoring digest changes only after
 the corresponding upstream delta has been classified against the applicable
 specification decisions.
 
+## 2026-09-09: RFC 9110 errata
+
+- **Authority:** `rfc9110-errata`
+- **URL:** https://errata.rfc-editor.org/search/?rfc_number=9110&presentation=records
+- **Previous SHA-256:**
+  `1f6790054c0cdb2f2a70a94fa2b9c73b09a4ee0578a32b4a3006ed0ecfaac86d`
+- **Reviewed SHA-256:**
+  `cec32fd170146656d933f627b512f2e027ae5c3592f5ec7760c3627493b30505`
+- **Retrieved and reviewed:** 2026-09-09
+- **Applicability:** `WIRE-DEC-016` directly; `WIRE-DEC-004` as source
+  applicability only
+- **Disposition:** Behavior-neutral because HTTP grammar and transport remain
+  caller-owned policy.
+
+Three consecutive retrievals produced the reviewed digest. The authority now
+includes [Errata ID 9164](https://errata.rfc-editor.org/eid9164/), reported on
+2026-09-07 as a Technical erratum against RFC 9110 Appendix A. It proposes
+documenting that the collected ABNF normalizes equivalent rule spellings in
+addition to the already documented list-rule expansion. The report expressly
+states that the collected grammar and body define the same language, so it
+does not identify an interoperability change.
+
+`WIRE-DEC-016` leaves HTTP grammar and transport behavior to composed callers,
+and `WIRE-DEC-004` neither parses HTTP ABNF nor negotiates media types. Errata
+ID 9162 remains Reported, and the immutable RFC 9110 source and its selected
+digest are unchanged. No selected wire behavior or source binding changes.
+Reconsider this disposition if either erratum becomes Verified or if the
+package later owns HTTP grammar or field combination.
+
 ## 2026-09-06: Go releases feed
 
 - **Authority:** `go-releases`

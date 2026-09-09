@@ -26,7 +26,7 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire
+go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
 Import format packages explicitly, such as

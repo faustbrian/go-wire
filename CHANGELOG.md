@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Record reported RFC 9110 Errata ID 9164 as behavior-neutral because HTTP
+  grammar remains caller-owned policy, while retaining the prior Errata ID
+  9162 review and the immutable RFC 9110 source binding.
+
 - Link the support policy from the root documentation entry points.
 
 - Record the reviewed Go releases-feed representation change as
