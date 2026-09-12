@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Register the released public API baseline with the shared compatibility gate while retaining the repository-owned API snapshot oracle.
+
 ### Documentation
 
 - Clarify how shared safety-policy updates are coordinated across standalone

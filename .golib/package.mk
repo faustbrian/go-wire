@@ -3,7 +3,10 @@ GOLANGCI_LINT ?= golangci-lint
 FUZZ_TIME ?= 2s
 BENCH_TIME ?= 100ms
 
-.PHONY: benchmark check conformance coverage docs format format-check fuzz lint safety \
+api:
+	./.golib/scripts/check-api-baseline.sh .
+
+.PHONY: api benchmark check conformance coverage docs format format-check fuzz lint safety \
 	release-major release-minor release-patch test test-race vet vuln
 
 format:
