@@ -8,7 +8,7 @@ Install the stable v1 release:
 go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
-The module supports Go 1.26.6 and newer. The
+The module supports Go 1.27.0 and newer. The
 [package example](../examples_test.go) is compiled and executed by `go test`.
 
 ## Decode JSON
