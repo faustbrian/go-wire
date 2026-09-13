@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
-[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML,
@@ -21,12 +21,12 @@ benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
 
-- Go 1.26.6 or later
+- Go 1.27.0 or later
 
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire
+go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
 Import format packages explicitly, such as

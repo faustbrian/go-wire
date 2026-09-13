@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-09-06",
+  "reviewed_at": "2026-09-09",
   "review_interval_days": 90,
   "authorities": [
     {"id":"go-json-source","kind":"specification","version":"Go 1.26.6","url":"https://api.github.com/repos/golang/go/contents/src/encoding/json?ref=go1.26.6","sha256":"4d6b3ec46ab8b690edf951816858ecb7d2dbd12ed930df1d6c12ece04c180828","specifications":["Go 1.26.6 encoding/json contract"]},
@@ -32,6 +32,6 @@
     {"id":"bson11-source","kind":"specification","version":"BSON 1.1","url":"https://bsonspec.org/spec.html","sha256":"4eeb35dbd4f2d1767343bc984638d98f3fdd0abd8fd1f2995ae64fbbb8eba731","specifications":["BSON 1.1"]},
     {"id":"bson-releases","kind":"releases","version":"","url":"https://bsonspec.org/spec.html","sha256":"4eeb35dbd4f2d1767343bc984638d98f3fdd0abd8fd1f2995ae64fbbb8eba731","specifications":["BSON 1.1"]},
     {"id":"rfc9110-source","kind":"specification","version":"RFC 9110","url":"https://www.rfc-editor.org/rfc/rfc9110.txt","sha256":"21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a","specifications":["RFC 9110 HTTP Semantics"]},
-    {"id":"rfc9110-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=9110&presentation=records","sha256":"1f6790054c0cdb2f2a70a94fa2b9c73b09a4ee0578a32b4a3006ed0ecfaac86d","specifications":["RFC 9110 HTTP Semantics"]}
+    {"id":"rfc9110-errata","kind":"errata","version":"","url":"https://errata.rfc-editor.org/search/?rfc_number=9110&presentation=records","sha256":"cec32fd170146656d933f627b512f2e027ae5c3592f5ec7760c3627493b30505","specifications":["RFC 9110 HTTP Semantics"]}
   ]
 }

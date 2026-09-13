@@ -30,7 +30,7 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire
+go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
 Import format packages explicitly, such as
@@ -2218,6 +2218,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
+
+- Record reported RFC 9110 Errata ID 9164 as behavior-neutral because HTTP
+  grammar remains caller-owned policy, while retaining the prior Errata ID
+  9162 review and the immutable RFC 9110 source binding.
 
 - Link the support policy from the root documentation entry points.
 
