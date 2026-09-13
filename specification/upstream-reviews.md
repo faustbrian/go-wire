@@ -80,6 +80,25 @@ Go 1.26.6 contract. Adopting Go 1.27 would separately reopen `WIRE-DEC-001` and
 `WIRE-DEC-015`; no changed `errors` source affects `WIRE-DEC-014` in the
 reviewed Go 1.26 patch line.
 
+## 2026-09-13: CTAP releases feed
+
+- **Authority:** `ctap-releases`
+- **URL:** https://fidoalliance.org/feed/
+- **Previous SHA-256:**
+  `0a4f5ac58a20f05d92074b4222de33736d38e40e4746bc7f50c9bf2469836989`
+- **Reviewed SHA-256:**
+  `8b539b1252ecceed1592f978e6087c8e1d45235c16bdd34db3ba63c219e74d51`
+- **Retrieved and reviewed:** 2026-09-13
+- **Applicability:** `WIRE-DEC-011` directly; `WIRE-DEC-001` as the broader
+  codec-delegation source inventory
+- **Disposition:** Behavior-neutral for the selected CTAP 2.2 deterministic
+  CBOR profile.
+
+The feed added two 2026-09-10 articles about banking identity standards and
+agentic card commerce. Neither article revises CTAP 2.2 or its deterministic
+CBOR rules. The immutable CTAP 2.2 source remains selected, so no behavior or
+decision binding changes.
+
 ## 2026-09-03: CTAP releases feed
 
 - **Authority:** `ctap-releases`
