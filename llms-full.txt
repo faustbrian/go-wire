@@ -11,7 +11,7 @@
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
-[![Go](https://img.shields.io/badge/go-1.26.6-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML,
@@ -25,7 +25,7 @@ benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
 
-- Go 1.26.6 or later
+- Go 1.27.0 or later
 
 ## Installation
 
@@ -163,7 +163,7 @@ Install the stable v1 release:
 go get github.com/faustbrian/go-wire@v1.0.0
 ```
 
-The module supports Go 1.26.6 and newer. The
+The module supports Go 1.27.0 and newer. The
 [package example](../examples_test.go) is compiled and executed by `go test`.
 
 ## Decode JSON
@@ -2570,7 +2570,7 @@ authoritative for signatures.
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
-Repository metadata and documentation declare Go 1.26.6 as the exact minimum
+Repository metadata and documentation declare Go 1.27.0 as the exact minimum
 toolchain. Package examples in `examples_test.go` are compiled and executed by
 the Go test gate.
 
