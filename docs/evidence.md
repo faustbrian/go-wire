@@ -19,7 +19,7 @@ authoritative for signatures.
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
-Repository metadata and documentation declare Go 1.26.6 as the exact minimum
+Repository metadata and documentation declare Go 1.27.0 as the exact minimum
 toolchain. Package examples in `examples_test.go` are compiled and executed by
 the Go test gate.
 
