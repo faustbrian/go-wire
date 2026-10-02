@@ -94,7 +94,7 @@ non-pointer values for every decoder.
   <https://www.w3.org/TR/soap12-part1/>
 - YAML 1.2.2: <https://yaml.org/spec/1.2.2/>
 - TOML 1.0.0: <https://toml.io/en/v1.0.0>
-- MessagePack: <https://github.com/msgpack/msgpack/blob/master/spec.md>
+- MessagePack: <https://raw.githubusercontent.com/msgpack/msgpack/master/spec.md>
 - CBOR: <https://www.rfc-editor.org/rfc/rfc8949.html>
 - BSON 1.1: <https://bsonspec.org/spec.html>
 - Go I/O contracts: <https://pkg.go.dev/io>

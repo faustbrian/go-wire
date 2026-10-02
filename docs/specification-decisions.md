@@ -511,7 +511,7 @@ Additional authoritative source: `{"id":"ctap22-source","version":"CTAP 2.2 Prop
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-012","title":"BSON document identity, order, duplicates, and conversion","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"BSON 1.1","version":"BSON 1.1","source_authority":"bson11-source","section":"Complete grammar and type specification","requirement_strength":"not specified","issue":"BSON defines ordered typed documents but does not select duplicate-name handling, Go map determinism, or lossy target conversion policy.","interpretations":["Accept scalars and trailing bytes.","Use last-value maps.","Require one document and explicit ordered or compatibility representations."],"peer_behavior":"The maintained MongoDB Go driver preserves duplicate elements in ordered documents while the wrapper rejects them by default.","selected_behavior":"Require one complete top-level document, reject recursive duplicates by default, preserve official driver types, and expose lossy conversions only as options.","rationale":"Document identity and order must remain explicit and ambiguous duplicate data must not silently collapse.","security_consequences":"Declared length, terminator, trailing bytes, and duplicate names are validated before assignment.","resource_consequences":"Input and output remain bounded and forged lengths are rejected before large allocation.","compatibility_consequences":"Ordered D and raw forms remain stable while unordered M output is explicitly non-deterministic.","wire_consequences":"ObjectID string conversion, truncating doubles, integer minimization, and JSON tags are opt-in.","executable_evidence":["TestDecodeRejectsMalformedTrailingDuplicateAndScalarData","TestDecodeRejectsNestedDuplicateKeys","TestDecodeProvidesExplicitInteroperabilityOptions","TestRoundTripPreservesDecimalBinarySubtypeAndRegex","TestEncodeOrderedDocumentsAreDeterministic"],"fixture_evidence":["bsonwire/testdata/event.bson.hex"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["bsonwire.Decode","bsonwire.Encode","bsonwire.D","bsonwire.M"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The BSON 1.1 publication and maintained driver are monitored.","reconsider_when":"The BSON edition or official driver type model changes."}
+{"id":"WIRE-DEC-012","title":"BSON document identity, order, duplicates, and conversion","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"BSON 1.1","version":"BSON 1.1","source_authority":"bson11-source","section":"Complete grammar and type specification","requirement_strength":"not specified","issue":"BSON defines ordered typed documents but does not select duplicate-name handling, Go map determinism, or lossy target conversion policy.","interpretations":["Accept scalars and trailing bytes.","Use last-value maps.","Require one document and explicit ordered or compatibility representations."],"peer_behavior":"The maintained MongoDB Go driver preserves duplicate elements in ordered documents while the wrapper rejects them by default.","selected_behavior":"Require one top-level BSON document, validate every nested document, array, and CodeWithScope scope before decoding, reject duplicate document names by default, and enforce at most 100 raw nesting levels below the root.","rationale":"Document identity and order must remain explicit and ambiguous duplicate data must not silently collapse.","security_consequences":"Malformed nested structures and duplicate scope names fail before decoder callbacks. Duplicate opt-in does not disable structural validation; array indices must be consecutive from zero.","resource_consequences":"Raw structural traversal is iterative with at most 100 nesting levels. Accepted input bytes bound validation work; output quotas apply when the driver flushes and do not bound its buffering or custom codec work.","compatibility_consequences":"The next major release tightens nested validation and introduces a fixed 100-level raw nesting limit while preserving valid ordered D and raw representations and valid duplicate opt-in.","wire_consequences":"ObjectID string conversion, truncating doubles, integer minimization, and JSON tags are opt-in.","executable_evidence":["TestDecodeRejectsMalformedTrailingDuplicateAndScalarData","TestDecodeRejectsNestedDuplicateKeys","TestDecodeProvidesExplicitInteroperabilityOptions","TestRoundTripPreservesDecimalBinarySubtypeAndRegex","TestEncodeOrderedDocumentsAreDeterministic","TestCodeWithScopeDuplicatePolicy","TestMalformedNestedStructureRejectedBeforeDecoderCallback","TestRawStructureNestingBoundary"],"fixture_evidence":["bsonwire/testdata/event.bson.hex"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["bsonwire.Decode","bsonwire.Encode","bsonwire.D","bsonwire.M","bsonwire.DefaultMaxNestedLevels"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The BSON 1.1 publication and maintained driver are monitored.","reconsider_when":"The BSON edition or official driver type model changes."}
 ```
 
 Authority URL: https://bsonspec.org/spec.html
@@ -535,7 +535,13 @@ Authority URL: https://bsonspec.org/spec.html
   the selected behavior below.
   APIs require exactly one complete
   top-level document whose declared length and terminator validate. Recursive
-  duplicate names fail by default with explicit compatibility opt-in.
+  duplicate names, including scope names, fail by default with explicit
+  compatibility opt-in. Structural validation remains enabled with that opt-in.
+  Iterative traversal checks each document, array, and CodeWithScope scope before
+  decoding, with at most 100 nesting levels below the root and consecutive array
+  indices. These acceptance changes are pending the next major release.
+  Encoding validates serialized output after codec work; raw validation does not
+  bound driver buffering or trusted custom codec work.
   Official driver types are re-exported rather than copied. Struct, `D`, and
   raw order are stable; `M` map order is explicitly not deterministic.
   ObjectID-as-string and truncating-double conversion, integer-width
@@ -543,6 +549,9 @@ Authority URL: https://bsonspec.org/spec.html
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestDecodeRejectsMalformedTrailingDuplicateAndScalarData`,
   `TestDecodeRejectsNestedDuplicateKeys`,
+  `TestCodeWithScopeDuplicatePolicy`,
+  `TestMalformedNestedStructureRejectedBeforeDecoderCallback`,
+  `TestRawStructureNestingBoundary`,
   `TestDecodeProvidesExplicitInteroperabilityOptions`,
   `TestRoundTripPreservesDecimalBinarySubtypeAndRegex`, and
   `TestEncodeOrderedDocumentsAreDeterministic` cover `bsonwire`. Reconsider on
@@ -594,7 +603,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8949.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is and errors.As causes without echoing complete payloads.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Complete payloads and tested sensitive values are not included in errors.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"Stable sentinels and typed errors remain usable across dependency error-shape changes.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
+{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is, errors.As, original causes, and diagnostic fields; ordinary wire and SOAP fault error strings render classifications only.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Default error text does not render diagnostic fields, wrapped causes, peer-controlled names, or SOAP fault values. Explicit field dumps and cause formatting require application redaction.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"The next major release changes error text while retaining stable sentinels, typed fields, original causes, and valid parsing behavior.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues","TestDefaultDiagnosticTextPreservesInspectableCause","TestParserDiagnosticNamesArePrivate","TestParserReaderDiagnosticsArePrivateAndInspectable","TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
 ```
 
 Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go1.26.6
@@ -617,14 +626,19 @@ Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go
   `wire.Error` classifies parse,
   validation, target, unsupported, envelope, SOAP fault, size, encode, and
   write outcomes with format and operation. `errors.Is` and `errors.As` retain
-  stable classification and useful causes. The package does not echo complete
-  payloads or the tested sensitive values; callers must still treat field names
-  and small offending lexemes as potentially sensitive. Valid SOAP faults are
-  protocol outcomes, not malformed input.
+  stable classification, original causes, and inspectable fields. Pending the
+  next major release, ordinary wire and SOAP fault text renders classifications
+  only. Explicit field dumps and cause formatting require application redaction.
+  Valid SOAP faults remain protocol outcomes with their code and reason retained
+  in structured fields, not malformed input.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestErrorKindsMatchTheirSentinels`,
   `TestErrorSupportsClassificationAndWrapping`,
-  `TestDecodeErrorsDoNotEchoSensitiveValues`, and SOAP fault tests cover
+  `TestDecodeErrorsDoNotEchoSensitiveValues`,
+  `TestDefaultDiagnosticTextPreservesInspectableCause`,
+  `TestParserDiagnosticNamesArePrivate`,
+  `TestParserReaderDiagnosticsArePrivateAndInspectable`, and
+  `TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable` cover
   `Error`, sentinels, and `FaultError`. Reconsider whenever a dependency error
   shape or disclosure boundary changes.
 

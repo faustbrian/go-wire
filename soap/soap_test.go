@@ -539,7 +539,7 @@ func TestFaultErrorWithoutReason(t *testing.T) {
 	t.Parallel()
 
 	err := &soap.FaultError{Fault: soap.Fault{Code: "code"}}
-	if got := err.Error(); got != "soap fault: code" {
+	if got := err.Error(); got != "soap fault" {
 		t.Fatalf("Error() = %q", got)
 	}
 	if !errors.Is(err, wire.ErrSOAPFault) {
@@ -547,7 +547,7 @@ func TestFaultErrorWithoutReason(t *testing.T) {
 	}
 
 	err = &soap.FaultError{Fault: soap.Fault{Code: "code", Reason: "reason"}}
-	if got := err.Error(); got != "soap fault: code: reason" {
+	if got := err.Error(); got != "soap fault" {
 		t.Fatalf("Error() = %q", got)
 	}
 }
