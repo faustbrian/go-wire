@@ -210,14 +210,13 @@ func CharsetReaderWithLimit(label string, input io.Reader, maxBytes int64) (io.R
 		return bytes.NewReader(payload), nil
 	case "iso-8859-1", "latin1", "latin-1":
 		return bytes.NewReader(singleByteToUTF8(payload, nil)), nil
-	case "windows-1252", "cp1252":
+	default:
+		// Admission above leaves only the Windows-1252 aliases here.
 		converted, err := windows1252ToUTF8(payload)
 		if err != nil {
 			return nil, err
 		}
 		return bytes.NewReader(converted), nil
-	default:
-		return nil, charsetError{message: "unsupported charset"}
 	}
 }
 

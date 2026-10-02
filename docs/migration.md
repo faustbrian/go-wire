@@ -17,6 +17,17 @@ XML and SOAP built-in callbacks follow their configured raw-input quotas;
 UTF-8 conversion may expand that input up to threefold. Custom callbacks and
 reader cancellation remain application responsibilities.
 
+## Pending v2 BSON structure boundary
+
+BSON validation now includes CodeWithScope scope documents and all nested
+document/array boundaries, including when duplicate keys are explicitly allowed.
+Arrays require consecutive zero-based indices. Raw nesting is limited to 100
+containers below the root; documents, arrays, and scopes each add one level.
+Malformed structure fails before decoder callbacks. This acceptance change is
+pending the next major release. Encoding validates serialized output afterward;
+driver buffering, pre-encoding resource limits, and custom-codec work are separate
+boundaries, not protected by this raw traversal limit.
+
 ## From direct `encoding/json`
 
 Before:

@@ -195,6 +195,13 @@ source.
 
 ## Package `bsonwire`
 
+Pending the next major release, raw validation permits at most 100 nested
+documents, arrays, or CodeWithScope scope documents below the root (depth zero),
+even with duplicate-key opt-in. Array indices must be consecutive from zero;
+malformed nested structure fails before decoder callbacks. `DefaultMaxNestedLevels`
+identifies this fixed raw-validation limit. Encoders validate serialized output
+after codec work; this is not a pre-encoding allocation or callback-work bound.
+
 - `DefaultMaxBytes` is 1 MiB and `ErrPayloadTooLarge` identifies byte-limit
   failures.
 - `A`, `D`, `E`, `M`, `Raw`, `RawArray`, `RawValue`, `ObjectID`, `DateTime`,

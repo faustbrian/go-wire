@@ -42,10 +42,17 @@ type (
 // DefaultMaxBytes is the default maximum BSON document size.
 const DefaultMaxBytes int64 = 1 << 20
 
+// DefaultMaxNestedLevels is the maximum raw-validation nesting below the root.
+// Documents, arrays, and CodeWithScope scope documents each add one level.
+// Encoding checks this policy after codec work, not before its allocation.
+const DefaultMaxNestedLevels = 100
+
 // ErrPayloadTooLarge identifies BSON documents over the configured byte limit.
 var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 
 var errDuplicateKey = errors.New("duplicate BSON key")
+
+var errNestingLimit = errors.New("BSON nesting limit exceeded")
 
 // DecodeOptions controls BSON decoding and explicit interoperability choices.
 type DecodeOptions struct {
@@ -82,6 +89,9 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	}
 	raw, err := validateDocument(payload, options.AllowDuplicateKeys)
 	if err != nil {
+		if errors.Is(err, errNestingLimit) {
+			return wrap(wire.ErrorKindSizeLimit, "decode", err)
+		}
 		return wrap(wire.ErrorKindParse, "decode", err)
 	}
 	decoder := bson.NewDecoder(bson.NewDocumentReader(bytes.NewReader(raw)))
@@ -124,6 +134,9 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 		return nil, wrap(wire.ErrorKindEncode, "encode", err)
 	}
 	if _, err := validateDocument(output.Bytes(), options.AllowDuplicateKeys); err != nil {
+		if errors.Is(err, errNestingLimit) {
+			return nil, wrap(wire.ErrorKindSizeLimit, "encode", err)
+		}
 		return nil, wrap(wire.ErrorKindValidation, "encode", err)
 	}
 	return output.Bytes(), nil
@@ -195,55 +208,129 @@ func readBounded(reader io.Reader, configuredMax int64) ([]byte, error) {
 }
 
 func validateDocument(payload []byte, allowDuplicates bool) (bson.Raw, error) {
-	if len(payload) < 5 {
-		return nil, errors.New("BSON document is shorter than its minimum length")
-	}
-	declared := int64(binary.LittleEndian.Uint32(payload[:4]))
-	if declared != int64(len(payload)) {
-		return nil, errors.New("BSON length prefix does not match payload length")
-	}
 	raw := bson.Raw(payload)
-	if err := raw.Validate(); err != nil {
+	frame, err := newStructureFrame(raw, false, 0, allowDuplicates)
+	if err != nil {
 		return nil, err
 	}
-	if !allowDuplicates {
-		if err := validateDocumentKeys(raw); err != nil {
+	stack := []structureFrame{frame}
+	for len(stack) != 0 {
+		current := &stack[len(stack)-1]
+		if current.index == current.length() {
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		value := current.value()
+		current.index++
+		var child bson.Raw
+		isArray := false
+		switch value.Type {
+		case bson.TypeEmbeddedDocument:
+			var ok bool
+			child, ok = value.DocumentOK()
+			if !ok {
+				return nil, errors.New("invalid BSON embedded document")
+			}
+		case bson.TypeArray:
+			array, ok := value.ArrayOK()
+			if !ok {
+				return nil, errors.New("invalid BSON array")
+			}
+			child, isArray = bson.Raw(array), true
+		case bson.TypeCodeWithScope:
+			child, err = scopeDocument(value)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			continue
+		}
+		frame, err := newStructureFrame(child, isArray, current.depth+1, allowDuplicates)
+		if err != nil {
 			return nil, err
 		}
+		stack = append(stack, frame)
 	}
 	return raw, nil
 }
 
-func validateDocumentKeys(raw bson.Raw) error {
-	// validateDocument has already recursively validated element boundaries.
-	elements, _ := raw.Elements()
-	seen := make(map[string]struct{}, len(elements))
-	for _, element := range elements {
-		key := element.Key()
-		if _, exists := seen[key]; exists {
-			return errors.Join(errDuplicateKey, errors.New(key))
-		}
-		seen[key] = struct{}{}
-		if err := validateValueKeys(element.Value()); err != nil {
-			return err
-		}
-	}
-	return nil
+type structureFrame struct {
+	elements []bson.RawElement
+	values   []bson.RawValue
+	index    int
+	depth    int
 }
 
-func validateValueKeys(value bson.RawValue) error {
-	if document, ok := value.DocumentOK(); ok {
-		return validateDocumentKeys(document)
+func (f *structureFrame) length() int {
+	if f.values != nil {
+		return len(f.values)
 	}
-	if array, ok := value.ArrayOK(); ok {
-		values, _ := array.Values()
-		for _, item := range values {
-			if err := validateValueKeys(item); err != nil {
-				return err
+	return len(f.elements)
+}
+
+func (f *structureFrame) value() bson.RawValue {
+	if f.values != nil {
+		return f.values[f.index]
+	}
+	return f.elements[f.index].Value()
+}
+
+func newStructureFrame(raw bson.Raw, isArray bool, depth int, allowDuplicates bool) (structureFrame, error) {
+	if depth > DefaultMaxNestedLevels {
+		return structureFrame{}, errNestingLimit
+	}
+	payload := []byte(raw)
+	if len(payload) < 5 {
+		return structureFrame{}, errors.New("BSON document is shorter than its minimum length")
+	}
+	declared := int64(binary.LittleEndian.Uint32(payload[:4]))
+	if declared != int64(len(payload)) {
+		return structureFrame{}, errors.New("BSON length prefix does not match payload length")
+	}
+	if isArray {
+		array := bson.RawArray(raw)
+		if err := array.Validate(); err != nil {
+			return structureFrame{}, err
+		}
+		values, err := array.Values()
+		return structureFrame{values: values, depth: depth}, err
+	}
+	// Driver validation is shallow; each child is checked on entry by the
+	// iterative traversal before any decoder callback is invoked.
+	if err := raw.Validate(); err != nil {
+		return structureFrame{}, err
+	}
+	elements, err := raw.Elements()
+	if err != nil {
+		return structureFrame{}, err
+	}
+	if !allowDuplicates {
+		seen := make(map[string]struct{}, len(elements))
+		for _, element := range elements {
+			key := element.Key()
+			if _, exists := seen[key]; exists {
+				return structureFrame{}, errors.Join(errDuplicateKey, errors.New(key))
 			}
+			seen[key] = struct{}{}
 		}
 	}
-	return nil
+	return structureFrame{elements: elements, depth: depth}, nil
+}
+
+func scopeDocument(value bson.RawValue) (bson.Raw, error) {
+	data := value.Value
+	if len(data) < 14 {
+		return nil, errors.New("invalid BSON code with scope")
+	}
+	codeLength := int64(binary.LittleEndian.Uint32(data[4:8]))
+	if codeLength < 1 || codeLength > int64(len(data)-13) || data[8+int(codeLength)-1] != 0 {
+		return nil, errors.New("invalid BSON scope code string")
+	}
+	_, scope, ok := value.CodeWithScopeOK()
+	if !ok || len(scope) != len(data)-8-int(codeLength) {
+		return nil, errors.New("invalid BSON scope document boundary")
+	}
+	return scope, nil
 }
 
 func wrap(kind wire.ErrorKind, op string, err error) error {
