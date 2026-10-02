@@ -65,7 +65,7 @@ func TestErrorSupportsClassificationAndWrapping(t *testing.T) {
 		Err:    cause,
 	}
 
-	if got, want := err.Error(), "wire: json decode: parse failure: invalid character"; got != want {
+	if got, want := err.Error(), "wire: parse failure"; got != want {
 		t.Fatalf("Error() = %q, want %q", got, want)
 	}
 	if !errors.Is(err, wire.ErrParse) {
@@ -88,7 +88,7 @@ func TestErrorFormatsMissingOptionalFields(t *testing.T) {
 		want string
 	}{
 		{name: "kind only", err: &wire.Error{Kind: wire.ErrorKindValidation}, want: "wire: validation failure"},
-		{name: "operation and cause", err: &wire.Error{Op: "read body", Err: errors.New("too large")}, want: "wire: read body: too large"},
+		{name: "operation and cause", err: &wire.Error{Op: "read body", Err: errors.New("too large")}, want: "wire: failure"},
 		{name: "zero value", err: &wire.Error{}, want: "wire: failure"},
 	}
 

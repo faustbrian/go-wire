@@ -153,12 +153,46 @@ func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 }
 
 // CharsetReader converts a deliberately limited set of common vendor
-// encodings to UTF-8. Unknown labels and undefined code points return errors.
+// encodings to UTF-8 with DefaultMaxBytes as the raw input limit.
+// Labels are limited to 64 bytes before normalization. Conversion may produce
+// up to three UTF-8 bytes per input byte. Caller reader code must return promptly.
 func CharsetReader(label string, input io.Reader) (io.Reader, error) {
+	return CharsetReaderWithLimit(label, input, 0)
+}
+
+// CharsetReaderWithLimit converts supported encodings with an inclusive raw
+// input byte quota. Zero uses DefaultMaxBytes; negative limits are invalid.
+// Unsupported or overlong labels are rejected without reading input.
+// Errors expose categories only; wrapped reader causes are trusted diagnostics.
+func CharsetReaderWithLimit(label string, input io.Reader, maxBytes int64) (io.Reader, error) {
+	if maxBytes < 0 {
+		return nil, charsetError{message: "invalid charset byte limit"}
+	}
+	if len(label) > 64 {
+		return nil, charsetError{message: "charset label exceeds size limit"}
+	}
 	label = strings.ToLower(strings.TrimSpace(label))
-	payload, err := io.ReadAll(input)
+	switch label {
+	case "utf-8", "utf8", "us-ascii", "ascii", "iso-8859-1", "latin1", "latin-1", "windows-1252", "cp1252":
+	default:
+		return nil, charsetError{message: "unsupported charset"}
+	}
+	if input == nil {
+		return nil, charsetError{message: "invalid charset reader"}
+	}
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	readLimit := maxBytes
+	if readLimit < math.MaxInt64 {
+		readLimit++
+	}
+	payload, err := io.ReadAll(io.LimitReader(input, readLimit))
 	if err != nil {
-		return nil, err
+		return nil, charsetError{message: "charset input read failed", cause: err}
+	}
+	if int64(len(payload)) > maxBytes {
+		return nil, charsetError{message: "charset input exceeds size limit", cause: ErrPayloadTooLarge}
 	}
 
 	switch label {
@@ -170,7 +204,7 @@ func CharsetReader(label string, input io.Reader) (io.Reader, error) {
 	case "us-ascii", "ascii":
 		for _, value := range payload {
 			if value > 0x7f {
-				return nil, charsetError{message: fmt.Sprintf("invalid US-ASCII byte 0x%02x", value)}
+				return nil, charsetError{message: "invalid US-ASCII"}
 			}
 		}
 		return bytes.NewReader(payload), nil
@@ -183,7 +217,7 @@ func CharsetReader(label string, input io.Reader) (io.Reader, error) {
 		}
 		return bytes.NewReader(converted), nil
 	default:
-		return nil, charsetError{message: fmt.Sprintf("unsupported charset %q", label)}
+		return nil, charsetError{message: "unsupported charset"}
 	}
 }
 
@@ -192,7 +226,9 @@ func decoderFor(payload []byte, options DecodeOptions) *xml.Decoder {
 	decoder.Strict = !options.AllowNonStrict
 	decoder.CharsetReader = options.CharsetReader
 	if decoder.CharsetReader == nil {
-		decoder.CharsetReader = CharsetReader
+		decoder.CharsetReader = func(label string, input io.Reader) (io.Reader, error) {
+			return CharsetReaderWithLimit(label, input, options.MaxBytes)
+		}
 	}
 	return decoder
 }
@@ -284,11 +320,14 @@ func validateTarget(target any) error {
 
 type charsetError struct {
 	message string
+	cause   error
 }
 
 func (e charsetError) Error() string {
 	return e.message
 }
+
+func (e charsetError) Unwrap() error { return e.cause }
 
 func classifyDecodeError(op string, err error) error {
 	var syntaxError *xml.SyntaxError
@@ -332,7 +371,7 @@ func windows1252ToUTF8(payload []byte) ([]byte, error) {
 	for _, value := range payload {
 		if isWindows1252Control(value) {
 			if _, ok := windows1252[value]; !ok {
-				return nil, charsetError{message: fmt.Sprintf("undefined Windows-1252 byte 0x%02x", value)}
+				return nil, charsetError{message: "undefined Windows-1252 code point"}
 			}
 		}
 	}

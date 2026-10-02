@@ -79,10 +79,7 @@ type FaultError struct {
 }
 
 func (e *FaultError) Error() string {
-	if e.Fault.Reason == "" {
-		return "soap fault: " + e.Fault.Code
-	}
-	return "soap fault: " + e.Fault.Code + ": " + e.Fault.Reason
+	return "soap fault"
 }
 
 // Unwrap exposes the shared SOAP-fault classification.
@@ -705,7 +702,9 @@ func decoderFor(payload []byte, options ParseOptions) *xml.Decoder {
 	decoder.Strict = true
 	decoder.CharsetReader = options.CharsetReader
 	if decoder.CharsetReader == nil {
-		decoder.CharsetReader = xmlwire.CharsetReader
+		decoder.CharsetReader = func(label string, input io.Reader) (io.Reader, error) {
+			return xmlwire.CharsetReaderWithLimit(label, input, options.MaxBytes)
+		}
 	}
 	return decoder
 }

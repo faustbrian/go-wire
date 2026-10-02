@@ -14,6 +14,13 @@ allocation bounds. Never assume equivalent semantics across formats.
 
 ## Application Responsibilities
 
+Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
+in the pending major-release source. Structured fields and wrapped causes are
+retained for trusted inspection, not automatic logging or disclosure. Explicit
+field dumps, formatting underlying causes, and application-added error prefixes
+require application redaction. This is not a guarantee about arbitrary caller
+formatting or caller-owned error implementations.
+
 Apply transport body limits, deadlines, authentication, authorization, and
 rate limits before decoding. Do not expose raw parser errors when they may
 contain sensitive input.

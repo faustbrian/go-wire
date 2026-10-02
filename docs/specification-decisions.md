@@ -594,7 +594,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8949.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is and errors.As causes without echoing complete payloads.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Complete payloads and tested sensitive values are not included in errors.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"Stable sentinels and typed errors remain usable across dependency error-shape changes.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
+{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is, errors.As, original causes, and diagnostic fields; ordinary wire and SOAP fault error strings render classifications only.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Default error text does not render diagnostic fields, wrapped causes, peer-controlled names, or SOAP fault values. Explicit field dumps and cause formatting require application redaction.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"The next major release changes error text while retaining stable sentinels, typed fields, original causes, and valid parsing behavior.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues","TestDefaultDiagnosticTextPreservesInspectableCause","TestParserDiagnosticNamesArePrivate","TestParserReaderDiagnosticsArePrivateAndInspectable","TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
 ```
 
 Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go1.26.6
@@ -617,14 +617,19 @@ Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go
   `wire.Error` classifies parse,
   validation, target, unsupported, envelope, SOAP fault, size, encode, and
   write outcomes with format and operation. `errors.Is` and `errors.As` retain
-  stable classification and useful causes. The package does not echo complete
-  payloads or the tested sensitive values; callers must still treat field names
-  and small offending lexemes as potentially sensitive. Valid SOAP faults are
-  protocol outcomes, not malformed input.
+  stable classification, original causes, and inspectable fields. Pending the
+  next major release, ordinary wire and SOAP fault text renders classifications
+  only. Explicit field dumps and cause formatting require application redaction.
+  Valid SOAP faults remain protocol outcomes with their code and reason retained
+  in structured fields, not malformed input.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestErrorKindsMatchTheirSentinels`,
   `TestErrorSupportsClassificationAndWrapping`,
-  `TestDecodeErrorsDoNotEchoSensitiveValues`, and SOAP fault tests cover
+  `TestDecodeErrorsDoNotEchoSensitiveValues`,
+  `TestDefaultDiagnosticTextPreservesInspectableCause`,
+  `TestParserDiagnosticNamesArePrivate`,
+  `TestParserReaderDiagnosticsArePrivateAndInspectable`, and
+  `TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable` cover
   `Error`, sentinels, and `FaultError`. Reconsider whenever a dependency error
   shape or disclosure boundary changes.
 

@@ -5,6 +5,18 @@
 The module follows stable v1 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
+## Pending v2 charset boundary
+
+The unreleased charset hardening is intended for the next major release, not
+a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
+most 1 MiB of raw input and labels at most 64 bytes, and return categorical
+diagnostics. Use `CharsetReaderWithLimit` for a deliberate larger finite raw
+input quota; zero selects the default and negative limits are invalid.
+Use `errors.Is` to inspect retained reader causes rather than parsing text.
+XML and SOAP built-in callbacks follow their configured raw-input quotas;
+UTF-8 conversion may expand that input up to threefold. Custom callbacks and
+reader cancellation remain application responsibilities.
+
 ## From direct `encoding/json`
 
 Before:
@@ -138,8 +150,14 @@ are opt-in compatibility choices.
 
 ## Error mapping
 
+Pending next-major behavior: `wire.Error.Error()` renders only classification,
+and `soap.FaultError.Error()` renders `soap fault`. Format, operation, original
+causes, and SOAP fault fields remain inspectable; `errors.Is` and `errors.As`
+contracts are unchanged. Replace assumptions about contextual error text before
+adopting that major version. Released v1 retains its existing text behavior.
+
 Do not match message strings. Replace legacy string checks with `errors.Is` and
-`errors.As`. Preserve the underlying cause only for diagnostic logging and do
+`errors.As`. Preserve the underlying cause only for redacted diagnostic logging and do
 not return it to untrusted clients without review. Discard a decode target
 after any error because reflection codecs may have assigned fields before a
 later failure.
