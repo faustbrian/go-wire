@@ -3,6 +3,7 @@ package wire_test
 import (
 	"encoding/xml"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -29,10 +30,15 @@ func TestDefaultDiagnosticTextPreservesInspectableCause(t *testing.T) {
 		t.Error("default text is not categorical")
 	}
 	var found *diagnosticCause
-	if !errors.Is(err, wire.ErrValidation) || !errors.Is(err, cause) || !errors.As(err, &found) || found != cause || errors.Unwrap(err) != cause {
+	if !errors.Is(err, wire.ErrValidation) || !errors.Is(err, cause) || !errors.As(err, &found) || found != cause {
 		t.Fatal("classification or original typed cause lost")
 	}
-	if err.Format != wire.Format(cause.text) || err.Op != cause.text || err.Err != cause {
+	for _, diagnostic := range []error{errors.Unwrap(err), err.Err} {
+		if reflect.TypeOf(diagnostic) != reflect.TypeFor[*diagnosticCause]() || reflect.ValueOf(diagnostic).Pointer() != reflect.ValueOf(cause).Pointer() {
+			t.Fatal("direct original cause identity lost")
+		}
+	}
+	if err.Format != wire.Format(cause.text) || err.Op != cause.text {
 		t.Fatal("diagnostic fields changed")
 	}
 	unknown := &wire.Error{Kind: wire.ErrorKind(cause.text), Format: err.Format, Op: err.Op, Err: cause}

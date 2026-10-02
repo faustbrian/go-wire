@@ -111,7 +111,7 @@ func TestMalformedScopeBoundariesRejectedBeforeDecoderCallback(t *testing.T) {
 				if !errors.Is(err, wire.ErrParse) || !errors.As(err, &classified) || classified.Err == nil {
 					t.Fatal("malformed scope was not rejected with retained cause")
 				}
-				if err.Error() != "wire: parse failure" || errors.Unwrap(err) != classified.Err {
+				if err.Error() != "wire: parse failure" || !errors.Is(errors.Unwrap(err), classified.Err) {
 					t.Fatal("private default text or inspectable cause was lost")
 				}
 				if target.calls != 0 {
@@ -120,6 +120,55 @@ func TestMalformedScopeBoundariesRejectedBeforeDecoderCallback(t *testing.T) {
 			}
 		})
 	}
+}
+
+func assertStructureCallbackBoundary(t *testing.T, payload []byte, rejected bool) {
+	t.Helper()
+	for _, allow := range []bool{false, true} {
+		target := new(structureRecordingTarget)
+		err := bsonwire.Decode(payload, target, bsonwire.DecodeOptions{AllowDuplicateKeys: allow})
+		if !rejected {
+			if err != nil || target.calls != 1 {
+				t.Fatal("valid structure did not reach decoder exactly once")
+			}
+			continue
+		}
+		var classified *wire.Error
+		if !errors.Is(err, wire.ErrParse) || !errors.As(err, &classified) || classified.Err == nil {
+			t.Fatal("invalid structure was not rejected with retained parse cause")
+		}
+		if err.Error() != "wire: parse failure" || !errors.Is(errors.Unwrap(err), classified.Err) {
+			t.Fatal("private default text or inspectable cause was lost")
+		}
+		if target.calls != 0 {
+			t.Fatal("invalid structure reached decoder callback")
+		}
+	}
+}
+
+func TestRawStructureResumesSiblingValidation(t *testing.T) {
+	first := append([]byte{0x03, 'a', 0}, structureDocument()...)
+	second := append([]byte{0x03, 'b', 0}, structureDocument()...)
+	assertStructureCallbackBoundary(t, structureDocument(first, second), false)
+	second[len(second)-1] = 1 // malformed sibling after a complete valid child
+	assertStructureCallbackBoundary(t, structureDocument(first, second), true)
+}
+
+func TestScopeCodeLengthBoundsBeforeIndexing(t *testing.T) {
+	payload := structureScope(structureDocument())
+	assertStructureCallbackBoundary(t, payload, false)
+	// The code terminator index would equal the scope value length. Admission
+	// must reject the code length before attempting to read that index.
+	binary.LittleEndian.PutUint32(payload[11:15], 7)
+	assertStructureCallbackBoundary(t, payload, true)
+}
+
+func TestScopeRejectsTrailingBytesAfterValidDocument(t *testing.T) {
+	scope := structureDocument()
+	assertStructureCallbackBoundary(t, structureScope(scope), false)
+	// Unlike a scope shorter than its minimum, this valid document would pass
+	// child-frame admission if the enclosing exact-boundary check were lost.
+	assertStructureCallbackBoundary(t, structureScope(append(scope, 0)), true)
 }
 
 func TestRawStructureNestingBoundary(t *testing.T) {
