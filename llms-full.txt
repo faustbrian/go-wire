@@ -86,7 +86,7 @@ Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
 maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem)
 and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## Development
@@ -2017,7 +2017,7 @@ non-pointer values for every decoder.
   <https://www.w3.org/TR/soap12-part1/>
 - YAML 1.2.2: <https://yaml.org/spec/1.2.2/>
 - TOML 1.0.0: <https://toml.io/en/v1.0.0>
-- MessagePack: <https://github.com/msgpack/msgpack/blob/master/spec.md>
+- MessagePack: <https://raw.githubusercontent.com/msgpack/msgpack/master/spec.md>
 - CBOR: <https://www.rfc-editor.org/rfc/rfc8949.html>
 - BSON 1.1: <https://bsonspec.org/spec.html>
 - Go I/O contracts: <https://pkg.go.dev/io>
