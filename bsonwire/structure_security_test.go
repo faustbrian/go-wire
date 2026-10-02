@@ -92,6 +92,36 @@ func TestMalformedNestedStructureRejectedBeforeDecoderCallback(t *testing.T) {
 	}
 }
 
+func TestMalformedScopeBoundariesRejectedBeforeDecoderCallback(t *testing.T) {
+	short := structureDocument([]byte{0x0f, 's', 0, 4, 0, 0, 0})
+	truncated := structureScope(structureDocument())
+	binary.LittleEndian.PutUint32(truncated[16:20], 6)
+	trailing := structureScope(structureDocument())
+	binary.LittleEndian.PutUint32(trailing[16:20], 4)
+	for name, payload := range map[string][]byte{
+		"short scope value":        short,
+		"truncated scope document": truncated,
+		"trailing scope byte":      trailing,
+	} {
+		t.Run(name, func(t *testing.T) {
+			for _, allow := range []bool{false, true} {
+				target := new(structureRecordingTarget)
+				err := bsonwire.Decode(payload, target, bsonwire.DecodeOptions{AllowDuplicateKeys: allow})
+				var classified *wire.Error
+				if !errors.Is(err, wire.ErrParse) || !errors.As(err, &classified) || classified.Err == nil {
+					t.Fatal("malformed scope was not rejected with retained cause")
+				}
+				if err.Error() != "wire: parse failure" || errors.Unwrap(err) != classified.Err {
+					t.Fatal("private default text or inspectable cause was lost")
+				}
+				if target.calls != 0 {
+					t.Fatal("malformed scope reached decoder callback")
+				}
+			}
+		})
+	}
+}
+
 func TestRawStructureNestingBoundary(t *testing.T) {
 	for _, kind := range []byte{0x03, 0x04, 0x0f} {
 		for _, depth := range []int{bsonwire.DefaultMaxNestedLevels, bsonwire.DefaultMaxNestedLevels + 1} {

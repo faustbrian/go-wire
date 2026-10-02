@@ -226,17 +226,11 @@ func validateDocument(payload []byte, allowDuplicates bool) (bson.Raw, error) {
 		isArray := false
 		switch value.Type {
 		case bson.TypeEmbeddedDocument:
-			var ok bool
-			child, ok = value.DocumentOK()
-			if !ok {
-				return nil, errors.New("invalid BSON embedded document")
-			}
+			// Frame admission already validated this value's encoded length.
+			// Its own document structure is checked on child-frame entry.
+			child = bson.Raw(value.Value)
 		case bson.TypeArray:
-			array, ok := value.ArrayOK()
-			if !ok {
-				return nil, errors.New("invalid BSON array")
-			}
-			child, isArray = bson.Raw(array), true
+			child, isArray = bson.Raw(value.Value), true
 		case bson.TypeCodeWithScope:
 			child, err = scopeDocument(value)
 			if err != nil {
@@ -295,13 +289,14 @@ func newStructureFrame(raw bson.Raw, isArray bool, depth int, allowDuplicates bo
 		values, err := array.Values()
 		return structureFrame{values: values, depth: depth}, err
 	}
-	// Driver validation is shallow; each child is checked on entry by the
-	// iterative traversal before any decoder callback is invoked.
-	if err := raw.Validate(); err != nil {
-		return structureFrame{}, err
-	}
 	elements, err := raw.Elements()
 	if err != nil {
+		return structureFrame{}, err
+	}
+	// Elements validates values, but not the document's final terminator.
+	// Driver validation remains shallow; each child is checked on entry by
+	// the iterative traversal before any decoder callback is invoked.
+	if err := raw.Validate(); err != nil {
 		return structureFrame{}, err
 	}
 	if !allowDuplicates {
