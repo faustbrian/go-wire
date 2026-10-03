@@ -687,9 +687,15 @@ source.
   failures.
 - `DefaultMaxNestedLevels` is 32, `DefaultMaxArrayElements` is 131,072, and
   `DefaultMaxMapPairs` is 65,536.
+- `DefaultMaxTotalValues` is 262,144 and `DefaultMaxKeyComparisonWork` is
+  8,388,608 conservative examined-byte/value units, not a CPU or heap quota.
 - `DecodeOptions` contains `MaxBytes`, `MaxNestedLevels`, `MaxArrayElements`,
-  `MaxMapPairs`, `AllowDuplicateKeys`, `DisallowUnknownFields`, and
-  `NormalizeNumericWidths`. Zero limits select the exported safe defaults.
+  `MaxMapPairs`, `MaxTotalValues`, `MaxKeyComparisonWork`,
+  `AllowDuplicateKeys`, `DisallowUnknownFields`, and `NormalizeNumericWidths`.
+  Zero limits select the exported safe defaults. Aggregate values include
+  every container, scalar, key and value; key work includes supported
+  expanded array-key preparation. Duplicate-key opt-in skips comparison
+  reservations but retains total-value admission.
 - `EncodeOptions` contains `MaxBytes`, `CompactIntegers`, `CompactFloats`, and
   `StructAsArray`. Map keys are always sorted for deterministic output.
 - `Decode`, `DecodeReader`, `Encode`, and `EncodeWriter` process exactly one
