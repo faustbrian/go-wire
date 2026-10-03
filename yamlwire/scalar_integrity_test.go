@@ -184,3 +184,52 @@ func scalarNodeSemantics(node *yaml.Node) nodeSemantics {
 	}
 	return result
 }
+
+func TestEncodePreservesExplicitIndentAndEscapedKeys(t *testing.T) {
+	scalar := func(value string, style yaml.Style) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: style}
+	}
+	mapping := func(key, value *yaml.Node) *yaml.Node {
+		return &yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{key, value}}
+	}
+	for _, scenario := range []struct {
+		name string
+		node *yaml.Node
+	}{
+		{"leading spaces", scalar(" leading\n last\n", yaml.LiteralStyle)},
+		{"double quoted key", mapping(scalar("quoted\"\\key: label", yaml.DoubleQuotedStyle), scalar(" leading\n last", yaml.LiteralStyle))},
+		{"single quoted key", mapping(scalar("don't: label", yaml.SingleQuotedStyle), scalar(" leading\n last", yaml.LiteralStyle))},
+		{"double quoted scalar", scalar("escaped \\ \"\nfoo: |\n- >", yaml.DoubleQuotedStyle)},
+		{"compact sequence mapping", &yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{mapping(scalar("quoted\"\\key: label", yaml.DoubleQuotedStyle), scalar(" leading\n last", yaml.LiteralStyle))}}},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			want := scalarNodeSemantics(scenario.node)
+			for _, indent := range []int{0, 2, 4, 9} {
+				for _, sequenceIndent := range []bool{false, true} {
+					options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+					payload, err := yamlwire.Encode(scenario.node, options)
+					if err != nil {
+						t.Fatal(err)
+					}
+					var got yaml.Node
+					if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil {
+						t.Fatalf("parse %q: %v", payload, err)
+					}
+					if len(got.Content) != 1 || !reflect.DeepEqual(scalarNodeSemantics(got.Content[0]), want) {
+						t.Fatalf("node semantics changed: %q", payload)
+					}
+					var output bytes.Buffer
+					if err := yamlwire.EncodeWriter(&output, scenario.node, options); err != nil || !bytes.Equal(output.Bytes(), payload) {
+						t.Fatalf("writer output %q error=%v", output.Bytes(), err)
+					}
+					output.Reset()
+					output.WriteString("prior")
+					options.MaxBytes = int64(len(payload) - 1)
+					if err := yamlwire.EncodeWriter(&output, scenario.node, options); !errors.Is(err, wire.ErrSizeLimit) || output.String() != "prior" {
+						t.Fatalf("limited writer published %q error=%v", output.Bytes(), err)
+					}
+				}
+			}
+		})
+	}
+}

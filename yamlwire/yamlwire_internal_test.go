@@ -67,6 +67,7 @@ func TestBlockScalarIndicatorBoundaries(t *testing.T) {
 		"|":         0,
 		" |":        1,
 		"- |\n":     2,
+		"-   |\n":   4,
 		"x: |+\n":   3,
 		"x: >-\r\n": 3,
 	} {
@@ -74,7 +75,7 @@ func TestBlockScalarIndicatorBoundaries(t *testing.T) {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want %d", input, got, expected)
 		}
 	}
-	for _, input := range []string{"", "x: x", "xx |", "x:|", "text: 000- >", "- 000- |"} {
+	for _, input := range []string{"", "x: x", "xx |", "x:|", "text: 000- >", "- 000- |", "x: |0", "x: |--", "x: | text"} {
 		if got := blockScalarHeader([]byte(input)).index; got != -1 {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want -1", input, got)
 		}
