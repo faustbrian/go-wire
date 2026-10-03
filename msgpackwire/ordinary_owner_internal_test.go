@@ -37,6 +37,8 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			{reflect.TypeFor[[2]int](), 1, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2]int](), 3, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2]int](), 6, 2, 6, 2, true, true},
+			{reflect.TypeFor[[2]int](), math.MaxInt64, 2, 6, 2, true, true},
+			{reflect.TypeFor[[1]int](), math.MaxInt64, 1, 3, 1, true, true},
 			{reflect.TypeFor[[2][2]int](), 10, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2][2]int](), 17, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2][2]int](), 18, 4, 18, 6, true, true},
@@ -61,6 +63,7 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			{reflect.TypeFor[[1]int](), 2, 5, 5, true},
 			{reflect.TypeFor[[1]int](), 3, 10, 1, true},
 			{reflect.TypeFor[[1]int](), 2, 8, 0, false},
+			{reflect.TypeFor[[1]int](), 3, math.MaxInt64, math.MaxInt64 - 15, false},
 		} {
 			budget := &admissionBudget{work: test.work}
 			err := budget.reserveArrayKeys(test.target, test.count)
