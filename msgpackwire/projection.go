@@ -288,8 +288,6 @@ func projectedKey(source any, target reflect.Type, loose bool) (any, bool) {
 			}
 		}
 		return keys, true
-	default:
-		return nil, false
 	}
 	return value.Interface(), true
 }
