@@ -82,7 +82,7 @@ Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
 maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem)
 and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## Development
