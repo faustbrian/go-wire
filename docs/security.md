@@ -21,6 +21,30 @@ allocation bounds. Never assume equivalent semantics across formats.
 
 ## Application Responsibilities
 
+MessagePack preflight retains recursive raw-key duplicate rejection. Its
+additional destination-projection check covers built-in, unregistered scalar
+and array keys in known maps, nested arrays/slices, and unambiguous direct or
+`noinline` struct fields. It preserves numeric-width normalization and explicit
+`AllowDuplicateKeys` behavior; it is not a general driver emulator.
+
+Custom decoder/unmarshaler interfaces are not invoked by projection preflight.
+Opaque `msgpack.Register` overrides cannot be detected through the driver's
+public API. Applications own these trusted collaborators and their key
+normalization policy: use a codec-specific duplicate check or explicit
+last-key-wins policy, and review it whenever registration or codec behavior
+changes. This limitation avoids executing callbacks twice; it does not prove
+that arbitrary custom projections preserve nominal key equality.
+
+Wire maintainers still own projection gaps for struct and non-empty interface
+keys, alias, automatic
+embedding, shadowed or interned field routing, and existing dynamic interface
+destinations. Raw-key and numeric-fit checks remain active, but these surfaces
+are not certified for destination-projected uniqueness. Review these gaps
+before expanding the supported projection contract or the next major release.
+Aggregate MessagePack node/work admission and pairwise duplicate-check cost
+also remain separate unresolved resource boundaries; this repair adds no
+budget API or stronger aggregate-work guarantee.
+
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
 in the pending major-release source. Structured fields and wrapped causes are
 retained for trusted inspection, not automatic logging or disclosure. Explicit

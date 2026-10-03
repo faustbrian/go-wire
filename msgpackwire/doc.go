@@ -9,4 +9,12 @@
 // target allocation. MessagePack is deliberately excluded from
 // wire.DetectFormat because arbitrary binary bytes cannot be identified
 // reliably.
+//
+// Raw duplicate keys are rejected recursively by default. Destination-key
+// collisions are also checked for built-in, unregistered scalar and array key
+// projections in maps and unambiguous direct or noinline struct fields.
+// Struct keys and alias, auto-inline, shadowed or interned field routing are
+// not covered by that additional projection check. Custom codecs and global
+// msgpack.Register overrides are trusted caller-owned behavior, not predicted
+// or executed by preflight. See docs/security.md for remaining boundaries.
 package msgpackwire

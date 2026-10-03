@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reject built-in MessagePack destination map-key collisions before decoding
+  into the target, including numeric-width and string/binary projections in
+  known map and unambiguous field shapes. Explicit duplicate-key opt-in remains
+  last-key-wins. This acceptance tightening is pending the next major release;
+  opaque codecs and ambiguous struct projections remain separate boundaries.
+
 - Validate nested BSON structure and CodeWithScope scopes before decoding,
   retain structural checks with duplicate-key opt-in, and require consecutive
   array indices. Iterative raw validation permits 100 nested containers below

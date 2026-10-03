@@ -78,7 +78,7 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	decoder := msgpack.NewDecoder(bytes.NewReader(payload))
 	decoder.DisallowUnknownFields(options.DisallowUnknownFields)
 	decoder.UseLooseInterfaceDecoding(options.NormalizeNumericWidths)
-	if err := validateNumericPayload(payload, target, options.AllowDuplicateKeys); err != nil {
+	if err := validateNumericPayload(payload, target, options); err != nil {
 		kind := wire.ErrorKindValidation
 		if errors.Is(err, errDuplicateKey) {
 			kind = wire.ErrorKindParse
@@ -273,7 +273,7 @@ func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits,
 	return decoder.Skip()
 }
 
-func validateNumericPayload(payload []byte, target any, allowDuplicateKeys bool) error {
+func validateNumericPayload(payload []byte, target any, options DecodeOptions) error {
 	decoder := msgpack.NewDecoder(bytes.NewReader(payload))
 	decoder.SetMapDecoder(func(decoder *msgpack.Decoder) (any, error) {
 		return decodeNumericMap(decoder)
@@ -282,12 +282,18 @@ func validateNumericPayload(payload []byte, target any, allowDuplicateKeys bool)
 	if err := decoder.Decode(&source); err != nil {
 		return nil //nolint:nilerr // the main decoder owns syntax errors
 	}
-	if !allowDuplicateKeys {
+	if !options.AllowDuplicateKeys {
 		if err := rejectDuplicateKeys(source); err != nil {
 			return err
 		}
 	}
-	return validateNumericFit(source, reflect.TypeOf(target))
+	if err := validateNumericFit(source, reflect.TypeOf(target)); err != nil {
+		return err
+	}
+	if !options.AllowDuplicateKeys {
+		return rejectProjectedKeys(source, reflect.TypeOf(target), options.NormalizeNumericWidths)
+	}
+	return nil
 }
 
 func rejectDuplicateKeys(source any) error {
