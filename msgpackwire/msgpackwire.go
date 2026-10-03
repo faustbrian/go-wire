@@ -303,11 +303,11 @@ func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits,
 			if limits.budget != nil && !limits.allowDuplicates && length > 1 {
 				span := int64(beforeBytes - limits.reader.Len())
 				nodes := int64(beforeValues - limits.budget.values)
-				remaining := limits.budget.work - keyWeight
-				if span > remaining || nodes > (remaining-span)/4 {
-					return errStructuralLimit
+				weight, err := accumulateKeyWeight(limits.budget.work, keyWeight, span, nodes)
+				if err != nil {
+					return err
 				}
-				keyWeight += span + 4*nodes
+				keyWeight = weight
 			}
 			if err := validateMessagePackValue(decoder, limits, depth+1); err != nil {
 				return err
@@ -321,6 +321,14 @@ func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits,
 		return nil
 	}
 	return decoder.Skip()
+}
+
+func accumulateKeyWeight(work, accumulated, span, nodes int64) (int64, error) {
+	remaining := work - accumulated
+	if span > remaining || nodes > (remaining-span)/4 {
+		return accumulated, errStructuralLimit
+	}
+	return accumulated + span + 4*nodes, nil
 }
 
 func validateNumericPayload(payload []byte, target any, options DecodeOptions, budget *admissionBudget) error {

@@ -2,6 +2,7 @@ package msgpackwire
 
 import (
 	"encoding"
+	"math"
 	"reflect"
 	"strings"
 
@@ -193,6 +194,12 @@ func projectedKey(source any, target reflect.Type, loose bool) (any, bool) {
 			}
 		}
 		return source, value.Comparable()
+	}
+	// Use the admission owner's recursive component policy before preparing any
+	// reflected value or tuple, including arrays whose children have zero length.
+	_, _, _, supported, _ := arrayProjectionUnits(target, math.MaxInt64)
+	if !supported {
+		return nil, false
 	}
 	value := reflect.New(target).Elem()
 	if source == nil && target.Kind() != reflect.Array && target.Kind() != reflect.Struct {

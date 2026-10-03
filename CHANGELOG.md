@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Determine recursive MessagePack key projection support before preparing
+  reflected values or tuples. Unsupported components retain driver-owned
+  decoding instead of uncharged projection preparation.
+
 - Admit aggregate MessagePack values and conservative raw/projected key work
   before generic materialization, with finite inclusive decode defaults and
   expanded built-in array-key preparation accounting. Limit refusal preserves

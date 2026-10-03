@@ -68,6 +68,8 @@ is needed. This estimate does not emulate opaque custom keys.
 Array components must themselves be supported built-in scalars or arrays;
 pointer, struct, interface and custom components are not covered by expanded
 preparation accounting.
+Projection preflight declines unsupported shapes before preparing reflected
+values or tuples; their final driver allocations remain a separate boundary.
 
 Wire maintainers still own final driver destination allocations, unsupported
 or ambiguous projection shapes, and context-aware reader/decode APIs. Custom
