@@ -145,16 +145,16 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 		value       byte
 	}
 	var hints []hint
-	additions, bodyIndent := 0, -1
+	additions, bodyIndent := 0, 0
 	var context scalarTextContext
 	for lineIndex, line := range lines {
 		if len(bytes.TrimSpace(line)) == 0 {
 			continue
 		}
-		if bodyIndent >= 0 && leadingSpaces(line) >= bodyIndent {
+		if bodyIndent > 0 && leadingSpaces(line) >= bodyIndent {
 			continue
 		}
-		bodyIndent = -1
+		bodyIndent = 0
 		continued := context.quote != 0 || context.flowDepth > 0
 		context.scan(line)
 		if continued || context.quote != 0 || context.flowDepth > 0 {
@@ -172,7 +172,7 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 		}
 		bodyIndent = header.parentIndent + width
 		index, replace := header.index+1, false
-		if header.digit >= 0 {
+		if header.digit > 0 {
 			index, replace = header.digit, true
 		}
 		value := byte('0' + width)
@@ -215,27 +215,21 @@ type scalarHeader struct {
 }
 
 func leadingSpaces(line []byte) int {
-	index := 0
-	for index < len(line) && line[index] == ' ' {
-		index++
-	}
-	return index
+	return len(line) - len(bytes.TrimLeft(line, " "))
 }
 
 // blockScalarHeader recognizes scalar syntax in dumper-produced lines,
 // not marker-like suffixes within a plain scalar. Block bodies are skipped
 // by the caller, so their text is never interpreted as another header.
 func blockScalarHeader(line []byte) scalarHeader {
-	absent := scalarHeader{index: -1, digit: -1}
+	absent := scalarHeader{index: -1}
 	line = bytes.TrimRight(line, "\r\n")
 	start := leadingSpaces(line)
 	parent, sequence := start, false
-	for start+1 < len(line) && line[start] == '-' && line[start+1] == ' ' {
+	for bytes.HasPrefix(line[start:], []byte("- ")) {
 		parent, sequence = start, true
 		start += 2
-		for start < len(line) && line[start] == ' ' {
-			start++
-		}
+		start += leadingSpaces(line[start:])
 	}
 	if start+1 < len(line) && (line[start] == '?' || line[start] == ':') && line[start+1] == ' ' {
 		parent, sequence = start, false
@@ -248,53 +242,61 @@ func blockScalarHeader(line []byte) scalarHeader {
 	// colon followed by whitespace outside that key introduces its value.
 	var quote byte
 	keyStart := scalarPropertiesEnd(line, start)
-	for index := keyStart; index < len(line) && line[keyStart] != '|' && line[keyStart] != '>'; index++ {
-		value := line[index]
-		if quote != 0 {
-			if quote == '"' && value == '\\' {
-				index++
+	if keyStart < len(line) && line[keyStart] != '|' && line[keyStart] != '>' {
+		skipNext := false
+		for offset, value := range line[keyStart:] {
+			index := keyStart + offset
+			if skipNext {
+				skipNext = false
 				continue
 			}
-			if value == quote {
-				if quote == '\'' && index+1 < len(line) && line[index+1] == '\'' {
-					index++
+			if quote != 0 {
+				if quote == '"' && value == '\\' {
+					skipNext = true
 					continue
 				}
-				quote = 0
+				if value == quote {
+					if quote == '\'' && index+1 < len(line) && line[index+1] == '\'' {
+						skipNext = true
+						continue
+					}
+					quote = 0
+				}
+				continue
 			}
-			continue
-		}
-		if index == keyStart && (value == '\'' || value == '"') {
-			quote = value
-			continue
-		}
-		if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
-			parent, sequence = start, false
-			start = index + 2
-			break
+			if index == keyStart && (value == '\'' || value == '"') {
+				quote = value
+				continue
+			}
+			if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
+				parent, sequence = start, false
+				start = index + 2
+				break
+			}
 		}
 	}
 	start = scalarPropertiesEnd(line, start)
 	if start == len(line) || (line[start] != '|' && line[start] != '>') {
 		return absent
 	}
-	header := scalarHeader{index: start, digit: -1, parentIndent: parent, sequence: sequence}
-	index, chomp := start+1, false
-	for index < len(line) && line[index] != ' ' {
+	header := scalarHeader{index: start, parentIndent: parent, sequence: sequence}
+	// The pinned dumper emits original explicit widths only in 2..9.
+	// Normalization may write width 1 at an odd grid boundary, but never
+	// feeds its own output back through this recognizer.
+	indicators, trailing, _ := bytes.Cut(line[start+1:], []byte{' '})
+	chomp := false
+	for offset, value := range indicators {
 		switch {
-		case line[index] >= '1' && line[index] <= '9' && header.digit < 0:
-			header.digit = index
-		case (line[index] == '+' || line[index] == '-') && !chomp:
+		case value >= '2' && value <= '9' && header.digit == 0:
+			header.digit = start + 1 + offset
+		case (value == '+' || value == '-') && !chomp:
 			chomp = true
 		default:
 			return absent
 		}
-		index++
 	}
-	for index < len(line) && line[index] == ' ' {
-		index++
-	}
-	if index < len(line) && line[index] != '#' {
+	trailing = bytes.TrimLeft(trailing, " ")
+	if len(trailing) > 0 && trailing[0] != '#' {
 		return absent
 	}
 	return header
@@ -309,17 +311,26 @@ type scalarTextContext struct {
 }
 
 func (context *scalarTextContext) scan(line []byte) {
-	start := true
-	for index := leadingSpaces(line); index < len(line); index++ {
-		value := line[index]
+	start, skipNext, property := true, false, false
+	for index, value := range line {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+		if property {
+			if value == ' ' {
+				property = false
+			}
+			continue
+		}
 		if context.quote != 0 {
 			if context.quote == '"' && value == '\\' {
-				index++
+				skipNext = true
 				continue
 			}
 			if value == context.quote {
 				if value == '\'' && index+1 < len(line) && line[index+1] == '\'' {
-					index++
+					skipNext = true
 					continue
 				}
 				context.quote = 0
@@ -334,9 +345,7 @@ func (context *scalarTextContext) scan(line []byte) {
 			return
 		}
 		if start && (value == '!' || value == '&') {
-			for index+1 < len(line) && line[index+1] != ' ' {
-				index++
-			}
+			property = true
 			continue
 		}
 		if start && (value == '\'' || value == '"') {
@@ -369,19 +378,12 @@ func (context *scalarTextContext) scan(line []byte) {
 
 // scalarPropertiesEnd skips emitted tags and anchors, but not scalar data.
 func scalarPropertiesEnd(line []byte, index int) int {
-	for index < len(line) {
-		if line[index] == ' ' {
-			index++
-			continue
-		}
-		if line[index] != '!' && line[index] != '&' {
-			break
-		}
-		for index < len(line) && line[index] != ' ' {
-			index++
-		}
+	rest := bytes.TrimLeft(line[index:], " ")
+	for len(rest) > 0 && (rest[0] == '!' || rest[0] == '&') {
+		_, after, _ := bytes.Cut(rest, []byte{' '})
+		rest = bytes.TrimLeft(after, " ")
 	}
-	return index
+	return len(line) - len(rest)
 }
 
 // EncodeWriter serializes value and writes one complete YAML document.

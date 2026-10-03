@@ -233,3 +233,78 @@ func TestEncodePreservesExplicitIndentAndEscapedKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestEncodePreservesMixedBlockContinuationBoundaries(t *testing.T) {
+	t.Parallel()
+	scalar := func(value string, style yaml.Style) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: style}
+	}
+	for _, indent := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
+		for _, sequenceIndent := range []bool{false, true} {
+			// Fresh nodes avoid the pinned dumper's borrowed style/tag updates
+			// carrying state between independently configured encodings.
+			makeNode := func() *yaml.Node {
+				anchored := scalar(" leading\n last\n", yaml.TaggedStyle|yaml.LiteralStyle)
+				anchored.Tag, anchored.Anchor = "!vendor", "block"
+				return &yaml.Node{Kind: yaml.MappingNode, Tag: "!collection", Anchor: "document", Style: yaml.TaggedStyle, Content: []*yaml.Node{
+					scalar("already explicit", 0), anchored,
+					scalar("alias", 0), {Kind: yaml.AliasNode, Value: "block", Alias: anchored},
+					scalar("quoted continuation", 0), scalar("first\nfoo: |\n- >\nlast's end", yaml.SingleQuotedStyle),
+					scalar("flow continuation", 0), {Kind: yaml.SequenceNode, Style: yaml.FlowStyle, Content: []*yaml.Node{
+						scalar("first\nfoo: |\n- >\nlast's end", yaml.SingleQuotedStyle), scalar("sibling", 0),
+					}},
+					scalar("protected body", 0), scalar("first\n['unclosed \"\nfoo: |\n- >\nlast\n", yaml.LiteralStyle),
+					scalar("later block", 0), scalar("\t\n0", yaml.LiteralStyle),
+					scalar("nested blocks", 0), {Kind: yaml.SequenceNode, Content: []*yaml.Node{
+						{Kind: yaml.MappingNode, Content: []*yaml.Node{
+							scalar("don't: label", yaml.SingleQuotedStyle), scalar("\t\n0", yaml.LiteralStyle),
+							scalar("last", 0), scalar(" leading\n final", yaml.LiteralStyle),
+						}},
+					}},
+					scalar("final sibling", 0), scalar("unchanged", 0),
+				}}
+			}
+			options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+			want := scalarNodeSemantics(makeNode())
+			payload, err := yamlwire.Encode(makeNode(), options)
+			if err != nil {
+				t.Fatalf("options=%+v: %v", options, err)
+			}
+			for _, decode := range []func([]byte, *yaml.Node) error{
+				func(payload []byte, got *yaml.Node) error { return yaml.Load(payload, got, yaml.WithV4Defaults()) },
+				func(payload []byte, got *yaml.Node) error {
+					return yamlwire.Decode(payload, got, yamlwire.DecodeOptions{})
+				},
+			} {
+				var got yaml.Node
+				if err := decode(payload, &got); err != nil || len(got.Content) != 1 || !reflect.DeepEqual(scalarNodeSemantics(got.Content[0]), want) {
+					t.Fatalf("options=%+v: mixed document changed: %q, error=%v", options, payload, err)
+				}
+				mapping := got.Content[0]
+				anchored, alias := mapping.Content[1], mapping.Content[3]
+				if mapping.Tag != "!collection" || mapping.Anchor != "document" || anchored.Tag != "!vendor" || anchored.Anchor != "block" || alias.Alias != anchored {
+					t.Fatalf("options=%+v: scalar tag, anchor, or alias target changed: %q", options, payload)
+				}
+			}
+			repeated, err := yamlwire.Encode(makeNode(), options)
+			if err != nil || !bytes.Equal(repeated, payload) {
+				t.Fatalf("options=%+v: nondeterministic document: %q, error=%v", options, repeated, err)
+			}
+			for _, allowance := range []int64{-1, 0, 1} {
+				limited := options
+				limited.MaxBytes = int64(len(payload)) + allowance
+				encoded, encodeErr := yamlwire.Encode(makeNode(), limited)
+				var output bytes.Buffer
+				output.WriteString("prior")
+				writeErr := yamlwire.EncodeWriter(&output, makeNode(), limited)
+				if allowance < 0 {
+					if encoded != nil || !errors.Is(encodeErr, wire.ErrSizeLimit) || !errors.Is(encodeErr, yamlwire.ErrPayloadTooLarge) || !errors.Is(writeErr, wire.ErrSizeLimit) || output.String() != "prior" {
+						t.Fatalf("options=%+v: final quota published %q/%q, errors=%v/%v", limited, encoded, output.String(), encodeErr, writeErr)
+					}
+				} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
+					t.Fatalf("options=%+v: exact final quota changed output, errors=%v/%v", limited, encodeErr, writeErr)
+				}
+			}
+		}
+	}
+}
