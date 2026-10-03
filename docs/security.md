@@ -41,9 +41,43 @@ embedding, shadowed or interned field routing, and existing dynamic interface
 destinations. Raw-key and numeric-fit checks remain active, but these surfaces
 are not certified for destination-projected uniqueness. Review these gaps
 before expanding the supported projection contract or the next major release.
-Aggregate MessagePack node/work admission and pairwise duplicate-check cost
-also remain separate unresolved resource boundaries; this repair adds no
-budget API or stronger aggregate-work guarantee.
+
+MessagePack's per-decode admission owner counts every container, scalar, key
+and value once before generic materialization. `MaxTotalValues` defaults to
+256 Ki values. `MaxKeyComparisonWork` defaults to 8 Mi abstract examined-byte
+or value units. Both bounds are inclusive; zero selects the finite default,
+and negative options are rejected before reading.
+
+For each map with `n` keys, a key weight is its exact encoded byte span plus
+four times its subtree value count. Before generic decoding, the owner
+reserves two passes of `n*(n-1)/2 + (n-1)*sum(key weights)`. Arithmetic is
+checked against the remaining allowance before multiplication. Duplicate-key
+opt-in skips this comparison reservation, but never structural admission.
+This conservative reservation bounds admitted comparison inputs and weighted
+pairwise work; it does not establish a wall-clock CPU or actual heap quota.
+
+Known built-in array-key projections additionally reserve expanded target
+preparation and comparison through the same owner, before reflected arrays
+or projection tuples are allocated. For a scalar leaf, storage/preparation
+weights are one and comparison weight is zero. An array of `n` elements has
+storage `n*child storage`, preparation `storage+n+n*child preparation`, and
+comparison weight `n+n*child comparison`. A map reserves preparation for
+each key and comparison weight for each key's possible peers, including zero
+padding. Byte arrays use this same conservative estimate even when no tuple
+is needed. This estimate does not emulate opaque custom keys.
+Array components must themselves be supported built-in scalars or arrays;
+pointer, struct, interface and custom components are not covered by expanded
+preparation accounting.
+
+Wire maintainers still own final driver destination allocations, unsupported
+or ambiguous projection shapes, and context-aware reader/decode APIs. Custom
+objects and callback work remain trusted collaborator responsibilities.
+Review these residual boundaries before claiming aggregate memory, CPU-time,
+or cancellation protection beyond the admitted preflight operations.
+
+The new option fields and finite aggregate admission are pending next-major
+changes. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
+literals; named limit overrides may be needed for accepted larger workloads.
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
 in the pending major-release source. Structured fields and wrapped causes are

@@ -22,7 +22,7 @@ func hasCustomProjection(target reflect.Type) bool {
 	return false
 }
 
-func rejectProjectedKeys(source any, target reflect.Type, loose bool) error {
+func rejectProjectedKeys(source any, target reflect.Type, loose bool, budget *admissionBudget) error {
 	if hasCustomProjection(target) {
 		return nil
 	}
@@ -50,6 +50,9 @@ func rejectProjectedKeys(source any, target reflect.Type, loose bool) error {
 		if target.Kind() == reflect.Map {
 			keyType, valueType = target.Key(), target.Elem()
 		}
+		if err := budget.reserveArrayKeys(keyType, len(object)); err != nil {
+			return err
+		}
 		var keys []any
 		for _, entry := range object {
 			key, supported := projectedKey(entry.key, keyType, loose)
@@ -73,7 +76,7 @@ func rejectProjectedKeys(source any, target reflect.Type, loose bool) error {
 				}
 				keys = append(keys, key)
 			}
-			if err := rejectProjectedKeys(entry.value, valueType, loose); err != nil {
+			if err := rejectProjectedKeys(entry.value, valueType, loose, budget); err != nil {
 				return err
 			}
 		}
@@ -87,7 +90,7 @@ func rejectProjectedKeys(source any, target reflect.Type, loose bool) error {
 				element = target.Elem()
 			}
 			for _, item := range items {
-				if err := rejectProjectedKeys(item, element, loose); err != nil {
+				if err := rejectProjectedKeys(item, element, loose, budget); err != nil {
 					return err
 				}
 			}
@@ -98,7 +101,7 @@ func rejectProjectedKeys(source any, target reflect.Type, loose bool) error {
 			}
 			for index, field := range fields {
 				if index < len(items) {
-					if err := rejectProjectedKeys(items[index], field.target, loose); err != nil {
+					if err := rejectProjectedKeys(items[index], field.target, loose, budget); err != nil {
 						return err
 					}
 				}
