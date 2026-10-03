@@ -90,11 +90,9 @@ func arrayProjectionUnits(target reflect.Type, limit int64) (storage, preparatio
 		return 0, 0, 0, true, false
 	}
 	preparation = storage + n + children
-	children, fits = multiply(childComparisons)
-	if !fits || n > limit-children {
-		return 0, 0, 0, true, false
-	}
-	return storage, preparation, n + children, true, true
+	// Recursive preparation is at least comparison work. The admitted checked
+	// preparation therefore proves this product and sum fit within limit.
+	return storage, preparation, n + n*childComparisons, true, true
 }
 
 func (budget *admissionBudget) reserveArrayKeys(target reflect.Type, count int) error {

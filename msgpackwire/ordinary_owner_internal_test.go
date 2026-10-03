@@ -2,6 +2,7 @@ package msgpackwire
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -31,6 +32,8 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			{reflect.TypeFor[[2]int](), 3, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2]int](), 6, 2, 6, 2, true, true},
 			{reflect.TypeFor[[2][2]int](), 10, 0, 0, 0, true, false},
+			{reflect.TypeFor[[2][2]int](), 17, 0, 0, 0, true, false},
+			{reflect.TypeFor[[2][2]int](), 18, 4, 18, 6, true, true},
 			{reflect.TypeFor[[1]struct{ Value int }](), 6, 0, 0, 0, false, true},
 		} {
 			storage, preparation, comparisons, supported, fits := arrayProjectionUnits(test.target, test.limit)
@@ -81,6 +84,8 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 		{"unsigned value", uint16(2), reflect.TypeFor[uint8](), false, uint8(2), true},
 		{"unsigned negative", int8(-1), reflect.TypeFor[uint8](), false, nil, false},
 		{"float unsigned", uint8(2), reflect.TypeFor[float64](), false, float64(2), true},
+		// The pinned driver's float decoder converts Uint64 through int64.
+		{"float unsigned signed wrapping", uint64(math.MaxUint64), reflect.TypeFor[float64](), false, float64(-1), true},
 		{"float unsupported", "x", reflect.TypeFor[float64](), false, nil, false},
 		{"float32 double", float64(1.5), reflect.TypeFor[float32](), false, nil, false},
 		{"boolean", true, reflect.TypeFor[bool](), false, true, true},
