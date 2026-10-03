@@ -9,7 +9,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,7 +20,7 @@ write APIs.
 
 ## Status
 
-The package has a stable v1 API. Supported format behavior is fixture-backed, fuzzed,
+The package has a stable v2 API. Supported format behavior is fixture-backed, fuzzed,
 benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
@@ -30,12 +30,12 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 Import format packages explicitly, such as
-`github.com/faustbrian/go-wire/jsonwire` or
-`github.com/faustbrian/go-wire/soap`.
+`github.com/faustbrian/go-wire/v2/jsonwire` or
+`github.com/faustbrian/go-wire/v2/soap`.
 
 ## Quickstart
 
@@ -86,7 +86,7 @@ Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
 maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem)
 and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## Development
@@ -157,10 +157,10 @@ Use this index to select an explicit wire format and understand its limits.
 
 ## Install
 
-Install the stable v1 release:
+Install the stable v2 release:
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 The module supports Go 1.27.0 and newer. The
@@ -545,7 +545,9 @@ source.
   sentinels for `errors.Is`.
 - `type Error struct { Kind ErrorKind; Format Format; Op string; Err error }`
   carries structured context.
-- `(*Error).Error() string` renders a stable contextual message.
+- `(*Error).Error() string` renders only the stable classification. `Format`,
+  `Op`, and `Err` remain inspectable trusted diagnostics and may contain peer
+  data. Version 2 uses typed fields and cause inspection instead of diagnostic text.
 - `(*Error).Is(error) bool` matches the sentinel for `Kind` or an underlying
   cause.
 - `(*Error).Unwrap() error` returns the underlying cause.
@@ -588,7 +590,14 @@ source.
 - `EncodeWriter(io.Writer, any, EncodeOptions) error` writes the same complete
   XML document.
 - `CharsetReader(string, io.Reader) (io.Reader, error)` converts UTF-8,
-  US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8.
+  US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8 with a 1 MiB raw-input quota.
+- `CharsetReaderWithLimit(string, io.Reader, int64) (io.Reader, error)` selects
+  an inclusive raw-input quota; zero uses 1 MiB and negative values are invalid.
+  Both helpers reject labels over 64 bytes before normalization and unsupported
+  labels before reading. UTF-8 conversion can expand accepted input up to three
+  times its raw size. Errors are categorical; wrapped reader causes remain
+  trusted diagnostics. XML and SOAP default callbacks use their configured
+  input quotas. Custom callbacks and blocking readers remain caller-owned.
 
 ## Package `soap`
 
@@ -633,9 +642,10 @@ source.
 - `FaultReason` contains a SOAP 1.2 `Language` and `Text` pair.
 - `Fault` contains `Version`, `Code`, `Subcodes`, `Reason`, `Reasons`, `Actor`,
   `Node`, `Role`, `Detail`, and `Raw`.
-- `FaultError` carries a `Fault`, formats its code/reason, and unwraps to the
+- `FaultError` carries a `Fault`, renders a categorical message, and unwraps to the
   shared SOAP fault classification.
-- `(*FaultError).Error() string` renders the fault code and optional reason.
+- `(*FaultError).Error() string` renders `soap fault`; code and reason remain
+  available through the structured `Fault` field.
 - `(*FaultError).Unwrap() error` exposes a `wire.Error` classified as
   `wire.ErrSOAPFault`.
 - `MarshalFault(Fault) ([]byte, error)` validates and emits a complete SOAP
@@ -703,6 +713,13 @@ source.
 
 ## Package `bsonwire`
 
+Version 2 raw validation permits at most 100 nested
+documents, arrays, or CodeWithScope scope documents below the root (depth zero),
+even with duplicate-key opt-in. Array indices must be consecutive from zero;
+malformed nested structure fails before decoder callbacks. `DefaultMaxNestedLevels`
+identifies this fixed raw-validation limit. Encoders validate serialized output
+after codec work; this is not a pre-encoding allocation or callback-work bound.
+
 - `DefaultMaxBytes` is 1 MiB and `ErrPayloadTooLarge` identifies byte-limit
   failures.
 - `A`, `D`, `E`, `M`, `Raw`, `RawArray`, `RawValue`, `ObjectID`, `DateTime`,
@@ -731,7 +748,7 @@ normalization behavior are SemVer-governed.
 `wire` uses format-specific packages rather than a universal codec:
 
 ```text
-github.com/faustbrian/go-wire        shared Format and Error vocabulary
+github.com/faustbrian/go-wire/v2        shared Format and Error vocabulary
 ├── jsonwire                         JSON boundary policy
 ├── xmlwire                          XML boundary policy and charsets
 ├── soap                             SOAP envelope and fault semantics
@@ -1545,10 +1562,60 @@ only execute a line without proving its contract.
 
 # Migration notes
 
-## Version 1 compatibility
+## From v1 to v2
 
-The module follows stable v1 compatibility. Pin a released version, keep the
+Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
+all codec imports to `github.com/faustbrian/go-wire/v2`. Update related imports
+in one change: v1 and v2 errors and sentinels have distinct Go identities.
+Existing v1 consumers remain on their selected version until deliberately
+migrated; this release does not migrate other repositories.
+
+Ordinary wire and SOAP fault text is categorical. Inspect `*wire.Error`, its
+wrapped cause, and `*soap.FaultError` fields for trusted diagnostics instead of
+matching old diagnostic strings. Existing classification and cause inspection
+remain available within the selected major module.
+
+Built-in XML and SOAP charset conversion enforces raw-input byte quotas and
+rejects unsupported or overlong labels before reading. Use
+`xmlwire.CharsetReaderWithLimit` for an explicit quota; custom callbacks and
+reader responsiveness remain caller-owned. Conversion can expand output.
+
+BSON validates nested documents, arrays and CodeWithScope scopes before decoder
+callbacks, including with duplicate-key opt-in. Supply consecutive array indices
+and at most 100 nested containers below the root. Encoding validates structure
+after codec work; this is not pre-encoding allocation protection.
+
+YAML scalar values, explicit mapping keys and quoted continuations retain their
+authored content. Emitted block indicators can change to preserve those values;
+encoded bytes are not promised to be identical across released versions.
+
+## Version 2 compatibility
+
+The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
+
+## Pending v2 charset boundary
+
+Version 2 charset hardening changes admission and default quotas, not
+a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
+most 1 MiB of raw input and labels at most 64 bytes, and return categorical
+diagnostics. Use `CharsetReaderWithLimit` for a deliberate larger finite raw
+input quota; zero selects the default and negative limits are invalid.
+Use `errors.Is` to inspect retained reader causes rather than parsing text.
+XML and SOAP built-in callbacks follow their configured raw-input quotas;
+UTF-8 conversion may expand that input up to threefold. Custom callbacks and
+reader cancellation remain application responsibilities.
+
+## Pending v2 BSON structure boundary
+
+BSON validation now includes CodeWithScope scope documents and all nested
+document/array boundaries, including when duplicate keys are explicitly allowed.
+Arrays require consecutive zero-based indices. Raw nesting is limited to 100
+containers below the root; documents, arrays, and scopes each add one level.
+Malformed structure fails before decoder callbacks. This acceptance change is
+part of version 2. Encoding validates serialized output afterward;
+driver buffering, pre-encoding resource limits, and custom-codec work are separate
+boundaries, not protected by this raw traversal limit.
 
 ## From direct `encoding/json`
 
@@ -1683,8 +1750,14 @@ are opt-in compatibility choices.
 
 ## Error mapping
 
+Pending next-major behavior: `wire.Error.Error()` renders only classification,
+and `soap.FaultError.Error()` renders `soap fault`. Format, operation, original
+causes, and SOAP fault fields remain inspectable; `errors.Is` and `errors.As`
+contracts are unchanged. Replace assumptions about contextual error text before
+adopting that major version. Released v1 retains its existing text behavior.
+
 Do not match message strings. Replace legacy string checks with `errors.Is` and
-`errors.As`. Preserve the underlying cause only for diagnostic logging and do
+`errors.As`. Preserve the underlying cause only for redacted diagnostic logging and do
 not return it to untrusted clients without review. Discard a decode target
 after any error because reflection codecs may have assigned fields before a
 later failure.
@@ -1773,47 +1846,30 @@ The release commit must have:
 - documentation links and examples validated;
 - specification decisions, source pins, and conformance evidence validated;
 - dependency and vulnerability scans passing;
-- `CHANGELOG.md` moved from Unreleased to the release version;
+- a dated `CHANGELOG.md` entry covering the release delta;
 - migration notes for every breaking change.
 
 ## Release procedure
 
-1. Choose a SemVer version from the compatibility impact.
-2. Replace the Unreleased changelog section with the version and UTC date, then
-   add a fresh Unreleased section.
-3. Run the guarded target for the intended compatibility level:
-
-   ```sh
-   make release-patch
-   make release-minor
-   make release-major
-   ```
-
-   Each target calculates the next stable version, requires a clean `main`
-   branch synchronized with `origin/main`, runs the complete release gate, and
-   creates a local annotated tag. It never pushes the tag.
-4. Merge the release commit through normal review.
-5. Review the local tag, then push only that tag:
-
-   ```sh
-   git push origin v1.0.0
-   ```
-
-6. The tagged-release workflow re-runs quality and security gates, builds a
-   source archive with checksums, and creates a GitHub Release from the matching
-   changelog section.
-7. Verify the release page, checksum artifact, module availability, and Go
-   documentation rendering.
+1. Choose a SemVer version from the compatibility impact and add a dated
+   changelog entry covering the release delta. Keep an Unreleased section for
+   subsequent work and document every breaking migration.
+2. Merge the reviewed release preparation through the normal required gates.
+3. Follow the [release guide](releasing.md) for the exact candidate rehearsal,
+   guarded local tag creation, and manual publication procedure. The repository
+   has no `make release-*` targets or automatic tag-triggered publisher.
+4. Verify the published tag, release assets, public module checksum record,
+   and clean-consumer resolution before reporting publication complete.
 
 Never move or recreate a published tag. Publish a new patch version if a
 release artifact or note needs correction.
 
 ## Release reproducibility
 
-The release contains source only; consumers compile it with Go modules. The
-workflow records the tag, commit, Go version, source archive, and SHA-256
-checksum. Runtime dependencies are pinned through `go.mod` and recorded with
-their selection rationale and residual risks in
+The release contains source only; consumers compile it with Go modules.
+Publication binds the tag and commit to a deterministic source archive and
+SHA-256 checksum. Runtime dependencies are pinned through `go.mod` and recorded
+with their selection rationale and residual risks in
 [`dependencies.md`](dependencies.md). Dependency upgrades require full wire
 compatibility, fuzz, benchmark, vulnerability, and license review.
 
@@ -1878,7 +1934,7 @@ multiple runs and `benchstat` outside the release gate.
 # Security and interoperability hardening audit
 
 Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-published its stable v1 contract. This report distinguishes format
+prepares its stable v2 contract. This report distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -1971,15 +2027,15 @@ non-pointer values for every decoder.
   <https://www.w3.org/TR/soap12-part1/>
 - YAML 1.2.2: <https://yaml.org/spec/1.2.2/>
 - TOML 1.0.0: <https://toml.io/en/v1.0.0>
-- MessagePack: <https://github.com/msgpack/msgpack/blob/master/spec.md>
+- MessagePack: <https://raw.githubusercontent.com/msgpack/msgpack/master/spec.md>
 - CBOR: <https://www.rfc-editor.org/rfc/rfc8949.html>
 - BSON 1.1: <https://bsonspec.org/spec.html>
 - Go I/O contracts: <https://pkg.go.dev/io>
 
 ## Release verdict
 
-The package is now available as stable v1.0.0. The current module requires Go
-1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+The current release preparation targets v2.0.0. The current module requires Go
+1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller
 responsibilities are explicit in the findings and format matrix; no stronger
@@ -2007,11 +2063,25 @@ before application processing.
 
 ## Format Risks
 
+BSON raw validation uses iterative traversal with a fixed 100-level nesting
+limit below the root, covering documents, arrays, and CodeWithScope scopes.
+Structural checks remain enabled with duplicate-key opt-in. Driver validation
+is shallow, so the package validates every entered container before decoding.
+Post-encoding validation does not bound driver buffering or custom codec work;
+pre-encoding allocation protection remains separate work.
+
 XML and SOAP require entity and nesting discipline. YAML aliases and recursive
 structures require limits. Binary formats require byte, depth, collection, and
 allocation bounds. Never assume equivalent semantics across formats.
 
 ## Application Responsibilities
+
+Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
+in version 2. Structured fields and wrapped causes are
+retained for trusted inspection, not automatic logging or disclosure. Explicit
+field dumps, formatting underlying causes, and application-added error prefixes
+require application redaction. This is not a guarantee about arbitrary caller
+formatting or caller-owned error implementations.
 
 Apply transport body limits, deadlines, authentication, authorization, and
 rate limits before decoding. Do not expose raw parser errors when they may
@@ -2041,13 +2111,21 @@ Format-specific fuzz targets, 100% meaningful production coverage, API
 inventory checks, documentation links, and vulnerability scanning are release
 gates.
 
-## Tagging
+## Tagging and publication
 
-Use `make release-patch`, `make release-minor`, or
-`make release-major`. Review the local annotated tag before pushing it.
-The release workflow validates the tag, rebuilds all gates, creates a
-deterministic source archive and checksum, and publishes changelog-derived
-notes.
+The repository has no automatic tag-triggered publisher. Dispatch the owned
+`ci.yml` workflow with `release_dry_run=true` and inspect every required result
+for the actual candidate. Hosted gates do not publish a release.
+
+For the local maintainer route, `scripts/release.sh major` checks a clean,
+synchronized main and the dated changelog, runs `make check`, and creates an
+annotated tag. Use the trusted maintainer signing key for publication,
+verify the new remote tag target, and never move an existing release tag.
+
+Publish changelog-derived notes with a deterministic source archive and checksum
+bound to the verified main commit. Verify public asset bytes, the public Go
+module and its checksum record, and a clean consumer after publication. A tag
+push alone does not establish a successful release or consumer adoption.
 
 ## Source: CONTRIBUTING.md
 
@@ -2273,7 +2351,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
 
-## [1.0.2] - 2026-10-03
+## [2.0.0] - 2026-10-03
 
 ### Fixed
 
@@ -2288,11 +2366,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Adopt MongoDB driver v2.9.1 while retaining the existing BSON API and
-  codec behavior; driver network and GridFS operations remain outside
-  the module's imported package boundary.
+- Publish the major module as `github.com/faustbrian/go-wire/v2`. Update all
+  Wire imports together; v1 and v2 error types and sentinels are distinct.
+
+- Harden XML and SOAP built-in charset conversion with bounded raw input and
+  labels, pre-read allowlist rejection, and private categorical diagnostics.
+  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. Custom charset callbacks remain caller-owned.
+
+- Make shared wire errors and SOAP fault errors render categorical text only,
+  retaining original diagnostic fields, causes, and error classification.
+  Use typed causes and fault fields instead of previous diagnostic text.
+  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
+
+- Validate nested BSON structure and CodeWithScope scopes before decoding,
+  retain structural checks with duplicate-key opt-in, and require consecutive
+  array indices. Iterative raw validation permits 100 nested containers below
+  the root; encoding checks output after codec work. These acceptance changes
+  do not provide pre-encoding allocation protection.
+  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
+
+- Adopt MongoDB driver v2.9.1 while retaining external BSON driver aliases;
+  driver network and GridFS operations remain outside the module's imported
+  package boundary.
 
 ### Documentation
+
+- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
+  CTAP 2.2 normative PDF and deterministic-CBOR profile.
 
 - Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
   module pins.
@@ -2535,9 +2635,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.2
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v2.0.0...HEAD
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
+[2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0
 
 ## Source: docs/dependencies.md
 
@@ -2992,14 +3092,17 @@ concepts.
 
 ## Mandatory Automation
 
-Every repository provides pinned-SHA workflows for CI, benchmarks, scheduled
-fuzzing, security, and tagged releases. CI tests Go 1.25.x as the supported
-minimum line and current stable Go. Dependency review runs on pull requests;
-reachable dependency scanning uses `govulncheck`.
+Wire uses an immutable reusable CI workflow for selected-module quality,
+benchmark, fuzz, and security gates. The supported minimum is Go 1.27.0,
+as declared in `go.mod` and the module manifest. Dependency review runs on
+pull requests; reachable dependency scanning uses `govulncheck`.
 
-The common Make interface is `format`, `format-check`, `test`,
-`test-race`, `coverage`, `vet`, `lint`, `fuzz`, `benchmark`,
-`safety`, `docs`, `vuln`, `check`, and semantic release targets.
+The current Make interface is `check`, `ci`, `cohesion`, `inventory`, and
+`repository-check`. Formatting, race, coverage, analyzer, fuzz, benchmark,
+and vulnerability checks are gates inside the library tool, not separate
+Make targets. A release rehearsal uses the manual CI input
+`release_dry_run`; tags do not automatically publish releases. Follow the
+[release guide](releasing.md) for guarded tagging and manual publication.
 
 The package family shares the `GO-SAFETY-1` baseline. It forbids `unsafe`,
 cgo, and `go:linkname` in production code and standardizes ownership,
@@ -3025,6 +3128,11 @@ repositories.
 ## Source: docs/specification-decisions.md
 
 # Wire Specification Decisions
+
+Version 2.0.0 implements the retained BSON-admission and diagnostic-privacy
+decisions. Prospective major-release wording in the rendered decision records
+refers to this v2 integration; their source bindings and decision hashes remain
+unchanged. Current adoption guidance is in [migration.md](migration.md).
 
 This register records observable choices where the supported wire-format
 specifications, Go codecs, dependency codecs, and package policy permit
@@ -3451,12 +3559,12 @@ Authority URL: https://raw.githubusercontent.com/msgpack/msgpack/8aa09e2a6a9180a
 
 </details>
 
-**Authoritative reference:** [MessagePack format specification](https://github.com/msgpack/msgpack/blob/8aa09e2a6a9180a49fc62ecfefe149f063cc5e4b/spec.md).
+**Authoritative reference:** [MessagePack format specification](https://raw.githubusercontent.com/msgpack/msgpack/8aa09e2a6a9180a49fc62ecfefe149f063cc5e4b/spec.md).
 
 - **Status, owner, and classification:** `resolved`; maintainers; MessagePack
   interoperability and defensive policy.
 - **Source and issue:** The pinned MessagePack
-  [format specification](https://github.com/msgpack/msgpack/blob/8aa09e2a6a9180a49fc62ecfefe149f063cc5e4b/spec.md)
+  [format specification](https://raw.githubusercontent.com/msgpack/msgpack/8aa09e2a6a9180a49fc62ecfefe149f063cc5e4b/spec.md)
   defines compact values, arbitrary map keys, extension identifiers, and
   multiple integer widths, but not duplicate-key resolution, Go assignment
   narrowing, application extension registries, or resource limits.
@@ -3537,7 +3645,7 @@ Additional authoritative source: `{"id":"ctap22-source","version":"CTAP 2.2 Prop
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-012","title":"BSON document identity, order, duplicates, and conversion","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"BSON 1.1","version":"BSON 1.1","source_authority":"bson11-source","section":"Complete grammar and type specification","requirement_strength":"not specified","issue":"BSON defines ordered typed documents but does not select duplicate-name handling, Go map determinism, or lossy target conversion policy.","interpretations":["Accept scalars and trailing bytes.","Use last-value maps.","Require one document and explicit ordered or compatibility representations."],"peer_behavior":"The maintained MongoDB Go driver preserves duplicate elements in ordered documents while the wrapper rejects them by default.","selected_behavior":"Require one complete top-level document, reject recursive duplicates by default, preserve official driver types, and expose lossy conversions only as options.","rationale":"Document identity and order must remain explicit and ambiguous duplicate data must not silently collapse.","security_consequences":"Declared length, terminator, trailing bytes, and duplicate names are validated before assignment.","resource_consequences":"Input and output remain bounded and forged lengths are rejected before large allocation.","compatibility_consequences":"Ordered D and raw forms remain stable while unordered M output is explicitly non-deterministic.","wire_consequences":"ObjectID string conversion, truncating doubles, integer minimization, and JSON tags are opt-in.","executable_evidence":["TestDecodeRejectsMalformedTrailingDuplicateAndScalarData","TestDecodeRejectsNestedDuplicateKeys","TestDecodeProvidesExplicitInteroperabilityOptions","TestRoundTripPreservesDecimalBinarySubtypeAndRegex","TestEncodeOrderedDocumentsAreDeterministic"],"fixture_evidence":["bsonwire/testdata/event.bson.hex"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["bsonwire.Decode","bsonwire.Encode","bsonwire.D","bsonwire.M"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The BSON 1.1 publication and maintained driver are monitored.","reconsider_when":"The BSON edition or official driver type model changes."}
+{"id":"WIRE-DEC-012","title":"BSON document identity, order, duplicates, and conversion","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"BSON 1.1","version":"BSON 1.1","source_authority":"bson11-source","section":"Complete grammar and type specification","requirement_strength":"not specified","issue":"BSON defines ordered typed documents but does not select duplicate-name handling, Go map determinism, or lossy target conversion policy.","interpretations":["Accept scalars and trailing bytes.","Use last-value maps.","Require one document and explicit ordered or compatibility representations."],"peer_behavior":"The maintained MongoDB Go driver preserves duplicate elements in ordered documents while the wrapper rejects them by default.","selected_behavior":"Require one top-level BSON document, validate every nested document, array, and CodeWithScope scope before decoding, reject duplicate document names by default, and enforce at most 100 raw nesting levels below the root.","rationale":"Document identity and order must remain explicit and ambiguous duplicate data must not silently collapse.","security_consequences":"Malformed nested structures and duplicate scope names fail before decoder callbacks. Duplicate opt-in does not disable structural validation; array indices must be consecutive from zero.","resource_consequences":"Raw structural traversal is iterative with at most 100 nesting levels. Accepted input bytes bound validation work; output quotas apply when the driver flushes and do not bound its buffering or custom codec work.","compatibility_consequences":"The next major release tightens nested validation and introduces a fixed 100-level raw nesting limit while preserving valid ordered D and raw representations and valid duplicate opt-in.","wire_consequences":"ObjectID string conversion, truncating doubles, integer minimization, and JSON tags are opt-in.","executable_evidence":["TestDecodeRejectsMalformedTrailingDuplicateAndScalarData","TestDecodeRejectsNestedDuplicateKeys","TestDecodeProvidesExplicitInteroperabilityOptions","TestRoundTripPreservesDecimalBinarySubtypeAndRegex","TestEncodeOrderedDocumentsAreDeterministic","TestCodeWithScopeDuplicatePolicy","TestMalformedNestedStructureRejectedBeforeDecoderCallback","TestRawStructureNestingBoundary"],"fixture_evidence":["bsonwire/testdata/event.bson.hex"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["bsonwire.Decode","bsonwire.Encode","bsonwire.D","bsonwire.M","bsonwire.DefaultMaxNestedLevels"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The BSON 1.1 publication and maintained driver are monitored.","reconsider_when":"The BSON edition or official driver type model changes."}
 ```
 
 Authority URL: https://bsonspec.org/spec.html
@@ -3561,7 +3669,13 @@ Authority URL: https://bsonspec.org/spec.html
   the selected behavior below.
   APIs require exactly one complete
   top-level document whose declared length and terminator validate. Recursive
-  duplicate names fail by default with explicit compatibility opt-in.
+  duplicate names, including scope names, fail by default with explicit
+  compatibility opt-in. Structural validation remains enabled with that opt-in.
+  Iterative traversal checks each document, array, and CodeWithScope scope before
+  decoding, with at most 100 nesting levels below the root and consecutive array
+  indices. These acceptance changes are pending the next major release.
+  Encoding validates serialized output after codec work; raw validation does not
+  bound driver buffering or trusted custom codec work.
   Official driver types are re-exported rather than copied. Struct, `D`, and
   raw order are stable; `M` map order is explicitly not deterministic.
   ObjectID-as-string and truncating-double conversion, integer-width
@@ -3569,6 +3683,9 @@ Authority URL: https://bsonspec.org/spec.html
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestDecodeRejectsMalformedTrailingDuplicateAndScalarData`,
   `TestDecodeRejectsNestedDuplicateKeys`,
+  `TestCodeWithScopeDuplicatePolicy`,
+  `TestMalformedNestedStructureRejectedBeforeDecoderCallback`,
+  `TestRawStructureNestingBoundary`,
   `TestDecodeProvidesExplicitInteroperabilityOptions`,
   `TestRoundTripPreservesDecimalBinarySubtypeAndRegex`, and
   `TestEncodeOrderedDocumentsAreDeterministic` cover `bsonwire`. Reconsider on
@@ -3620,7 +3737,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8949.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is and errors.As causes without echoing complete payloads.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Complete payloads and tested sensitive values are not included in errors.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"Stable sentinels and typed errors remain usable across dependency error-shape changes.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
+{"id":"WIRE-DEC-014","title":"Error classification, causes, and disclosure","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"Go 1.26.6 errors package contract","version":"Go 1.26.6","source_authority":"go-errors-source","section":"src/errors and errors wrapping contract","requirement_strength":"not specified","issue":"Codec errors mix syntax, conversion, limits, targets, protocol faults, and raw diagnostics without a shared stable package taxonomy.","interpretations":["Return codec errors directly.","Expose only sentinels.","Wrap bounded causes in a stable cross-format taxonomy."],"peer_behavior":"Maintained-peer diagnostic disclosure has not been assessed as a portable contract.","selected_behavior":"Classify stable error kinds while preserving errors.Is, errors.As, original causes, and diagnostic fields; ordinary wire and SOAP fault error strings render classifications only.","rationale":"Callers need actionable classification without coupling to dependency text or leaking attacker-controlled data.","security_consequences":"Default error text does not render diagnostic fields, wrapped causes, peer-controlled names, or SOAP fault values. Explicit field dumps and cause formatting require application redaction.","resource_consequences":"Error construction does not add unbounded copies of input data.","compatibility_consequences":"The next major release changes error text while retaining stable sentinels, typed fields, original causes, and valid parsing behavior.","wire_consequences":"Valid SOAP faults remain protocol outcomes rather than malformed input.","executable_evidence":["TestErrorKindsMatchTheirSentinels","TestErrorSupportsClassificationAndWrapping","TestDecodeErrorsDoNotEchoSensitiveValues","TestDefaultDiagnosticTextPreservesInspectableCause","TestParserDiagnosticNamesArePrivate","TestParserReaderDiagnosticsArePrivateAndInspectable","TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["Error","ErrorKind","FaultError","All exported error sentinels"],"documentation":["docs/specification-decisions.md","docs/api.md"],"upstream_status":"The Go 1.26.6 errors contract and release stream are pinned and monitored.","reconsider_when":"A dependency error shape or disclosure boundary changes."}
 ```
 
 Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go1.26.6
@@ -3643,14 +3760,19 @@ Authority URL: https://api.github.com/repos/golang/go/contents/src/errors?ref=go
   `wire.Error` classifies parse,
   validation, target, unsupported, envelope, SOAP fault, size, encode, and
   write outcomes with format and operation. `errors.Is` and `errors.As` retain
-  stable classification and useful causes. The package does not echo complete
-  payloads or the tested sensitive values; callers must still treat field names
-  and small offending lexemes as potentially sensitive. Valid SOAP faults are
-  protocol outcomes, not malformed input.
+  stable classification, original causes, and inspectable fields. Pending the
+  next major release, ordinary wire and SOAP fault text renders classifications
+  only. Explicit field dumps and cause formatting require application redaction.
+  Valid SOAP faults remain protocol outcomes with their code and reason retained
+  in structured fields, not malformed input.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestErrorKindsMatchTheirSentinels`,
   `TestErrorSupportsClassificationAndWrapping`,
-  `TestDecodeErrorsDoNotEchoSensitiveValues`, and SOAP fault tests cover
+  `TestDecodeErrorsDoNotEchoSensitiveValues`,
+  `TestDefaultDiagnosticTextPreservesInspectableCause`,
+  `TestParserDiagnosticNamesArePrivate`,
+  `TestParserReaderDiagnosticsArePrivateAndInspectable`, and
+  `TestParsedSOAPFaultDiagnosticsArePrivateAndInspectable` cover
   `Error`, sentinels, and `FaultError`. Reconsider whenever a dependency error
   shape or disclosure boundary changes.
 

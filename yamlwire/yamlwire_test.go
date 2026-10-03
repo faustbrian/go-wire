@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/yamlwire"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/yamlwire"
 	"go.yaml.in/yaml/v4"
 )
 

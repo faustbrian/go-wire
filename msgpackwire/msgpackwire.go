@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/internal/outputlimit"
-	"github.com/faustbrian/go-wire/internal/valuecheck"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v2/internal/valuecheck"
 	"github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
 )

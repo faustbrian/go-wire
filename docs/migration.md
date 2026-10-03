@@ -1,9 +1,59 @@
 # Migration notes
 
-## Version 1 compatibility
+## From v1 to v2
 
-The module follows stable v1 compatibility. Pin a released version, keep the
+Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
+all codec imports to `github.com/faustbrian/go-wire/v2`. Update related imports
+in one change: v1 and v2 errors and sentinels have distinct Go identities.
+Existing v1 consumers remain on their selected version until deliberately
+migrated; this release does not migrate other repositories.
+
+Ordinary wire and SOAP fault text is categorical. Inspect `*wire.Error`, its
+wrapped cause, and `*soap.FaultError` fields for trusted diagnostics instead of
+matching old diagnostic strings. Existing classification and cause inspection
+remain available within the selected major module.
+
+Built-in XML and SOAP charset conversion enforces raw-input byte quotas and
+rejects unsupported or overlong labels before reading. Use
+`xmlwire.CharsetReaderWithLimit` for an explicit quota; custom callbacks and
+reader responsiveness remain caller-owned. Conversion can expand output.
+
+BSON validates nested documents, arrays and CodeWithScope scopes before decoder
+callbacks, including with duplicate-key opt-in. Supply consecutive array indices
+and at most 100 nested containers below the root. Encoding validates structure
+after codec work; this is not pre-encoding allocation protection.
+
+YAML scalar values, explicit mapping keys and quoted continuations retain their
+authored content. Emitted block indicators can change to preserve those values;
+encoded bytes are not promised to be identical across released versions.
+
+## Version 2 compatibility
+
+The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
+
+## Pending v2 charset boundary
+
+Version 2 charset hardening changes admission and default quotas, not
+a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
+most 1 MiB of raw input and labels at most 64 bytes, and return categorical
+diagnostics. Use `CharsetReaderWithLimit` for a deliberate larger finite raw
+input quota; zero selects the default and negative limits are invalid.
+Use `errors.Is` to inspect retained reader causes rather than parsing text.
+XML and SOAP built-in callbacks follow their configured raw-input quotas;
+UTF-8 conversion may expand that input up to threefold. Custom callbacks and
+reader cancellation remain application responsibilities.
+
+## Pending v2 BSON structure boundary
+
+BSON validation now includes CodeWithScope scope documents and all nested
+document/array boundaries, including when duplicate keys are explicitly allowed.
+Arrays require consecutive zero-based indices. Raw nesting is limited to 100
+containers below the root; documents, arrays, and scopes each add one level.
+Malformed structure fails before decoder callbacks. This acceptance change is
+part of version 2. Encoding validates serialized output afterward;
+driver buffering, pre-encoding resource limits, and custom-codec work are separate
+boundaries, not protected by this raw traversal limit.
 
 ## From direct `encoding/json`
 
@@ -138,8 +188,14 @@ are opt-in compatibility choices.
 
 ## Error mapping
 
+Pending next-major behavior: `wire.Error.Error()` renders only classification,
+and `soap.FaultError.Error()` renders `soap fault`. Format, operation, original
+causes, and SOAP fault fields remain inspectable; `errors.Is` and `errors.As`
+contracts are unchanged. Replace assumptions about contextual error text before
+adopting that major version. Released v1 retains its existing text behavior.
+
 Do not match message strings. Replace legacy string checks with `errors.Is` and
-`errors.As`. Preserve the underlying cause only for diagnostic logging and do
+`errors.As`. Preserve the underlying cause only for redacted diagnostic logging and do
 not return it to untrusted clients without review. Discard a decode target
 after any error because reflection codecs may have assigned fields before a
 later failure.

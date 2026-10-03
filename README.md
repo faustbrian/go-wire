@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -16,7 +16,7 @@ write APIs.
 
 ## Status
 
-The package has a stable v1 API. Supported format behavior is fixture-backed, fuzzed,
+The package has a stable v2 API. Supported format behavior is fixture-backed, fuzzed,
 benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
@@ -26,12 +26,12 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 Import format packages explicitly, such as
-`github.com/faustbrian/go-wire/jsonwire` or
-`github.com/faustbrian/go-wire/soap`.
+`github.com/faustbrian/go-wire/v2/jsonwire` or
+`github.com/faustbrian/go-wire/v2/soap`.
 
 ## Quickstart
 
@@ -82,7 +82,7 @@ Support guidance is in [SUPPORT.md](SUPPORT.md), and release history is
 maintained in [CHANGELOG.md](CHANGELOG.md).
 
 For ecosystem-wide selection and ownership guidance, see the versioned
-[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/README.md)
+[Golib ecosystem index](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem)
 and its [Integration and data movement family](https://github.com/faustbrian/go-library-tools/blob/v1.4.0/docs/ecosystem/design-language.md#package-families-and-selection).
 
 ## Development

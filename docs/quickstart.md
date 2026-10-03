@@ -2,10 +2,10 @@
 
 ## Install
 
-Install the stable v1 release:
+Install the stable v2 release:
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 The module supports Go 1.27.0 and newer. The

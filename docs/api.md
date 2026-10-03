@@ -27,7 +27,9 @@ source.
   sentinels for `errors.Is`.
 - `type Error struct { Kind ErrorKind; Format Format; Op string; Err error }`
   carries structured context.
-- `(*Error).Error() string` renders a stable contextual message.
+- `(*Error).Error() string` renders only the stable classification. `Format`,
+  `Op`, and `Err` remain inspectable trusted diagnostics and may contain peer
+  data. Version 2 uses typed fields and cause inspection instead of diagnostic text.
 - `(*Error).Is(error) bool` matches the sentinel for `Kind` or an underlying
   cause.
 - `(*Error).Unwrap() error` returns the underlying cause.
@@ -70,7 +72,14 @@ source.
 - `EncodeWriter(io.Writer, any, EncodeOptions) error` writes the same complete
   XML document.
 - `CharsetReader(string, io.Reader) (io.Reader, error)` converts UTF-8,
-  US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8.
+  US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8 with a 1 MiB raw-input quota.
+- `CharsetReaderWithLimit(string, io.Reader, int64) (io.Reader, error)` selects
+  an inclusive raw-input quota; zero uses 1 MiB and negative values are invalid.
+  Both helpers reject labels over 64 bytes before normalization and unsupported
+  labels before reading. UTF-8 conversion can expand accepted input up to three
+  times its raw size. Errors are categorical; wrapped reader causes remain
+  trusted diagnostics. XML and SOAP default callbacks use their configured
+  input quotas. Custom callbacks and blocking readers remain caller-owned.
 
 ## Package `soap`
 
@@ -115,9 +124,10 @@ source.
 - `FaultReason` contains a SOAP 1.2 `Language` and `Text` pair.
 - `Fault` contains `Version`, `Code`, `Subcodes`, `Reason`, `Reasons`, `Actor`,
   `Node`, `Role`, `Detail`, and `Raw`.
-- `FaultError` carries a `Fault`, formats its code/reason, and unwraps to the
+- `FaultError` carries a `Fault`, renders a categorical message, and unwraps to the
   shared SOAP fault classification.
-- `(*FaultError).Error() string` renders the fault code and optional reason.
+- `(*FaultError).Error() string` renders `soap fault`; code and reason remain
+  available through the structured `Fault` field.
 - `(*FaultError).Unwrap() error` exposes a `wire.Error` classified as
   `wire.ErrSOAPFault`.
 - `MarshalFault(Fault) ([]byte, error)` validates and emits a complete SOAP
@@ -184,6 +194,13 @@ source.
   CBOR data item. Duplicate keys are always rejected.
 
 ## Package `bsonwire`
+
+Version 2 raw validation permits at most 100 nested
+documents, arrays, or CodeWithScope scope documents below the root (depth zero),
+even with duplicate-key opt-in. Array indices must be consecutive from zero;
+malformed nested structure fails before decoder callbacks. `DefaultMaxNestedLevels`
+identifies this fixed raw-validation limit. Encoders validate serialized output
+after codec work; this is not a pre-encoding allocation or callback-work bound.
 
 - `DefaultMaxBytes` is 1 MiB and `ErrPayloadTooLarge` identifies byte-limit
   failures.

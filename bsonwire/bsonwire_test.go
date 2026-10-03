@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/bsonwire"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/bsonwire"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

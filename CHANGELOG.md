@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
 
-## [1.0.2] - 2026-10-03
+## [2.0.0] - 2026-10-03
 
 ### Fixed
 
@@ -90,11 +90,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Adopt MongoDB driver v2.9.1 while retaining the existing BSON API and
-  codec behavior; driver network and GridFS operations remain outside
-  the module's imported package boundary.
+- Publish the major module as `github.com/faustbrian/go-wire/v2`. Update all
+  Wire imports together; v1 and v2 error types and sentinels are distinct.
+
+- Harden XML and SOAP built-in charset conversion with bounded raw input and
+  labels, pre-read allowlist rejection, and private categorical diagnostics.
+  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. Custom charset callbacks remain caller-owned.
+
+- Make shared wire errors and SOAP fault errors render categorical text only,
+  retaining original diagnostic fields, causes, and error classification.
+  Use typed causes and fault fields instead of previous diagnostic text.
+  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
+
+- Validate nested BSON structure and CodeWithScope scopes before decoding,
+  retain structural checks with duplicate-key opt-in, and require consecutive
+  array indices. Iterative raw validation permits 100 nested containers below
+  the root; encoding checks output after codec work. These acceptance changes
+  do not provide pre-encoding allocation protection.
+  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
+
+- Adopt MongoDB driver v2.9.1 while retaining external BSON driver aliases;
+  driver network and GridFS operations remain outside the module's imported
+  package boundary.
 
 ### Documentation
+
+- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
+  CTAP 2.2 normative PDF and deterministic-CBOR profile.
 
 - Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
   module pins.
@@ -337,6 +359,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.2
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v2.0.0...HEAD
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
+[2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0

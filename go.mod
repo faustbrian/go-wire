@@ -1,4 +1,4 @@
-module github.com/faustbrian/go-wire
+module github.com/faustbrian/go-wire/v2
 
 go 1.27.0
 

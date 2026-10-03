@@ -3,10 +3,36 @@ package soap
 import (
 	"bytes"
 	"errors"
+	"io"
+	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/xmlwire"
 )
+
+func TestDefaultCharsetReaderUsesParseQuota(t *testing.T) {
+	decoder := decoderFor(nil, ParseOptions{MaxBytes: 3})
+	if _, err := decoder.CharsetReader("ascii", strings.NewReader("1234")); !errors.Is(err, xmlwire.ErrPayloadTooLarge) {
+		t.Fatalf("configured callback quota: %v", err)
+	}
+	reader, err := decoder.CharsetReader("cp1252", strings.NewReader("\x80\x80\x80"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := io.ReadAll(reader)
+	if err != nil || string(got) != "€€€" {
+		t.Fatalf("raw-byte inclusive quota: %q, %v", got, err)
+	}
+	called := false
+	custom := decoderFor(nil, ParseOptions{MaxBytes: 1, CharsetReader: func(_ string, input io.Reader) (io.Reader, error) {
+		called = true
+		return input, nil
+	}})
+	if _, err := custom.CharsetReader("vendor", strings.NewReader("1234")); err != nil || !called {
+		t.Fatal("custom callback changed")
+	}
+}
 
 func TestExceedsLimitHonorsExactBoundary(t *testing.T) {
 	t.Parallel()

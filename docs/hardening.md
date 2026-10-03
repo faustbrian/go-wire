@@ -1,7 +1,7 @@
 # Security and interoperability hardening audit
 
 Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-published its stable v1 contract. This report distinguishes format
+prepares its stable v2 contract. This report distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -94,15 +94,15 @@ non-pointer values for every decoder.
   <https://www.w3.org/TR/soap12-part1/>
 - YAML 1.2.2: <https://yaml.org/spec/1.2.2/>
 - TOML 1.0.0: <https://toml.io/en/v1.0.0>
-- MessagePack: <https://github.com/msgpack/msgpack/blob/master/spec.md>
+- MessagePack: <https://raw.githubusercontent.com/msgpack/msgpack/master/spec.md>
 - CBOR: <https://www.rfc-editor.org/rfc/rfc8949.html>
 - BSON 1.1: <https://bsonspec.org/spec.html>
 - Go I/O contracts: <https://pkg.go.dev/io>
 
 ## Release verdict
 
-The package is now available as stable v1.0.0. The current module requires Go
-1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+The current release preparation targets v2.0.0. The current module requires Go
+1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller
 responsibilities are explicit in the findings and format matrix; no stronger

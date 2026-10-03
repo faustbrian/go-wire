@@ -3,7 +3,6 @@ package wire
 import (
 	"errors"
 	"fmt"
-	"strings"
 )
 
 // ErrorKind classifies a failure independently of its underlying cause.
@@ -41,24 +40,13 @@ type Error struct {
 	Err    error
 }
 
-// Error returns a stable, human-readable description of the failure.
+// Error returns a stable classification without rendering diagnostic fields
+// or the underlying cause, which may contain untrusted wire data.
 func (e *Error) Error() string {
-	parts := []string{"wire"}
-	context := strings.TrimSpace(strings.Join([]string{string(e.Format), e.Op}, " "))
-	if context != "" {
-		parts = append(parts, context)
-	}
 	if kindErr := sentinelForKind(e.Kind); kindErr != nil {
-		parts = append(parts, kindErr.Error())
+		return "wire: " + kindErr.Error()
 	}
-	if e.Err != nil {
-		parts = append(parts, e.Err.Error())
-	}
-	if len(parts) == 1 {
-		parts = append(parts, "failure")
-	}
-
-	return strings.Join(parts, ": ")
+	return "wire: failure"
 }
 
 // Unwrap returns the underlying format-specific failure, if any.

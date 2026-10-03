@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/internal/outputlimit"
-	"github.com/faustbrian/go-wire/internal/valuecheck"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v2/internal/valuecheck"
 	"go.yaml.in/yaml/v4"
 	"go.yaml.in/yaml/v4/plugin/limit"
 )
