@@ -2207,10 +2207,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
-  as parse errors instead of panicking. Comparable keys and the default
-  prohibition on tags remain unchanged.
-
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
@@ -2276,6 +2272,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
+
+## [1.0.2] - 2026-10-03
+
+### Fixed
+
+- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
+  as parse errors instead of panicking. Comparable keys and the default
+  prohibition on tags remain unchanged.
+
+### Changed
+
+- Adopt MongoDB driver v2.9.1 while retaining the existing BSON API and
+  codec behavior; driver network and GridFS operations remain outside
+  the module's imported package boundary.
+
+### Documentation
+
+- Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
+  module pins.
 
 ## [1.0.0] - 2026-08-25
 
@@ -2515,7 +2530,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.2
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
 
 ## Source: docs/dependencies.md
@@ -2531,8 +2547,8 @@ than incomplete local parsers.
 | YAML | `go.yaml.in/yaml/v4 v4.0.0-rc.6` | Official YAML organization implementation with duplicate-key handling, multi-document loading, and alias/depth limit plugins | v4 is the actively maintained line; v1-v3 are frozen except for security fixes. The release-candidate pin is a residual API risk tracked through Dependabot and the quality gate. `wire` adds explicit block-scalar indentation because rc.6 can emit tab-leading multiline scalars that its scanner rejects when indentation is implicit. |
 | TOML | `github.com/BurntSushi/toml v1.6.0` | Mature TOML parser/encoder with metadata for unknown fields and native datetime/numeric conversion | Stable tagged module with a small dependency surface. It documents TOML 1.1 compatibility; wire's contract remains the tested subset described in the format matrix. Duplicate keys and malformed trailing text are rejected by its parser. |
 | MessagePack | `github.com/vmihailenco/msgpack/v5 v5.4.1` | Mature v5 codec with timestamps, extension support, sorted maps, and stream APIs | Widely deployed stable major version, but older than the other binary codecs and without native structural limit options. `wire` adds bounded structural preflight and recursive numeric-fit validation because collection traversal and narrow integer methods otherwise rely directly on encoded structure and Go casts. The shamaton alternative was rejected because its v3 decoder has a published unfixed panic vulnerability. |
-| CBOR | `github.com/fxamacker/cbor/v2 v2.9.2` | Fuzzed RFC 8949 implementation with immutable encode/decode modes and explicit duplicate, tag, deterministic, and resource options | Active tagged releases, extensive fuzzing, and published security assessment history. `github.com/x448/float16` is its sole runtime helper. |
-| BSON | `go.mongodb.org/mongo-driver/v2 v2.8.0` | Official MongoDB BSON implementation and canonical ObjectID, datetime, raw document, and registry types | Actively maintained official stable driver. Only the BSON package is imported; network/client behavior is not part of `wire`. |
+| CBOR | `github.com/fxamacker/cbor/v2 v2.9.4` | Fuzzed RFC 8949 implementation with immutable encode/decode modes and explicit duplicate, tag, deterministic, and resource options | Active tagged releases, extensive fuzzing, and published security assessment history. `github.com/x448/float16` is its sole runtime helper. |
+| BSON | `go.mongodb.org/mongo-driver/v2 v2.9.1` | Official MongoDB BSON implementation and canonical ObjectID, datetime, raw document, and registry types | Actively maintained official stable driver. Only the BSON package is imported; network/client behavior is not part of `wire`. |
 
 All versions are pinned in `go.mod` and checksummed in `go.sum`. Dependabot,
 `govulncheck`, scheduled fuzzing, and the release gate monitor changes. A local

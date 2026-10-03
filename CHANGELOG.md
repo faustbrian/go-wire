@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
-  as parse errors instead of panicking. Comparable keys and the default
-  prohibition on tags remain unchanged.
-
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
@@ -78,6 +74,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
+
+## [1.0.2] - 2026-10-03
+
+### Fixed
+
+- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
+  as parse errors instead of panicking. Comparable keys and the default
+  prohibition on tags remain unchanged.
+
+### Changed
+
+- Adopt MongoDB driver v2.9.1 while retaining the existing BSON API and
+  codec behavior; driver network and GridFS operations remain outside
+  the module's imported package boundary.
+
+### Documentation
+
+- Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
+  module pins.
 
 ## [1.0.0] - 2026-08-25
 
@@ -317,5 +332,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.2
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
