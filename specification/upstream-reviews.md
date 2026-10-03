@@ -5,6 +5,33 @@ by [`monitoring.json`](monitoring.json). A monitoring digest changes only after
 the corresponding upstream delta has been classified against the applicable
 specification decisions.
 
+## 2026-10-02: CTAP releases feed
+
+- **Authority:** `ctap-releases`
+- **URL:** https://fidoalliance.org/feed/
+- **Previous SHA-256:**
+  `8b539b1252ecceed1592f978e6087c8e1d45235c16bdd34db3ba63c219e74d51`
+- **Reviewed SHA-256:**
+  `ddbe77379f2fb0235776506ac81de20365f2a0c2604e0633dc9c8a1d2c3686fb`
+- **Retrieved and reviewed:** 2026-10-02
+- **Applicability:** `WIRE-DEC-011` directly; `WIRE-DEC-001` as source inventory
+- **Disposition:** Behavior-neutral for the selected CTAP 2.2 CBOR profile.
+
+The current general-news feed contains 99 items and was built on 2026-09-28.
+Newer items cover Wi-Fi onboarding, payment passkeys, agentic trust and other
+deployment news. Its CTAP-related mentions are not replacements for the dated
+normative publication. This is a publication-date and current-content review;
+the previous feed body is unavailable for a byte-for-byte comparison.
+
+The selected CTAP 2.2 Proposed Standard PDF dated 2025-07-14 was retrieved
+again and retains SHA-256
+`2ef853c63fd0835e609e16fbe6a7fcd5965fd6a21d86752f46df54c5cfb81f73`.
+No normative source, supported profile, codec dependency or decision binding
+changes. The general-news monitor is not a complete specification-release
+inventory; replacing it with a specification-specific authority remains a
+separate maintenance task. Reconsider if the selected normative source or the
+documented supported profile changes.
+
 ## 2026-09-09: RFC 9110 errata
 
 - **Authority:** `rfc9110-errata`

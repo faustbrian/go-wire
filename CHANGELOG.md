@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Validate nested BSON structure and CodeWithScope scopes before decoding,
+  retain structural checks with duplicate-key opt-in, and require consecutive
+  array indices. Iterative raw validation permits 100 nested containers below
+  the root; encoding checks output after codec work. These acceptance changes
+  are pending the next major release, not pre-encoding allocation protection.
+  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
+
+- Make shared wire errors and SOAP fault errors render categorical text only,
+  retaining original diagnostic fields, causes, and error classification.
+  This incompatible text change is pending the next major release.
+  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
+
+- Harden XML and SOAP built-in charset conversion with bounded raw input and
+  labels, pre-read allowlist rejection, and private categorical diagnostics.
+  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. This incompatible
+  behavior is pending integration into the next major release.
+
 - Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
   as parse errors instead of panicking. Comparable keys and the default
   prohibition on tags remain unchanged.
@@ -24,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
+
+- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
+  CTAP 2.2 normative PDF and deterministic-CBOR profile.
 
 - Record reported RFC 9110 Errata ID 9164 as behavior-neutral because HTTP
   grammar remains caller-owned policy, while retaining the prior Errata ID
