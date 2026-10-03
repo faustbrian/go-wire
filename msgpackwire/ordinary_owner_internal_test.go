@@ -27,6 +27,12 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			storage, preparation, comparisons int64
 			supported, fits                   bool
 		}{
+			{reflect.TypeFor[int](), 0, 1, 1, 0, true, false},
+			{reflect.TypeFor[int](), 1, 1, 1, 0, true, true},
+			// Empty child arrays require no storage; the two outer tuple slots
+			// still contribute preparation and comparison units.
+			{reflect.TypeFor[[2][0]int](), 1, 0, 0, 0, true, false},
+			{reflect.TypeFor[[2][0]int](), 2, 0, 2, 2, true, true},
 			{reflect.TypeFor[[1]int](), 0, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2]int](), 1, 0, 0, 0, true, false},
 			{reflect.TypeFor[[2]int](), 3, 0, 0, 0, true, false},
@@ -49,6 +55,7 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			work, remaining int64
 			reject          bool
 		}{
+			{reflect.TypeFor[[0]int](), 2, 0, 0, false},
 			{reflect.TypeFor[[1]struct{ Value int }](), 1, 2, 2, false},
 			{reflect.TypeFor[[2]int](), 1, 3, 3, true},
 			{reflect.TypeFor[[1]int](), 2, 5, 5, true},
