@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Determine recursive MessagePack key projection support before preparing
+  reflected values or tuples. Unsupported components retain driver-owned
+  decoding instead of uncharged projection preparation.
+
+- Admit aggregate MessagePack values and conservative raw/projected key work
+  before generic materialization, with finite inclusive decode defaults and
+  expanded built-in array-key preparation accounting. Limit refusal preserves
+  the destination and does not invoke destination codecs. New option fields
+  require keyed-literal migration and acceptance tightening in the next major
+  release; final driver allocations and cancellation remain separate work.
+
+- Reject built-in MessagePack destination map-key collisions before decoding
+  into the target, including numeric-width and string/binary projections in
+  known map and unambiguous field shapes. Explicit duplicate-key opt-in remains
+  last-key-wins. This acceptance tightening is pending the next major release;
+  opaque codecs and ambiguous struct projections remain separate boundaries.
+
 - Validate nested BSON structure and CodeWithScope scopes before decoding,
   retain structural checks with duplicate-key opt-in, and require consecutive
   array indices. Iterative raw validation permits 100 nested containers below

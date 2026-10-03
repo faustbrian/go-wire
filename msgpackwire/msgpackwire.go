@@ -27,6 +27,10 @@ const (
 	DefaultMaxArrayElements = 128 << 10
 	// DefaultMaxMapPairs bounds allocation amplification from maps.
 	DefaultMaxMapPairs = 64 << 10
+	// DefaultMaxTotalValues bounds aggregate containers, keys and values.
+	DefaultMaxTotalValues = 256 << 10
+	// DefaultMaxKeyComparisonWork bounds conservative key-comparison units.
+	DefaultMaxKeyComparisonWork = 8 << 20
 )
 
 // ErrPayloadTooLarge identifies MessagePack objects over the byte limit.
@@ -34,10 +38,17 @@ var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 
 // DecodeOptions controls MessagePack decoding and integer interoperability.
 type DecodeOptions struct {
-	MaxBytes               int64
-	MaxNestedLevels        int
-	MaxArrayElements       int
-	MaxMapPairs            int
+	MaxBytes         int64
+	MaxNestedLevels  int
+	MaxArrayElements int
+	MaxMapPairs      int
+	// MaxTotalValues counts every container, scalar, key and value once.
+	// Zero selects DefaultMaxTotalValues; negative values are invalid.
+	MaxTotalValues int
+	// MaxKeyComparisonWork bounds conservative examined-byte/value units,
+	// including supported expanded array-key preparation. Zero selects the
+	// default; negative values are invalid. This is not a CPU or heap quota.
+	MaxKeyComparisonWork   int64
 	AllowDuplicateKeys     bool
 	DisallowUnknownFields  bool
 	NormalizeNumericWidths bool
@@ -68,7 +79,8 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err != nil {
 		return err
 	}
-	if err := validateMessagePackStructure(payload, options); err != nil {
+	budget := newAdmissionBudget(options)
+	if err := validateMessagePackStructure(payload, options, budget); err != nil {
 		kind := wire.ErrorKindParse
 		if errors.Is(err, errStructuralLimit) {
 			kind = wire.ErrorKindSizeLimit
@@ -78,10 +90,13 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	decoder := msgpack.NewDecoder(bytes.NewReader(payload))
 	decoder.DisallowUnknownFields(options.DisallowUnknownFields)
 	decoder.UseLooseInterfaceDecoding(options.NormalizeNumericWidths)
-	if err := validateNumericPayload(payload, target, options.AllowDuplicateKeys); err != nil {
+	if err := validateNumericPayload(payload, target, options, budget); err != nil {
 		kind := wire.ErrorKindValidation
 		if errors.Is(err, errDuplicateKey) {
 			kind = wire.ErrorKindParse
+		}
+		if errors.Is(err, errStructuralLimit) {
+			kind = wire.ErrorKindSizeLimit
 		}
 		return wrap(kind, "decode", err)
 	}
@@ -105,6 +120,10 @@ func validateOptions(options DecodeOptions) error {
 		return errors.New("max array elements must not be negative")
 	case options.MaxMapPairs < 0:
 		return errors.New("max map pairs must not be negative")
+	case options.MaxTotalValues < 0:
+		return errors.New("max total values must not be negative")
+	case options.MaxKeyComparisonWork < 0:
+		return errors.New("max key comparison work must not be negative")
 	default:
 		return nil
 	}
@@ -197,12 +216,16 @@ func classifyDecodeError(err error, target any) error {
 	return wrap(wire.ErrorKindValidation, "decode", err)
 }
 
-func validateMessagePackStructure(payload []byte, options DecodeOptions) error {
-	decoder := msgpack.NewDecoder(bytes.NewReader(payload))
+func validateMessagePackStructure(payload []byte, options DecodeOptions, budget *admissionBudget) error {
+	reader := bytes.NewReader(payload)
+	decoder := msgpack.NewDecoder(reader)
 	limits := structuralLimits{
 		maxNestedLevels:  defaultLimit(options.MaxNestedLevels, DefaultMaxNestedLevels),
 		maxArrayElements: defaultLimit(options.MaxArrayElements, DefaultMaxArrayElements),
 		maxMapPairs:      defaultLimit(options.MaxMapPairs, DefaultMaxMapPairs),
+		reader:           reader,
+		budget:           budget,
+		allowDuplicates:  options.AllowDuplicateKeys,
 	}
 	if err := validateMessagePackValue(decoder, limits, 0); err != nil {
 		return err
@@ -217,6 +240,9 @@ type structuralLimits struct {
 	maxNestedLevels  int
 	maxArrayElements int
 	maxMapPairs      int
+	reader           *bytes.Reader
+	budget           *admissionBudget
+	allowDuplicates  bool
 }
 
 func defaultLimit(configured, fallback int) int {
@@ -227,6 +253,11 @@ func defaultLimit(configured, fallback int) int {
 }
 
 func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits, depth int) error {
+	if limits.budget != nil {
+		if err := limits.budget.visit(); err != nil {
+			return err
+		}
+	}
 	code, err := decoder.PeekCode()
 	if err != nil {
 		return err
@@ -260,11 +291,30 @@ func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits,
 		if depth+1 > limits.maxNestedLevels {
 			return fmt.Errorf("%w: nesting exceeds %d levels", errStructuralLimit, limits.maxNestedLevels)
 		}
+		var keyWeight int64
 		for range length {
+			var beforeBytes, beforeValues int
+			if limits.budget != nil && !limits.allowDuplicates && length > 1 {
+				beforeBytes, beforeValues = limits.reader.Len(), limits.budget.values
+			}
 			if err := validateMessagePackValue(decoder, limits, depth+1); err != nil {
 				return err
 			}
+			if limits.budget != nil && !limits.allowDuplicates && length > 1 {
+				span := int64(beforeBytes - limits.reader.Len())
+				nodes := int64(beforeValues - limits.budget.values)
+				weight, err := accumulateKeyWeight(limits.budget.work, keyWeight, span, nodes)
+				if err != nil {
+					return err
+				}
+				keyWeight = weight
+			}
 			if err := validateMessagePackValue(decoder, limits, depth+1); err != nil {
+				return err
+			}
+		}
+		if limits.budget != nil && !limits.allowDuplicates && length > 1 {
+			if err := limits.budget.reserveMap(length, keyWeight); err != nil {
 				return err
 			}
 		}
@@ -273,7 +323,15 @@ func validateMessagePackValue(decoder *msgpack.Decoder, limits structuralLimits,
 	return decoder.Skip()
 }
 
-func validateNumericPayload(payload []byte, target any, allowDuplicateKeys bool) error {
+func accumulateKeyWeight(work, accumulated, span, nodes int64) (int64, error) {
+	remaining := work - accumulated
+	if span > remaining || nodes > (remaining-span)/4 {
+		return accumulated, errStructuralLimit
+	}
+	return accumulated + span + 4*nodes, nil
+}
+
+func validateNumericPayload(payload []byte, target any, options DecodeOptions, budget *admissionBudget) error {
 	decoder := msgpack.NewDecoder(bytes.NewReader(payload))
 	decoder.SetMapDecoder(func(decoder *msgpack.Decoder) (any, error) {
 		return decodeNumericMap(decoder)
@@ -282,12 +340,18 @@ func validateNumericPayload(payload []byte, target any, allowDuplicateKeys bool)
 	if err := decoder.Decode(&source); err != nil {
 		return nil //nolint:nilerr // the main decoder owns syntax errors
 	}
-	if !allowDuplicateKeys {
+	if !options.AllowDuplicateKeys {
 		if err := rejectDuplicateKeys(source); err != nil {
 			return err
 		}
 	}
-	return validateNumericFit(source, reflect.TypeOf(target))
+	if err := validateNumericFit(source, reflect.TypeOf(target)); err != nil {
+		return err
+	}
+	if !options.AllowDuplicateKeys {
+		return rejectProjectedKeys(source, reflect.TypeOf(target), options.NormalizeNumericWidths, budget)
+	}
+	return nil
 }
 
 func rejectDuplicateKeys(source any) error {
