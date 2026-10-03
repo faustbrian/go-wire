@@ -57,11 +57,16 @@ func TestOrdinaryAdmissionOwners(t *testing.T) {
 			work, remaining int64
 			reject          bool
 		}{
+			{reflect.TypeFor[[1]int](), 0, 0, 0, false},
+			{reflect.TypeFor[int](), 2, 0, 0, false},
 			{reflect.TypeFor[[0]int](), 2, 0, 0, false},
 			{reflect.TypeFor[[1]struct{ Value int }](), 1, 2, 2, false},
 			{reflect.TypeFor[[2]int](), 1, 3, 3, true},
 			{reflect.TypeFor[[1]int](), 2, 5, 5, true},
 			{reflect.TypeFor[[1]int](), 3, 10, 1, true},
+			{reflect.TypeFor[[1]int](), 3, 14, 5, true},
+			{reflect.TypeFor[[1]int](), 3, 15, 0, false},
+			{reflect.TypeFor[[1]int](), 1, 3, 0, false},
 			{reflect.TypeFor[[1]int](), 2, 8, 0, false},
 			{reflect.TypeFor[[1]int](), 3, math.MaxInt64, math.MaxInt64 - 15, false},
 		} {
@@ -86,6 +91,12 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 		supported bool
 	}{
 		{"nil interface", nil, reflect.TypeFor[any](), false, nil, true},
+		{"nil scalar", nil, reflect.TypeFor[int](), false, 0, true},
+		{"nil scalar array", nil, reflect.TypeFor[[1]int](), false, []any{0}, true},
+		{"nil struct", nil, reflect.TypeFor[struct{ Value int }](), false, nil, false},
+		{"pointer destination", 1, reflect.TypeFor[*int](), false, nil, false},
+		{"nonempty interface", 1, reflect.TypeFor[error](), false, nil, false},
+		{"uncomparable interface value", []any{1}, reflect.TypeFor[any](), false, []any{1}, false},
 		{"loose signed", int16(2), reflect.TypeFor[any](), true, int64(2), true},
 		{"loose float", float32(1.5), reflect.TypeFor[any](), true, float64(1.5), true},
 		{"loose binary", []byte("x"), reflect.TypeFor[any](), true, "x", true},
@@ -94,6 +105,8 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 		{"unsigned value", uint16(2), reflect.TypeFor[uint8](), false, uint8(2), true},
 		{"unsigned negative", int8(-1), reflect.TypeFor[uint8](), false, nil, false},
 		{"float unsigned", uint8(2), reflect.TypeFor[float64](), false, float64(2), true},
+		{"float32 preserves type", float32(1.5), reflect.TypeFor[float32](), false, float32(1.5), true},
+		{"float64 preserves type", float64(1.5), reflect.TypeFor[float64](), false, float64(1.5), true},
 		// The pinned driver's float decoder converts Uint64 through int64.
 		{"float unsigned signed wrapping", uint64(math.MaxUint64), reflect.TypeFor[float64](), false, float64(-1), true},
 		{"float unsupported", "x", reflect.TypeFor[float64](), false, nil, false},
@@ -103,6 +116,7 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 		{"nil byte array", nil, reflect.TypeFor[[2]byte](), false, [2]byte{}, true},
 		{"binary byte array", []byte("x"), reflect.TypeFor[[2]byte](), false, [2]byte{'x'}, true},
 		{"string byte array", "x", reflect.TypeFor[[2]byte](), false, [2]byte{'x'}, true},
+		{"exact string byte array", "xy", reflect.TypeFor[[2]byte](), false, [2]byte{'x', 'y'}, true},
 		{"byte array unsupported", []any{uint8(1)}, reflect.TypeFor[[2]byte](), false, nil, false},
 		{"byte array fit", "xy", reflect.TypeFor[[1]byte](), false, nil, false},
 		{"array unsupported source", true, reflect.TypeFor[[1]int](), false, nil, false},
@@ -126,6 +140,42 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 		if equalProjectedKeys([]any{1}, right) {
 			t.Fatalf("different composite identity compared equal: %#v", right)
 		}
+	}
+}
+
+func TestOrdinaryProjectionKnownFieldRouting(t *testing.T) {
+	type destination struct {
+		Ignored  int `msgpack:"-"`
+		_msgpack struct{}
+		private  int
+		Values   map[[1]int]int
+	}
+	target := reflect.TypeFor[destination]()
+	fields, supported := projectionFields(target)
+	wantFields := []numericStructField{{name: "Values", target: reflect.TypeFor[map[[1]int]int]()}}
+	if !supported || !reflect.DeepEqual(fields, wantFields) {
+		t.Fatalf("known fields = %#v/%v; want only exported Values", fields, supported)
+	}
+	source := numericMap{
+		{key: "Unknown", value: 9},
+		{key: "Values", value: numericMap{
+			{key: []any{1}, value: 1},
+			{key: []any{2}, value: 2},
+		}},
+	}
+	wantSource := numericMap{
+		{key: "Unknown", value: 9},
+		{key: "Values", value: numericMap{
+			{key: []any{1}, value: 1},
+			{key: []any{2}, value: 2},
+		}},
+	}
+	budget := &admissionBudget{work: 8}
+	if err := rejectProjectedKeys(source, target, false, budget); err != nil || budget.work != 0 {
+		t.Fatalf("known nested map = %v, remaining %d; want accepted at eight units", err, budget.work)
+	}
+	if !reflect.DeepEqual(source, wantSource) {
+		t.Fatal("projection admission changed the borrowed source")
 	}
 }
 
