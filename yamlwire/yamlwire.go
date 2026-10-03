@@ -139,45 +139,247 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 		maxBytes = DefaultMaxBytes
 	}
 	lines := bytes.SplitAfter(payload, []byte{'\n'})
-	indicators := 0
-	for _, line := range lines {
-		if hasBlockScalar(blockScalarIndicator(line)) {
-			indicators++
+	type hint struct {
+		line, index int
+		replace     bool
+		value       byte
+	}
+	var hints []hint
+	additions, bodyIndent := 0, -1
+	var context scalarTextContext
+	for lineIndex, line := range lines {
+		if len(bytes.TrimSpace(line)) == 0 {
+			continue
+		}
+		if bodyIndent >= 0 && leadingSpaces(line) >= bodyIndent {
+			continue
+		}
+		bodyIndent = -1
+		continued := context.quote != 0 || context.flowDepth > 0
+		context.scan(line)
+		if continued || context.quote != 0 || context.flowDepth > 0 {
+			continue
+		}
+		header := blockScalarHeader(line)
+		if !hasBlockScalar(header.index) {
+			continue
+		}
+		// The pinned emitter aligns mapping content to the configured grid,
+		// but advances only two columns after a compact sequence indicator.
+		width := indent - header.parentIndent%indent
+		if header.sequence {
+			width = 2
+		}
+		bodyIndent = header.parentIndent + width
+		index, replace := header.index+1, false
+		if header.digit >= 0 {
+			index, replace = header.digit, true
+		}
+		value := byte('0' + width)
+		if replace && line[index] == value {
+			continue
+		}
+		hints = append(hints, hint{lineIndex, index, replace, value})
+		if !replace {
+			additions++
 		}
 	}
-	if indicators == 0 {
+	if len(hints) == 0 {
 		return payload, nil
 	}
-	if exceedsLimit(indicators, maxBytes-int64(len(payload))) {
+	if exceedsLimit(additions, maxBytes-int64(len(payload))) {
 		return nil, outputlimit.ErrLimit
 	}
-	result := make([]byte, 0, outputCapacity(len(payload), indicators))
-	for _, line := range lines {
-		index := blockScalarIndicator(line)
-		if !hasBlockScalar(index) {
+	result := make([]byte, 0, outputCapacity(len(payload), additions))
+	next := 0
+	for lineIndex, line := range lines {
+		if next == len(hints) || hints[next].line != lineIndex {
 			result = append(result, line...)
 			continue
 		}
-		result = append(result, line[:index+1]...)
-		result = append(result, byte('0'+indent))
-		result = append(result, line[index+1:]...)
+		edit := hints[next]
+		result = append(result, line[:edit.index]...)
+		result = append(result, edit.value)
+		if edit.replace {
+			edit.index++
+		}
+		result = append(result, line[edit.index:]...)
+		next++
 	}
 	return result, nil
 }
 
-func blockScalarIndicator(line []byte) int {
-	line = bytes.TrimSuffix(line, []byte{'\n'})
-	line = bytes.TrimSuffix(line, []byte{'\r'})
-	if len(line) == 0 {
-		return -1
+type scalarHeader struct {
+	index, digit, parentIndent int
+	sequence                   bool
+}
+
+func leadingSpaces(line []byte) int {
+	index := 0
+	for index < len(line) && line[index] == ' ' {
+		index++
 	}
-	index := len(line) - 1
-	if line[index] == '+' || line[index] == '-' {
-		index--
+	return index
+}
+
+// blockScalarHeader recognizes scalar syntax in dumper-produced lines,
+// not marker-like suffixes within a plain scalar. Block bodies are skipped
+// by the caller, so their text is never interpreted as another header.
+func blockScalarHeader(line []byte) scalarHeader {
+	absent := scalarHeader{index: -1, digit: -1}
+	line = bytes.TrimRight(line, "\r\n")
+	start := leadingSpaces(line)
+	parent, sequence := start, false
+	for start+1 < len(line) && line[start] == '-' && line[start+1] == ' ' {
+		parent, sequence = start, true
+		start += 2
+		for start < len(line) && line[start] == ' ' {
+			start++
+		}
 	}
-	if index <= 1 || (line[index] != '|' && line[index] != '>') ||
-		line[index-1] != ' ' || (line[index-2] != ':' && line[index-2] != '-') {
-		return -1
+	if start+1 < len(line) && (line[start] == '?' || line[start] == ':') && line[start+1] == ' ' {
+		parent, sequence = start, false
+		start += 2
+	}
+	if start == len(line) || line[start] == '#' {
+		return absent
+	}
+	// A quoted mapping key can contain colons and escaped quotes. Only a
+	// colon followed by whitespace outside that key introduces its value.
+	var quote byte
+	keyStart := scalarPropertiesEnd(line, start)
+	for index := keyStart; index < len(line) && line[keyStart] != '|' && line[keyStart] != '>'; index++ {
+		value := line[index]
+		if quote != 0 {
+			if quote == '"' && value == '\\' {
+				index++
+				continue
+			}
+			if value == quote {
+				if quote == '\'' && index+1 < len(line) && line[index+1] == '\'' {
+					index++
+					continue
+				}
+				quote = 0
+			}
+			continue
+		}
+		if index == keyStart && (value == '\'' || value == '"') {
+			quote = value
+			continue
+		}
+		if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
+			parent, sequence = start, false
+			start = index + 2
+			break
+		}
+	}
+	start = scalarPropertiesEnd(line, start)
+	if start == len(line) || (line[start] != '|' && line[start] != '>') {
+		return absent
+	}
+	header := scalarHeader{index: start, digit: -1, parentIndent: parent, sequence: sequence}
+	index, chomp := start+1, false
+	for index < len(line) && line[index] != ' ' {
+		switch {
+		case line[index] >= '1' && line[index] <= '9' && header.digit < 0:
+			header.digit = index
+		case (line[index] == '+' || line[index] == '-') && !chomp:
+			chomp = true
+		default:
+			return absent
+		}
+		index++
+	}
+	for index < len(line) && line[index] == ' ' {
+		index++
+	}
+	if index < len(line) && line[index] != '#' {
+		return absent
+	}
+	return header
+}
+
+// scalarTextContext follows quoted and flow continuations emitted by the
+// pinned dumper. Block bodies are excluded before scanning: their characters
+// are data, including unmatched quotes and collection indicators.
+type scalarTextContext struct {
+	quote     byte
+	flowDepth int
+}
+
+func (context *scalarTextContext) scan(line []byte) {
+	start := true
+	for index := leadingSpaces(line); index < len(line); index++ {
+		value := line[index]
+		if context.quote != 0 {
+			if context.quote == '"' && value == '\\' {
+				index++
+				continue
+			}
+			if value == context.quote {
+				if value == '\'' && index+1 < len(line) && line[index+1] == '\'' {
+					index++
+					continue
+				}
+				context.quote = 0
+			}
+			start = false
+			continue
+		}
+		if value == ' ' || value == '\r' || value == '\n' {
+			continue
+		}
+		if value == '#' && (index == 0 || line[index-1] == ' ') {
+			return
+		}
+		if start && (value == '!' || value == '&') {
+			for index+1 < len(line) && line[index+1] != ' ' {
+				index++
+			}
+			continue
+		}
+		if start && (value == '\'' || value == '"') {
+			context.quote = value
+			continue
+		}
+		if start && (value == '[' || value == '{') {
+			context.flowDepth++
+			continue
+		}
+		if context.flowDepth > 0 && (value == ']' || value == '}') {
+			context.flowDepth--
+			start = false
+			continue
+		}
+		if context.flowDepth > 0 && value == ',' {
+			start = true
+			continue
+		}
+		if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
+			start = true
+			continue
+		}
+		if start && (value == '-' || value == '?' || value == ':') && index+1 < len(line) && line[index+1] == ' ' {
+			continue
+		}
+		start = false
+	}
+}
+
+// scalarPropertiesEnd skips emitted tags and anchors, but not scalar data.
+func scalarPropertiesEnd(line []byte, index int) int {
+	for index < len(line) {
+		if line[index] == ' ' {
+			index++
+			continue
+		}
+		if line[index] != '!' && line[index] != '&' {
+			break
+		}
+		for index < len(line) && line[index] != ' ' {
+			index++
+		}
 	}
 	return index
 }

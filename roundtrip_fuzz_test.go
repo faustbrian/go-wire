@@ -23,6 +23,8 @@ type roundTripDocument struct {
 
 func FuzzRoundTrip(f *testing.F) {
 	f.Add("shipment <ready> & safe", int64(42), true)
+	f.Add("000- >", int64(-56), true)
+	f.Add("first\n000- >\nfoo: |\n- >\nlast", int64(0), false)
 	f.Add(string([]byte{'b', 'a', 'd', 0xff}), int64(-1), false)
 	f.Add("\x00\t\n\r", int64(0), true)
 

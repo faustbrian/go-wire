@@ -64,16 +64,18 @@ func TestBlockScalarIndicatorBoundaries(t *testing.T) {
 
 	for input, expected := range map[string]int{
 		"x: |\n":    3,
+		"|":         0,
+		" |":        1,
 		"- |\n":     2,
 		"x: |+\n":   3,
 		"x: >-\r\n": 3,
 	} {
-		if got := blockScalarIndicator([]byte(input)); got != expected {
+		if got := blockScalarHeader([]byte(input)).index; got != expected {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want %d", input, got, expected)
 		}
 	}
-	for _, input := range []string{"", "|", " |", "x: x", "xx |", "x:|"} {
-		if got := blockScalarIndicator([]byte(input)); got != -1 {
+	for _, input := range []string{"", "x: x", "xx |", "x:|", "text: 000- >", "- 000- |"} {
+		if got := blockScalarHeader([]byte(input)).index; got != -1 {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want -1", input, got)
 		}
 	}

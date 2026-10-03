@@ -79,6 +79,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserve YAML scalar values and mapping keys, including marker-like text
+  inside block contents or multiline quoted strings. Explicit indentation
+  follows the emitted mapping or sequence layout, including root and nested
+  tab-leading block scalars.
+
 - Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
   as parse errors instead of panicking. Comparable keys and the default
   prohibition on tags remain unchanged.
