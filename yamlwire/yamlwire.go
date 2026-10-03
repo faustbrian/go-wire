@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/faustbrian/go-wire/v2"
@@ -93,7 +94,10 @@ func encode(
 	if !validIndent(options.Indent) {
 		return nil, wrap(wire.ErrorKindValidation, "encode options", errors.New("indent must be between 2 and 9"))
 	}
-	yamlOptions := []yaml.Option{yaml.WithV4Defaults(), yaml.WithLineWidth(-1)}
+	// Negative width becomes a finite int32 limit in the pinned emitter.
+	// No addressable int column can exceed MaxInt, so plain continuations
+	// cannot wrap into marker-like lines consumed by normalization.
+	yamlOptions := []yaml.Option{yaml.WithV4Defaults(), yaml.WithLineWidth(math.MaxInt)}
 	if options.Indent != 0 {
 		yamlOptions = append(yamlOptions, yaml.WithIndent(options.Indent))
 	}
@@ -218,22 +222,25 @@ func leadingSpaces(line []byte) int {
 	return len(line) - len(bytes.TrimLeft(line, " "))
 }
 
+// These expressions recognize only the pinned emitter's prefixes and hints.
+// Explicit-key/value and sequence indicators compose; hints put width first.
+var (
+	dumperScalarPrefix = regexp.MustCompile(`^ *(?:[-?:] +)*`)
+	dumperBlockHints   = regexp.MustCompile(`^(?:([2-9]))?[+-]?(?: +(?:#.*)?)?$`)
+)
+
 // blockScalarHeader recognizes scalar syntax in dumper-produced lines,
 // not marker-like suffixes within a plain scalar. Block bodies are skipped
 // by the caller, so their text is never interpreted as another header.
 func blockScalarHeader(line []byte) scalarHeader {
 	absent := scalarHeader{index: -1}
 	line = bytes.TrimRight(line, "\r\n")
-	start := leadingSpaces(line)
+	prefix := dumperScalarPrefix.Find(line)
+	start := len(prefix)
 	parent, sequence := start, false
-	for bytes.HasPrefix(line[start:], []byte("- ")) {
-		parent, sequence = start, true
-		start += 2
-		start += leadingSpaces(line[start:])
-	}
-	if start+1 < len(line) && (line[start] == '?' || line[start] == ':') && line[start+1] == ' ' {
-		parent, sequence = start, false
-		start += 2
+	if indicators := bytes.TrimRight(prefix, " "); len(indicators) > 0 {
+		parent = len(indicators) - 1
+		sequence = indicators[parent] == '-'
 	}
 	if start == len(line) || line[start] == '#' {
 		return absent
@@ -243,6 +250,15 @@ func blockScalarHeader(line []byte) scalarHeader {
 	var quote byte
 	keyStart := scalarPropertiesEnd(line, start)
 	if keyStart < len(line) && line[keyStart] != '|' && line[keyStart] != '>' {
+		// Nonempty flow collections cannot be simple keys in this emitter.
+		// Empty collection keys can precede genuine block values on one line.
+		// All other flow lines contain scalar data, not block headers.
+		if line[keyStart] == '[' || line[keyStart] == '{' {
+			if !bytes.HasPrefix(line[keyStart:], []byte("[]: ")) && !bytes.HasPrefix(line[keyStart:], []byte("{}: ")) {
+				return absent
+			}
+			keyStart += 2
+		}
 		skipNext := false
 		for offset, value := range line[keyStart:] {
 			index := keyStart + offset
@@ -264,6 +280,10 @@ func blockScalarHeader(line []byte) scalarHeader {
 				}
 				continue
 			}
+			// A comment ends the key search; its colons and markers are data.
+			if value == '#' && line[index-1] == ' ' {
+				return absent
+			}
 			if index == keyStart && (value == '\'' || value == '"') {
 				quote = value
 				continue
@@ -283,21 +303,12 @@ func blockScalarHeader(line []byte) scalarHeader {
 	// The pinned dumper emits original explicit widths only in 2..9.
 	// Normalization may write width 1 at an odd grid boundary, but never
 	// feeds its own output back through this recognizer.
-	indicators, trailing, _ := bytes.Cut(line[start+1:], []byte{' '})
-	chomp := false
-	for offset, value := range indicators {
-		switch {
-		case value >= '2' && value <= '9' && header.digit == 0:
-			header.digit = start + 1 + offset
-		case (value == '+' || value == '-') && !chomp:
-			chomp = true
-		default:
-			return absent
-		}
-	}
-	trailing = bytes.TrimLeft(trailing, " ")
-	if len(trailing) > 0 && trailing[0] != '#' {
+	hints := dumperBlockHints.FindSubmatchIndex(line[start+1:])
+	if hints == nil {
 		return absent
+	}
+	if hints[2] >= 0 {
+		header.digit = start + 1
 	}
 	return header
 }

@@ -2360,6 +2360,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   follows the emitted mapping or sequence layout, including root and nested
   tab-leading block scalars.
 
+- Preserve blocks nested inside explicit collection keys and values. Keep
+  plain scalar content unchanged at large configured byte limits rather
+  than wrapping it into marker-like continuation lines.
+
+- Preserve marker-like scalar text inside inline flow collections and
+  trailing comments while repairing real blocks after empty collection keys.
+
 - Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
   as parse errors instead of panicking. Comparable keys and the default
   prohibition on tags remain unchanged.
