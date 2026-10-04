@@ -143,10 +143,6 @@ func encode(
 }
 
 func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) ([]byte, error) {
-	maxBytes := configuredMax
-	if maxBytes == 0 {
-		maxBytes = DefaultMaxBytes
-	}
 	// Authored comments and block bodies retain every YAML logical break,
 	// not just LF. Keep the separators byte-for-byte in their source slices.
 	var lines [][]byte
@@ -207,9 +203,9 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 			additions++
 		}
 	}
-	capacity := outputCapacity(len(payload), additions)
-	if capacity == -1 || int64(capacity) > maxBytes {
-		return nil, outputlimit.ErrLimit
+	capacity, err := admitOutputCapacity(len(payload), additions, configuredMax)
+	if err != nil {
+		return nil, err
 	}
 	if len(hints) == 0 && !foldedChanged {
 		return payload, nil
@@ -592,13 +588,21 @@ func exceedsLimit(length int, maximum int64) bool {
 	return int64(length) > maximum
 }
 
-// outputCapacity computes the normalized allocation size without overflowing.
+// admitOutputCapacity admits a representable normalized size within its quota.
 // length is a materialized slice length; delta may grow or shrink its body.
-func outputCapacity(length, delta int) int {
+// Admission is allocation-free, including at native integer boundaries.
+func admitOutputCapacity(length, delta int, maxBytes int64) (int, error) {
 	if delta > math.MaxInt-length || delta < -length {
-		return -1
+		return 0, outputlimit.ErrLimit
 	}
-	return length + delta
+	capacity := length + delta
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	if int64(capacity) > maxBytes {
+		return 0, outputlimit.ErrLimit
+	}
+	return capacity, nil
 }
 
 // intermediateOutputLimit leaves invalid negative limits for validation and
