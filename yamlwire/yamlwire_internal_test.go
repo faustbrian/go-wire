@@ -2,6 +2,7 @@ package yamlwire
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
@@ -95,5 +96,41 @@ func TestAddBlockIndentIndicatorsHonorsExactCapacity(t *testing.T) {
 	}
 	if string(got) != "text: |2-\n  value\n" {
 		t.Fatalf("addBlockIndentIndicators() = %q", got)
+	}
+}
+
+// Normalization must reject unrepresentable sizes before allocation, including
+// on 32-bit targets. The arithmetic boundary needs no enormous byte slice.
+func TestOutputCapacityRejectsOverflowWithoutAllocation(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct{ length, delta, want int }{
+		{math.MaxInt - 1, 1, math.MaxInt},
+		{math.MaxInt, 0, math.MaxInt},
+		{math.MaxInt, 1, -1},
+		{math.MaxInt - 1, 2, -1},
+		{4, -4, 0},
+		{4, -5, -1},
+		{math.MaxInt, -1, math.MaxInt - 1},
+	} {
+		if got := outputCapacity(test.length, test.delta); got != test.want {
+			t.Fatalf("normalized capacity(%d, %d) = %d, want %d", test.length, test.delta, got, test.want)
+		}
+	}
+}
+
+func TestIntermediateOutputLimitSaturatesWithoutAllocation(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct{ configured, want int64 }{
+		{-1, -1},
+		{0, 2 * DefaultMaxBytes},
+		{1, 2},
+		{math.MaxInt64/2 - 1, math.MaxInt64 - 3},
+		{math.MaxInt64 / 2, math.MaxInt64 - 1},
+		{math.MaxInt64/2 + 1, math.MaxInt64},
+		{math.MaxInt64, math.MaxInt64},
+	} {
+		if got := intermediateOutputLimit(test.configured); got != test.want {
+			t.Fatalf("scratch ceiling(%d) = %d, want %d", test.configured, got, test.want)
+		}
 	}
 }

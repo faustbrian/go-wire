@@ -108,17 +108,7 @@ func encode(
 	// LF. Each removed byte has a retained break partner, so at most twice
 	// the final quota is needed before normalization. Do not allocate from
 	// this ceiling; the buffer grows only as the provider produces bytes.
-	intermediateMax := options.MaxBytes
-	if intermediateMax == 0 {
-		intermediateMax = DefaultMaxBytes
-	}
-	if intermediateMax > 0 {
-		if intermediateMax <= math.MaxInt64/2 {
-			intermediateMax *= 2
-		} else {
-			intermediateMax = math.MaxInt64
-		}
-	}
+	intermediateMax := intermediateOutputLimit(options.MaxBytes)
 	output, err := outputlimit.New(intermediateMax, DefaultMaxBytes)
 	if err != nil {
 		return nil, wrap(wire.ErrorKindValidation, "encode options", err)
@@ -217,14 +207,14 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 			additions++
 		}
 	}
-	finalLength := int64(len(payload)) + int64(additions)
-	if finalLength > maxBytes || finalLength > math.MaxInt {
+	capacity := outputCapacity(len(payload), additions)
+	if capacity < 0 || int64(capacity) > maxBytes {
 		return nil, outputlimit.ErrLimit
 	}
 	if len(hints) == 0 && !foldedChanged {
 		return payload, nil
 	}
-	result := make([]byte, 0, int(finalLength))
+	result := make([]byte, 0, capacity)
 	next := 0
 	for lineIndex, line := range lines {
 		if next == len(hints) || hints[next].line != lineIndex {
@@ -258,7 +248,9 @@ func preserveFoldedBreaks(lines [][]byte, indent int) (int, bool) {
 			end = i
 			break
 		}
-		if first < 0 && len(content) > indent {
+		// The emitter writes indentation only immediately before an
+		// authored non-break character. Empty body breaks are unindented.
+		if first < 0 {
 			first = i
 		}
 	}
@@ -270,13 +262,13 @@ func preserveFoldedBreaks(lines [][]byte, indent int) (int, bool) {
 	for i := first; i < end; i++ {
 		line := lines[i]
 		content := bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
-		if len(content) <= indent || content[indent] == ' ' || content[indent] == '\t' || !bytes.HasSuffix(line, []byte{'\n'}) {
+		if len(content) == 0 || content[indent] == ' ' || content[indent] == '\t' || !bytes.HasSuffix(line, []byte{'\n'}) {
 			continue
 		}
 		// Every intervening blank line is crossed only once: the outer loop
 		// ignores them, and no two content lines share their following run.
 		next := i + 1
-		for next < end && len(bytes.TrimRight(lines[next], "\r\n\u0085\u2028\u2029")) <= indent {
+		for next < end && len(bytes.TrimRight(lines[next], "\r\n\u0085\u2028\u2029")) == 0 {
 			next++
 		}
 		ordinary := next < end && lines[next][indent] != ' ' && lines[next][indent] != '\t'
@@ -284,9 +276,11 @@ func preserveFoldedBreaks(lines [][]byte, indent int) (int, bool) {
 			lines[i] = append(append([]byte(nil), line...), '\n')
 			delta++
 			changed = true
-		} else if !leading && !ordinary && i+1 < end && bytes.Equal(lines[i+1], []byte{'\n'}) {
-			// A second LF proves a compensating break is present. A lone
-			// closing LF can be generated for a value without a final break.
+		} else if !leading && !ordinary && bytes.Equal(lines[i+1], []byte{'\n'}) {
+			// A second LF proves a compensating break is present. The
+			// splitter retains a following slice for every LF; a sibling
+			// ending this body is nonblank and cannot match the second LF.
+			// A lone closing LF may represent no final authored break.
 			lines[i] = line[:len(line)-1]
 			delta--
 			changed = true
@@ -598,8 +592,28 @@ func exceedsLimit(length int, maximum int64) bool {
 	return int64(length) > maximum
 }
 
-func outputCapacity(length, indicators int) int {
-	return length + indicators
+// outputCapacity computes the normalized allocation size without overflowing.
+// length is a materialized slice length; delta may grow or shrink its body.
+func outputCapacity(length, delta int) int {
+	if delta > math.MaxInt-length || delta < -length {
+		return -1
+	}
+	return length + delta
+}
+
+// intermediateOutputLimit leaves invalid negative limits for validation and
+// saturates the doubled scratch ceiling without a quota-sized allocation.
+func intermediateOutputLimit(maxBytes int64) int64 {
+	if maxBytes < 0 {
+		return maxBytes
+	}
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	if maxBytes > math.MaxInt64/2 {
+		return math.MaxInt64
+	}
+	return maxBytes * 2
 }
 
 func needsLimitPlugin(options DecodeOptions) bool {
