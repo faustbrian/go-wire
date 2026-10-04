@@ -208,7 +208,7 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 		}
 	}
 	capacity := outputCapacity(len(payload), additions)
-	if capacity < 0 || int64(capacity) > maxBytes {
+	if capacity == -1 || int64(capacity) > maxBytes {
 		return nil, outputlimit.ErrLimit
 	}
 	if len(hints) == 0 && !foldedChanged {
