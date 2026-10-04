@@ -1,7 +1,7 @@
 # Security and interoperability hardening audit
 
 Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-published its stable v1 contract. This report distinguishes format
+prepares its stable v2 contract. This report distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -17,9 +17,16 @@ amplification from large values.
 
 Transport authentication, authorization, timeouts, cancellation, schemas,
 secret redaction, and safe logging remain application responsibilities. Encode
-inputs are already-resident application values. Encoders retain at most the
-configured output byte quota and writer APIs publish only a complete encoded
-value; destination failures remain `wire.ErrWrite`.
+inputs are already-resident application values. Returned payloads stay inside
+the configured output byte quota and writer APIs publish only a complete
+encoded value; destination failures remain `wire.ErrWrite`.
+
+YAML additionally retains provider output in a bounded normalization buffer
+of at most twice the final quota (saturated at the representable byte limit).
+The pinned folded emitter can add an extra LF beside an authored LF; correcting
+that output can shrink it before final admission. Each removed LF has a
+retained break partner. The buffer grows from produced bytes, not the quota,
+and final output includes all indentation hints and folding corrections.
 
 ## Findings
 
@@ -36,7 +43,7 @@ value; destination failures remain `wire.ErrWrite`.
 | GW-009 | Medium | JSON `Decode*`, `Normalize` | Go `encoding/json` accepts invalid UTF-8 in strings and substitutes U+FFFD, while RFC 8259 requires exchanged JSON text to use UTF-8. | Invalid bytes could compare differently across implementations or after normalization. | Fixed. Both paths reject invalid UTF-8 as `wire.ErrParse` before target assignment; the regression is a fuzz seed. |
 | GW-010 | High | Typed `Encode*` across formats | A self-referential MessagePack map caused a runtime stack overflow; other reflection codecs had the same recursive-value exposure. The regression runs the original crash shape in a subprocess. | Process termination from a caller value, including values assembled from attacker-influenced application state. | Fixed. Every typed encoder performs shared path-local cycle and 1,000-level depth preflight before codec invocation. All eight format paths have classified-error tests at 100% coverage. |
 | GW-011 | Medium | XML and SOAP `Decode*`/`Parse*` | The 1 MiB byte cap still allowed hundreds of thousands of tiny nested XML elements, while no wrapper token-depth policy existed. | Excessive parser stack or heap growth from deeply nested untrusted XML. | Fixed. XML and SOAP now default to 1,000 nested elements, expose `MaxDepth`, reject negative options, and classify excess depth as `wire.ErrSizeLimit`. |
-| GW-012 | Medium | YAML `Encode*` | YAML v4 emitted a multiline string beginning with a tab as an implicit-indentation block scalar, then rejected that output during its own parse. The cross-format round-trip fuzzer found `"\t\n0"`. | The writer could produce bytes that neither `wire` nor other strict YAML parsers accepted. | Fixed. Emitted block scalars carry an explicit 2-9 space indentation indicator, remain inside the output quota, and round-trip regressions preserve both the tab case and ordinary scalars ending in `>` or `|`. |
+| GW-012 | Medium | YAML `Encode*` | YAML v4 emitted a multiline string beginning with a tab as an implicit-indentation block scalar, then rejected that output during its own parse. The cross-format round-trip fuzzer found `"\t\n0"`. | The writer could produce bytes that neither `wire` nor other strict YAML parsers accepted. | Fixed. Only actual emitted block headers receive explicit indentation matching their mapping or sequence layout, including root and nested blocks. Plain scalar suffixes, multiline quoted content, and explicit mapping keys remain unchanged; final output stays inside the quota. |
 | GW-013 | Low | JSON, XML, and SOAP read/target errors | The original packages predated the shared size and target error kinds and retained validation classification while newer formats used the dedicated kinds. | Cross-format boundary code needed format-specific branching for equivalent failures. | Fixed before v1. All eight formats now use `wire.ErrSizeLimit` and `wire.ErrTarget`; a hostile endless reader proves each stream stops at exactly `MaxBytes + 1`. |
 
 No finding caused payload bytes or sensitive field values to be embedded in a
@@ -101,8 +108,8 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The package is now available as stable v1.0.0. The current module requires Go
-1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+The current release preparation targets v2.0.0. The current module requires Go
+1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller
 responsibilities are explicit in the findings and format matrix; no stronger

@@ -1,13 +1,40 @@
 # Migration notes
 
-## Version 1 compatibility
+## From v1 to v2
 
-The module follows stable v1 compatibility. Pin a released version, keep the
+Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
+all codec imports to `github.com/faustbrian/go-wire/v2`. Update related imports
+in one change: v1 and v2 errors and sentinels have distinct Go identities.
+Existing v1 consumers remain on their selected version until deliberately
+migrated; this release does not migrate other repositories.
+
+Ordinary wire and SOAP fault text is categorical. Inspect `*wire.Error`, its
+wrapped cause, and `*soap.FaultError` fields for trusted diagnostics instead of
+matching old diagnostic strings. Existing classification and cause inspection
+remain available within the selected major module.
+
+Built-in XML and SOAP charset conversion enforces raw-input byte quotas and
+rejects unsupported or overlong labels before reading. Use
+`xmlwire.CharsetReaderWithLimit` for an explicit quota; custom callbacks and
+reader responsiveness remain caller-owned. Conversion can expand output.
+
+BSON validates nested documents, arrays and CodeWithScope scopes before decoder
+callbacks, including with duplicate-key opt-in. Supply consecutive array indices
+and at most 100 nested containers below the root. Encoding validates structure
+after codec work; this is not pre-encoding allocation protection.
+
+YAML scalar values, explicit mapping keys and quoted continuations retain their
+authored content. Emitted block indicators can change to preserve those values;
+encoded bytes are not promised to be identical across released versions.
+
+## Version 2 compatibility
+
+The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
 ## Pending v2 charset boundary
 
-The unreleased charset hardening is intended for the next major release, not
+Version 2 charset hardening changes admission and default quotas, not
 a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
 most 1 MiB of raw input and labels at most 64 bytes, and return categorical
 diagnostics. Use `CharsetReaderWithLimit` for a deliberate larger finite raw
@@ -24,7 +51,7 @@ document/array boundaries, including when duplicate keys are explicitly allowed.
 Arrays require consecutive zero-based indices. Raw nesting is limited to 100
 containers below the root; documents, arrays, and scopes each add one level.
 Malformed structure fails before decoder callbacks. This acceptance change is
-pending the next major release. Encoding validates serialized output afterward;
+part of version 2. Encoding validates serialized output afterward;
 driver buffering, pre-encoding resource limits, and custom-codec work are separate
 boundaries, not protected by this raw traversal limit.
 

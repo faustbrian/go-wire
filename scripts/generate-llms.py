@@ -47,8 +47,16 @@ def title(path: Path) -> str:
     return path.stem.replace("-", " ").title()
 
 
+def package_name() -> str:
+    module = (ROOT / "go.mod").read_text(encoding="utf-8").splitlines()[0].split()[1]
+    parts = module.split("/")
+    if parts[-1].startswith("v") and parts[-1][1:].isdigit() and int(parts[-1][1:]) >= 2:
+        return parts[-2]
+    return parts[-1]
+
+
 def render_index(paths: list[Path]) -> str:
-    package = (ROOT / "go.mod").read_text(encoding="utf-8").splitlines()[0].split("/")[-1]
+    package = package_name()
     lines = [
         f"# {package}",
         "",
@@ -61,7 +69,7 @@ def render_index(paths: list[Path]) -> str:
 
 
 def render_full(paths: list[Path]) -> str:
-    package = (ROOT / "go.mod").read_text(encoding="utf-8").splitlines()[0].split("/")[-1]
+    package = package_name()
     sections = [f"# {package} Complete Documentation", ""]
     for path in paths:
         content = (ROOT / path).read_text(encoding="utf-8").rstrip()

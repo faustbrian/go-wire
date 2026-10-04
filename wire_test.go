@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/v2"
 )
 
 func TestDetectFormat(t *testing.T) {

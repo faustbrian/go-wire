@@ -9,27 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Validate nested BSON structure and CodeWithScope scopes before decoding,
-  retain structural checks with duplicate-key opt-in, and require consecutive
-  array indices. Iterative raw validation permits 100 nested containers below
-  the root; encoding checks output after codec work. These acceptance changes
-  are pending the next major release, not pre-encoding allocation protection.
-  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
-
-- Make shared wire errors and SOAP fault errors render categorical text only,
-  retaining original diagnostic fields, causes, and error classification.
-  This incompatible text change is pending the next major release.
-  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
-
-- Harden XML and SOAP built-in charset conversion with bounded raw input and
-  labels, pre-read allowlist rejection, and private categorical diagnostics.
-  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. This incompatible
-  behavior is pending integration into the next major release.
-
-- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
-  as parse errors instead of panicking. Comparable keys and the default
-  prohibition on tags remain unchanged.
-
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
@@ -41,9 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
-
-- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
-  CTAP 2.2 normative PDF and deterministic-CBOR profile.
 
 - Record reported RFC 9110 Errata ID 9164 as behavior-neutral because HTTP
   grammar remains caller-owned policy, while retaining the prior Errata ID
@@ -98,6 +74,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
+
+## [2.0.0] - 2026-10-03
+
+### Fixed
+
+- Preserve YAML scalar values and mapping keys, including marker-like text
+  inside block contents or multiline quoted strings. Explicit indentation
+  follows the emitted mapping or sequence layout, including root and nested
+  tab-leading block scalars.
+
+- Preserve blocks nested inside explicit collection keys and values. Keep
+  plain scalar content unchanged at large configured byte limits rather
+  than wrapping it into marker-like continuation lines.
+
+- Preserve marker-like scalar text inside inline flow collections and
+  trailing comments while repairing real blocks after empty collection keys.
+
+- Preserve emitted carriage returns and Unicode line breaks in comments and
+  scalar bodies while repairing subsequent tab-leading block values.
+
+- Preserve authored folded YAML values across ordinary and more-indented
+  line transitions and trailing breaks. Admit the inclusive final byte quota
+  after bounded provider-output normalization without repeating callbacks.
+
+- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
+  as parse errors instead of panicking. Comparable keys and the default
+  prohibition on tags remain unchanged.
+
+### Changed
+
+- Publish the major module as `github.com/faustbrian/go-wire/v2`. Update all
+  Wire imports together; v1 and v2 error types and sentinels are distinct.
+
+- Harden XML and SOAP built-in charset conversion with bounded raw input and
+  labels, pre-read allowlist rejection, and private categorical diagnostics.
+  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. Custom charset callbacks remain caller-owned.
+
+- Make shared wire errors and SOAP fault errors render categorical text only,
+  retaining original diagnostic fields, causes, and error classification.
+  Use typed causes and fault fields instead of previous diagnostic text.
+  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
+
+- Validate nested BSON structure and CodeWithScope scopes before decoding,
+  retain structural checks with duplicate-key opt-in, and require consecutive
+  array indices. Iterative raw validation permits 100 nested containers below
+  the root; encoding checks output after codec work. These acceptance changes
+  do not provide pre-encoding allocation protection.
+  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
+
+- Adopt MongoDB driver v2.9.1 while retaining external BSON driver aliases;
+  driver network and GridFS operations remain outside the module's imported
+  package boundary.
+
+### Documentation
+
+- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
+  CTAP 2.2 normative PDF and deterministic-CBOR profile.
+
+- Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
+  module pins.
 
 ## [1.0.0] - 2026-08-25
 
@@ -337,5 +373,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v2.0.0...HEAD
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
+[2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0

@@ -6,11 +6,12 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"regexp"
 	"strings"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/internal/outputlimit"
-	"github.com/faustbrian/go-wire/internal/valuecheck"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v2/internal/valuecheck"
 	"go.yaml.in/yaml/v4"
 	"go.yaml.in/yaml/v4/plugin/limit"
 )
@@ -93,14 +94,22 @@ func encode(
 	if !validIndent(options.Indent) {
 		return nil, wrap(wire.ErrorKindValidation, "encode options", errors.New("indent must be between 2 and 9"))
 	}
-	yamlOptions := []yaml.Option{yaml.WithV4Defaults(), yaml.WithLineWidth(-1)}
+	// Negative width becomes a finite int32 limit in the pinned emitter.
+	// No addressable int column can exceed MaxInt, so plain continuations
+	// cannot wrap into marker-like lines consumed by normalization.
+	yamlOptions := []yaml.Option{yaml.WithV4Defaults(), yaml.WithLineWidth(math.MaxInt)}
 	if options.Indent != 0 {
 		yamlOptions = append(yamlOptions, yaml.WithIndent(options.Indent))
 	}
 	if options.DefaultSequenceIndent {
 		yamlOptions = append(yamlOptions, yaml.WithCompactSeqIndent(false))
 	}
-	output, err := outputlimit.New(options.MaxBytes, DefaultMaxBytes)
+	// The pinned folded emitter can insert an extra LF beside each authored
+	// LF. Each removed byte has a retained break partner, so at most twice
+	// the final quota is needed before normalization. Do not allocate from
+	// this ceiling; the buffer grows only as the provider produces bytes.
+	intermediateMax := intermediateOutputLimit(options.MaxBytes)
+	output, err := outputlimit.New(intermediateMax, DefaultMaxBytes)
 	if err != nil {
 		return nil, wrap(wire.ErrorKindValidation, "encode options", err)
 	}
@@ -134,52 +143,333 @@ func encode(
 }
 
 func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) ([]byte, error) {
-	maxBytes := configuredMax
-	if maxBytes == 0 {
-		maxBytes = DefaultMaxBytes
+	// Authored comments and block bodies retain every YAML logical break,
+	// not just LF. Keep the separators byte-for-byte in their source slices.
+	var lines [][]byte
+	start := 0
+	for _, lineBreak := range dumperLineBreaks.FindAllIndex(payload, -1) {
+		lines = append(lines, payload[start:lineBreak[1]])
+		start = lineBreak[1]
 	}
-	lines := bytes.SplitAfter(payload, []byte{'\n'})
-	indicators := 0
-	for _, line := range lines {
-		if hasBlockScalar(blockScalarIndicator(line)) {
-			indicators++
+	lines = append(lines, payload[start:])
+	type hint struct {
+		line, index int
+		replace     bool
+		value       byte
+	}
+	var hints []hint
+	additions, bodyIndent := 0, 0
+	foldedChanged := false
+	var context scalarTextContext
+	for lineIndex, line := range lines {
+		if len(bytes.TrimSpace(line)) == 0 {
+			continue
+		}
+		if bodyIndent > 0 && leadingSpaces(line) >= bodyIndent {
+			continue
+		}
+		bodyIndent = 0
+		continued := context.quote != 0 || context.flowDepth > 0
+		context.scan(line)
+		if continued || context.quote != 0 || context.flowDepth > 0 {
+			continue
+		}
+		header := blockScalarHeader(line)
+		if !hasBlockScalar(header.index) {
+			continue
+		}
+		// The pinned emitter aligns mapping content to the configured grid,
+		// but advances only two columns after a compact sequence indicator.
+		width := indent - header.parentIndent%indent
+		if header.sequence {
+			width = 2
+		}
+		bodyIndent = header.parentIndent + width
+		if line[header.index] == '>' {
+			delta, changed := preserveFoldedBreaks(lines[lineIndex+1:], bodyIndent)
+			additions += delta
+			foldedChanged = foldedChanged || changed
+		}
+		index, replace := header.index+1, false
+		if header.digit > 0 {
+			index, replace = header.digit, true
+		}
+		value := byte('0' + width)
+		if replace && line[index] == value {
+			continue
+		}
+		hints = append(hints, hint{lineIndex, index, replace, value})
+		if !replace {
+			additions++
 		}
 	}
-	if indicators == 0 {
+	capacity, err := admitOutputCapacity(len(payload), additions, configuredMax)
+	if err != nil {
+		return nil, err
+	}
+	if len(hints) == 0 && !foldedChanged {
 		return payload, nil
 	}
-	if exceedsLimit(indicators, maxBytes-int64(len(payload))) {
-		return nil, outputlimit.ErrLimit
-	}
-	result := make([]byte, 0, outputCapacity(len(payload), indicators))
-	for _, line := range lines {
-		index := blockScalarIndicator(line)
-		if !hasBlockScalar(index) {
+	result := make([]byte, 0, capacity)
+	next := 0
+	for lineIndex, line := range lines {
+		if next == len(hints) || hints[next].line != lineIndex {
 			result = append(result, line...)
 			continue
 		}
-		result = append(result, line[:index+1]...)
-		result = append(result, byte('0'+indent))
-		result = append(result, line[index+1:]...)
+		edit := hints[next]
+		result = append(result, line[:edit.index]...)
+		result = append(result, edit.value)
+		if edit.replace {
+			edit.index++
+		}
+		result = append(result, line[edit.index:]...)
+		next++
 	}
 	return result, nil
 }
 
-func blockScalarIndicator(line []byte) int {
-	line = bytes.TrimSuffix(line, []byte{'\n'})
-	line = bytes.TrimSuffix(line, []byte{'\r'})
-	if len(line) == 0 {
-		return -1
+// preserveFoldedBreaks corrects the pinned emitter's fixed-origin LF
+// lookahead using its actual folded body. It never visits the represented
+// graph or re-evaluates a Marshaler. Blank logical lines belong to this body;
+// the first nonblank line outside its indentation ends it.
+func preserveFoldedBreaks(lines [][]byte, indent int) (int, bool) {
+	end, first := len(lines), -1
+	for i, line := range lines {
+		content := bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
+		if len(content) == 0 {
+			continue
+		}
+		if leadingSpaces(content) < indent {
+			end = i
+			break
+		}
+		// The emitter writes indentation only immediately before an
+		// authored non-break character. Empty body breaks are unindented.
+		if first < 0 {
+			first = i
+		}
 	}
-	index := len(line) - 1
-	if line[index] == '+' || line[index] == '-' {
-		index--
+	if first < 0 {
+		return 0, false
 	}
-	if index <= 1 || (line[index] != '|' && line[index] != '>') ||
-		line[index-1] != ' ' || (line[index-2] != ':' && line[index-2] != '-') {
-		return -1
+	leading := lines[first][indent] == ' ' || lines[first][indent] == '\t'
+	delta, changed := 0, false
+	for i := first; i < end; i++ {
+		line := lines[i]
+		content := bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
+		if len(content) == 0 || content[indent] == ' ' || content[indent] == '\t' || !bytes.HasSuffix(line, []byte{'\n'}) {
+			continue
+		}
+		// Every intervening blank line is crossed only once: the outer loop
+		// ignores them, and no two content lines share their following run.
+		next := i + 1
+		for next < end && len(bytes.TrimRight(lines[next], "\r\n\u0085\u2028\u2029")) == 0 {
+			next++
+		}
+		ordinary := next < end && lines[next][indent] != ' ' && lines[next][indent] != '\t'
+		if leading && ordinary {
+			lines[i] = append(append([]byte(nil), line...), '\n')
+			delta++
+			changed = true
+		} else if !leading && !ordinary && bytes.Equal(lines[i+1], []byte{'\n'}) {
+			// A second LF proves a compensating break is present. The
+			// splitter retains a following slice for every LF; a sibling
+			// ending this body is nonblank and cannot match the second LF.
+			// A lone closing LF may represent no final authored break.
+			lines[i] = line[:len(line)-1]
+			delta--
+			changed = true
+		}
 	}
-	return index
+	return delta, changed
+}
+
+type scalarHeader struct {
+	index, digit, parentIndent int
+	sequence                   bool
+}
+
+func leadingSpaces(line []byte) int {
+	return len(line) - len(bytes.TrimLeft(line, " "))
+}
+
+// These expressions recognize only the pinned emitter's prefixes and hints.
+// Explicit-key/value and sequence indicators compose; hints put width first.
+var (
+	dumperLineBreaks   = regexp.MustCompile(`\r\n|[\r\n\x{0085}\x{2028}\x{2029}]`)
+	dumperScalarPrefix = regexp.MustCompile(`^ *(?:[-?:] +)*`)
+	dumperBlockHints   = regexp.MustCompile(`^(?:([2-9]))?[+-]?(?: +(?:#.*)?)?$`)
+)
+
+// blockScalarHeader recognizes scalar syntax in dumper-produced lines,
+// not marker-like suffixes within a plain scalar. Block bodies are skipped
+// by the caller, so their text is never interpreted as another header.
+func blockScalarHeader(line []byte) scalarHeader {
+	absent := scalarHeader{index: -1}
+	line = bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
+	prefix := dumperScalarPrefix.Find(line)
+	start := len(prefix)
+	parent, sequence := start, false
+	if indicators := bytes.TrimRight(prefix, " "); len(indicators) > 0 {
+		parent = len(indicators) - 1
+		sequence = indicators[parent] == '-'
+	}
+	if start == len(line) || line[start] == '#' {
+		return absent
+	}
+	// A quoted mapping key can contain colons and escaped quotes. Only a
+	// colon followed by whitespace outside that key introduces its value.
+	var quote byte
+	keyStart := scalarPropertiesEnd(line, start)
+	if keyStart < len(line) && line[keyStart] != '|' && line[keyStart] != '>' {
+		// Nonempty flow collections cannot be simple keys in this emitter.
+		// Empty collection keys can precede genuine block values on one line.
+		// All other flow lines contain scalar data, not block headers.
+		if line[keyStart] == '[' || line[keyStart] == '{' {
+			if !bytes.HasPrefix(line[keyStart:], []byte("[]: ")) && !bytes.HasPrefix(line[keyStart:], []byte("{}: ")) {
+				return absent
+			}
+			keyStart += 2
+		}
+		skipNext := false
+		for offset, value := range line[keyStart:] {
+			index := keyStart + offset
+			if skipNext {
+				skipNext = false
+				continue
+			}
+			if quote != 0 {
+				if quote == '"' && value == '\\' {
+					skipNext = true
+					continue
+				}
+				if value == quote {
+					if quote == '\'' && index+1 < len(line) && line[index+1] == '\'' {
+						skipNext = true
+						continue
+					}
+					quote = 0
+				}
+				continue
+			}
+			// A comment ends the key search; its colons and markers are data.
+			if value == '#' && line[index-1] == ' ' {
+				return absent
+			}
+			if index == keyStart && (value == '\'' || value == '"') {
+				quote = value
+				continue
+			}
+			if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
+				parent, sequence = start, false
+				start = index + 2
+				break
+			}
+		}
+	}
+	start = scalarPropertiesEnd(line, start)
+	if start == len(line) || (line[start] != '|' && line[start] != '>') {
+		return absent
+	}
+	header := scalarHeader{index: start, parentIndent: parent, sequence: sequence}
+	// The pinned dumper emits original explicit widths only in 2..9.
+	// Normalization may write width 1 at an odd grid boundary, but never
+	// feeds its own output back through this recognizer.
+	hints := dumperBlockHints.FindSubmatchIndex(line[start+1:])
+	if hints == nil {
+		return absent
+	}
+	if hints[2] >= 0 {
+		header.digit = start + 1
+	}
+	return header
+}
+
+// scalarTextContext follows quoted and flow continuations emitted by the
+// pinned dumper. Block bodies are excluded before scanning: their characters
+// are data, including unmatched quotes and collection indicators.
+// Completed emission places delimiters, whitespace or logical breaks after
+// syntactic quotes and indicators; this is not an arbitrary-input parser.
+type scalarTextContext struct {
+	quote     byte
+	flowDepth int
+}
+
+func (context *scalarTextContext) scan(line []byte) {
+	start, skipNext, property := true, false, false
+	for index, value := range line {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+		if property {
+			if value == ' ' {
+				property = false
+			}
+			continue
+		}
+		if context.quote != 0 {
+			if context.quote == '"' && value == '\\' {
+				skipNext = true
+				continue
+			}
+			if value == context.quote {
+				if value == '\'' && line[index+1] == '\'' {
+					skipNext = true
+					continue
+				}
+				context.quote = 0
+			}
+			start = false
+			continue
+		}
+		if value == ' ' || value == '\r' || value == '\n' {
+			continue
+		}
+		if value == '#' && (index == 0 || line[index-1] == ' ') {
+			return
+		}
+		if start && (value == '!' || value == '&') {
+			property = true
+			continue
+		}
+		if start && (value == '\'' || value == '"') {
+			context.quote = value
+			continue
+		}
+		if start && (value == '[' || value == '{') {
+			context.flowDepth++
+			continue
+		}
+		if context.flowDepth > 0 && (value == ']' || value == '}') {
+			context.flowDepth--
+			start = false
+			continue
+		}
+		if context.flowDepth > 0 && value == ',' {
+			start = true
+			continue
+		}
+		if value == ':' && line[index+1] == ' ' {
+			start = true
+			continue
+		}
+		if start && (value == '-' || value == '?' || value == ':') && line[index+1] == ' ' {
+			continue
+		}
+		start = false
+	}
+}
+
+// scalarPropertiesEnd skips emitted tags and anchors, but not scalar data.
+func scalarPropertiesEnd(line []byte, index int) int {
+	rest := bytes.TrimLeft(line[index:], " ")
+	for len(rest) > 0 && (rest[0] == '!' || rest[0] == '&') {
+		_, after, _ := bytes.Cut(rest, []byte{' '})
+		rest = bytes.TrimLeft(after, " ")
+	}
+	return len(line) - len(rest)
 }
 
 // EncodeWriter serializes value and writes one complete YAML document.
@@ -298,8 +588,36 @@ func exceedsLimit(length int, maximum int64) bool {
 	return int64(length) > maximum
 }
 
-func outputCapacity(length, indicators int) int {
-	return length + indicators
+// admitOutputCapacity admits a representable normalized size within its quota.
+// length is a materialized slice length; delta may grow or shrink its body.
+// Admission is allocation-free, including at native integer boundaries.
+func admitOutputCapacity(length, delta int, maxBytes int64) (int, error) {
+	if delta > math.MaxInt-length || delta < -length {
+		return 0, outputlimit.ErrLimit
+	}
+	capacity := length + delta
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	if int64(capacity) > maxBytes {
+		return 0, outputlimit.ErrLimit
+	}
+	return capacity, nil
+}
+
+// intermediateOutputLimit leaves invalid negative limits for validation and
+// saturates the doubled scratch ceiling without a quota-sized allocation.
+func intermediateOutputLimit(maxBytes int64) int64 {
+	if maxBytes < 0 {
+		return maxBytes
+	}
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	if maxBytes > math.MaxInt64/2 {
+		return math.MaxInt64
+	}
+	return maxBytes * 2
 }
 
 func needsLimitPlugin(options DecodeOptions) bool {

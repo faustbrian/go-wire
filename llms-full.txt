@@ -9,7 +9,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v2)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -20,7 +20,7 @@ write APIs.
 
 ## Status
 
-The package has a stable v1 API. Supported format behavior is fixture-backed, fuzzed,
+The package has a stable v2 API. Supported format behavior is fixture-backed, fuzzed,
 benchmarked, and held to meaningful 100% production coverage.
 
 ## Requirements
@@ -30,12 +30,12 @@ benchmarked, and held to meaningful 100% production coverage.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 Import format packages explicitly, such as
-`github.com/faustbrian/go-wire/jsonwire` or
-`github.com/faustbrian/go-wire/soap`.
+`github.com/faustbrian/go-wire/v2/jsonwire` or
+`github.com/faustbrian/go-wire/v2/soap`.
 
 ## Quickstart
 
@@ -157,10 +157,10 @@ Use this index to select an explicit wire format and understand its limits.
 
 ## Install
 
-Install the stable v1 release:
+Install the stable v2 release:
 
 ```sh
-go get github.com/faustbrian/go-wire@v1.0.0
+go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
 
 The module supports Go 1.27.0 and newer. The
@@ -547,7 +547,7 @@ source.
   carries structured context.
 - `(*Error).Error() string` renders only the stable classification. `Format`,
   `Op`, and `Err` remain inspectable trusted diagnostics and may contain peer
-  data. This text change is pending integration into the next major release.
+  data. Version 2 uses typed fields and cause inspection instead of diagnostic text.
 - `(*Error).Is(error) bool` matches the sentinel for `Kind` or an underlying
   cause.
 - `(*Error).Unwrap() error` returns the underlying cause.
@@ -713,7 +713,7 @@ source.
 
 ## Package `bsonwire`
 
-Pending the next major release, raw validation permits at most 100 nested
+Version 2 raw validation permits at most 100 nested
 documents, arrays, or CodeWithScope scope documents below the root (depth zero),
 even with duplicate-key opt-in. Array indices must be consecutive from zero;
 malformed nested structure fails before decoder callbacks. `DefaultMaxNestedLevels`
@@ -748,7 +748,7 @@ normalization behavior are SemVer-governed.
 `wire` uses format-specific packages rather than a universal codec:
 
 ```text
-github.com/faustbrian/go-wire        shared Format and Error vocabulary
+github.com/faustbrian/go-wire/v2        shared Format and Error vocabulary
 ├── jsonwire                         JSON boundary policy
 ├── xmlwire                          XML boundary policy and charsets
 ├── soap                             SOAP envelope and fault semantics
@@ -1562,14 +1562,41 @@ only execute a line without proving its contract.
 
 # Migration notes
 
-## Version 1 compatibility
+## From v1 to v2
 
-The module follows stable v1 compatibility. Pin a released version, keep the
+Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
+all codec imports to `github.com/faustbrian/go-wire/v2`. Update related imports
+in one change: v1 and v2 errors and sentinels have distinct Go identities.
+Existing v1 consumers remain on their selected version until deliberately
+migrated; this release does not migrate other repositories.
+
+Ordinary wire and SOAP fault text is categorical. Inspect `*wire.Error`, its
+wrapped cause, and `*soap.FaultError` fields for trusted diagnostics instead of
+matching old diagnostic strings. Existing classification and cause inspection
+remain available within the selected major module.
+
+Built-in XML and SOAP charset conversion enforces raw-input byte quotas and
+rejects unsupported or overlong labels before reading. Use
+`xmlwire.CharsetReaderWithLimit` for an explicit quota; custom callbacks and
+reader responsiveness remain caller-owned. Conversion can expand output.
+
+BSON validates nested documents, arrays and CodeWithScope scopes before decoder
+callbacks, including with duplicate-key opt-in. Supply consecutive array indices
+and at most 100 nested containers below the root. Encoding validates structure
+after codec work; this is not pre-encoding allocation protection.
+
+YAML scalar values, explicit mapping keys and quoted continuations retain their
+authored content. Emitted block indicators can change to preserve those values;
+encoded bytes are not promised to be identical across released versions.
+
+## Version 2 compatibility
+
+The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
 ## Pending v2 charset boundary
 
-The unreleased charset hardening is intended for the next major release, not
+Version 2 charset hardening changes admission and default quotas, not
 a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
 most 1 MiB of raw input and labels at most 64 bytes, and return categorical
 diagnostics. Use `CharsetReaderWithLimit` for a deliberate larger finite raw
@@ -1586,7 +1613,7 @@ document/array boundaries, including when duplicate keys are explicitly allowed.
 Arrays require consecutive zero-based indices. Raw nesting is limited to 100
 containers below the root; documents, arrays, and scopes each add one level.
 Malformed structure fails before decoder callbacks. This acceptance change is
-pending the next major release. Encoding validates serialized output afterward;
+part of version 2. Encoding validates serialized output afterward;
 driver buffering, pre-encoding resource limits, and custom-codec work are separate
 boundaries, not protected by this raw traversal limit.
 
@@ -1819,47 +1846,30 @@ The release commit must have:
 - documentation links and examples validated;
 - specification decisions, source pins, and conformance evidence validated;
 - dependency and vulnerability scans passing;
-- `CHANGELOG.md` moved from Unreleased to the release version;
+- a dated `CHANGELOG.md` entry covering the release delta;
 - migration notes for every breaking change.
 
 ## Release procedure
 
-1. Choose a SemVer version from the compatibility impact.
-2. Replace the Unreleased changelog section with the version and UTC date, then
-   add a fresh Unreleased section.
-3. Run the guarded target for the intended compatibility level:
-
-   ```sh
-   make release-patch
-   make release-minor
-   make release-major
-   ```
-
-   Each target calculates the next stable version, requires a clean `main`
-   branch synchronized with `origin/main`, runs the complete release gate, and
-   creates a local annotated tag. It never pushes the tag.
-4. Merge the release commit through normal review.
-5. Review the local tag, then push only that tag:
-
-   ```sh
-   git push origin v1.0.0
-   ```
-
-6. The tagged-release workflow re-runs quality and security gates, builds a
-   source archive with checksums, and creates a GitHub Release from the matching
-   changelog section.
-7. Verify the release page, checksum artifact, module availability, and Go
-   documentation rendering.
+1. Choose a SemVer version from the compatibility impact and add a dated
+   changelog entry covering the release delta. Keep an Unreleased section for
+   subsequent work and document every breaking migration.
+2. Merge the reviewed release preparation through the normal required gates.
+3. Follow the [release guide](releasing.md) for the exact candidate rehearsal,
+   guarded local tag creation, and manual publication procedure. The repository
+   has no `make release-*` targets or automatic tag-triggered publisher.
+4. Verify the published tag, release assets, public module checksum record,
+   and clean-consumer resolution before reporting publication complete.
 
 Never move or recreate a published tag. Publish a new patch version if a
 release artifact or note needs correction.
 
 ## Release reproducibility
 
-The release contains source only; consumers compile it with Go modules. The
-workflow records the tag, commit, Go version, source archive, and SHA-256
-checksum. Runtime dependencies are pinned through `go.mod` and recorded with
-their selection rationale and residual risks in
+The release contains source only; consumers compile it with Go modules.
+Publication binds the tag and commit to a deterministic source archive and
+SHA-256 checksum. Runtime dependencies are pinned through `go.mod` and recorded
+with their selection rationale and residual risks in
 [`dependencies.md`](dependencies.md). Dependency upgrades require full wire
 compatibility, fuzz, benchmark, vulnerability, and license review.
 
@@ -1924,7 +1934,7 @@ multiple runs and `benchstat` outside the release gate.
 # Security and interoperability hardening audit
 
 Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-published its stable v1 contract. This report distinguishes format
+prepares its stable v2 contract. This report distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -1940,9 +1950,16 @@ amplification from large values.
 
 Transport authentication, authorization, timeouts, cancellation, schemas,
 secret redaction, and safe logging remain application responsibilities. Encode
-inputs are already-resident application values. Encoders retain at most the
-configured output byte quota and writer APIs publish only a complete encoded
-value; destination failures remain `wire.ErrWrite`.
+inputs are already-resident application values. Returned payloads stay inside
+the configured output byte quota and writer APIs publish only a complete
+encoded value; destination failures remain `wire.ErrWrite`.
+
+YAML additionally retains provider output in a bounded normalization buffer
+of at most twice the final quota (saturated at the representable byte limit).
+The pinned folded emitter can add an extra LF beside an authored LF; correcting
+that output can shrink it before final admission. Each removed LF has a
+retained break partner. The buffer grows from produced bytes, not the quota,
+and final output includes all indentation hints and folding corrections.
 
 ## Findings
 
@@ -1959,7 +1976,7 @@ value; destination failures remain `wire.ErrWrite`.
 | GW-009 | Medium | JSON `Decode*`, `Normalize` | Go `encoding/json` accepts invalid UTF-8 in strings and substitutes U+FFFD, while RFC 8259 requires exchanged JSON text to use UTF-8. | Invalid bytes could compare differently across implementations or after normalization. | Fixed. Both paths reject invalid UTF-8 as `wire.ErrParse` before target assignment; the regression is a fuzz seed. |
 | GW-010 | High | Typed `Encode*` across formats | A self-referential MessagePack map caused a runtime stack overflow; other reflection codecs had the same recursive-value exposure. The regression runs the original crash shape in a subprocess. | Process termination from a caller value, including values assembled from attacker-influenced application state. | Fixed. Every typed encoder performs shared path-local cycle and 1,000-level depth preflight before codec invocation. All eight format paths have classified-error tests at 100% coverage. |
 | GW-011 | Medium | XML and SOAP `Decode*`/`Parse*` | The 1 MiB byte cap still allowed hundreds of thousands of tiny nested XML elements, while no wrapper token-depth policy existed. | Excessive parser stack or heap growth from deeply nested untrusted XML. | Fixed. XML and SOAP now default to 1,000 nested elements, expose `MaxDepth`, reject negative options, and classify excess depth as `wire.ErrSizeLimit`. |
-| GW-012 | Medium | YAML `Encode*` | YAML v4 emitted a multiline string beginning with a tab as an implicit-indentation block scalar, then rejected that output during its own parse. The cross-format round-trip fuzzer found `"\t\n0"`. | The writer could produce bytes that neither `wire` nor other strict YAML parsers accepted. | Fixed. Emitted block scalars carry an explicit 2-9 space indentation indicator, remain inside the output quota, and round-trip regressions preserve both the tab case and ordinary scalars ending in `>` or `|`. |
+| GW-012 | Medium | YAML `Encode*` | YAML v4 emitted a multiline string beginning with a tab as an implicit-indentation block scalar, then rejected that output during its own parse. The cross-format round-trip fuzzer found `"\t\n0"`. | The writer could produce bytes that neither `wire` nor other strict YAML parsers accepted. | Fixed. Only actual emitted block headers receive explicit indentation matching their mapping or sequence layout, including root and nested blocks. Plain scalar suffixes, multiline quoted content, and explicit mapping keys remain unchanged; final output stays inside the quota. |
 | GW-013 | Low | JSON, XML, and SOAP read/target errors | The original packages predated the shared size and target error kinds and retained validation classification while newer formats used the dedicated kinds. | Cross-format boundary code needed format-specific branching for equivalent failures. | Fixed before v1. All eight formats now use `wire.ErrSizeLimit` and `wire.ErrTarget`; a hostile endless reader proves each stream stops at exactly `MaxBytes + 1`. |
 
 No finding caused payload bytes or sensitive field values to be embedded in a
@@ -2024,8 +2041,8 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The package is now available as stable v1.0.0. The current module requires Go
-1.26.6 or newer and has bounded reader and writer APIs for all eight formats,
+The current release preparation targets v2.0.0. The current module requires Go
+1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller
 responsibilities are explicit in the findings and format matrix; no stronger
@@ -2067,7 +2084,7 @@ allocation bounds. Never assume equivalent semantics across formats.
 ## Application Responsibilities
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
-in the pending major-release source. Structured fields and wrapped causes are
+in version 2. Structured fields and wrapped causes are
 retained for trusted inspection, not automatic logging or disclosure. Explicit
 field dumps, formatting underlying causes, and application-added error prefixes
 require application redaction. This is not a guarantee about arbitrary caller
@@ -2101,13 +2118,21 @@ Format-specific fuzz targets, 100% meaningful production coverage, API
 inventory checks, documentation links, and vulnerability scanning are release
 gates.
 
-## Tagging
+## Tagging and publication
 
-Use `make release-patch`, `make release-minor`, or
-`make release-major`. Review the local annotated tag before pushing it.
-The release workflow validates the tag, rebuilds all gates, creates a
-deterministic source archive and checksum, and publishes changelog-derived
-notes.
+The repository has no automatic tag-triggered publisher. Dispatch the owned
+`ci.yml` workflow with `release_dry_run=true` and inspect every required result
+for the actual candidate. Hosted gates do not publish a release.
+
+For the local maintainer route, `scripts/release.sh major` checks a clean,
+synchronized main and the dated changelog, runs `make check`, and creates an
+annotated tag. Use the trusted maintainer signing key for publication,
+verify the new remote tag target, and never move an existing release tag.
+
+Publish changelog-derived notes with a deterministic source archive and checksum
+bound to the verified main commit. Verify public asset bytes, the public Go
+module and its checksum record, and a clean consumer after publication. A tag
+push alone does not establish a successful release or consumer adoption.
 
 ## Source: CONTRIBUTING.md
 
@@ -2267,27 +2292,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Validate nested BSON structure and CodeWithScope scopes before decoding,
-  retain structural checks with duplicate-key opt-in, and require consecutive
-  array indices. Iterative raw validation permits 100 nested containers below
-  the root; encoding checks output after codec work. These acceptance changes
-  are pending the next major release, not pre-encoding allocation protection.
-  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
-
-- Make shared wire errors and SOAP fault errors render categorical text only,
-  retaining original diagnostic fields, causes, and error classification.
-  This incompatible text change is pending the next major release.
-  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
-
-- Harden XML and SOAP built-in charset conversion with bounded raw input and
-  labels, pre-read allowlist rejection, and private categorical diagnostics.
-  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. This incompatible
-  behavior is pending integration into the next major release.
-
-- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
-  as parse errors instead of panicking. Comparable keys and the default
-  prohibition on tags remain unchanged.
-
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion
@@ -2299,9 +2303,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   repository.
 
 ### Documentation
-
-- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
-  CTAP 2.2 normative PDF and deterministic-CBOR profile.
 
 - Record reported RFC 9110 Errata ID 9164 as behavior-neutral because HTTP
   grammar remains caller-owned policy, while retaining the prior Errata ID
@@ -2356,6 +2357,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Remove the archived monorepo documentation link; package guidance remains in
   the repository-owned documentation.
+
+## [2.0.0] - 2026-10-03
+
+### Fixed
+
+- Preserve YAML scalar values and mapping keys, including marker-like text
+  inside block contents or multiline quoted strings. Explicit indentation
+  follows the emitted mapping or sequence layout, including root and nested
+  tab-leading block scalars.
+
+- Preserve blocks nested inside explicit collection keys and values. Keep
+  plain scalar content unchanged at large configured byte limits rather
+  than wrapping it into marker-like continuation lines.
+
+- Preserve marker-like scalar text inside inline flow collections and
+  trailing comments while repairing real blocks after empty collection keys.
+
+- Preserve emitted carriage returns and Unicode line breaks in comments and
+  scalar bodies while repairing subsequent tab-leading block values.
+
+- Preserve authored folded YAML values across ordinary and more-indented
+  line transitions and trailing breaks. Admit the inclusive final byte quota
+  after bounded provider-output normalization without repeating callbacks.
+
+- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
+  as parse errors instead of panicking. Comparable keys and the default
+  prohibition on tags remain unchanged.
+
+### Changed
+
+- Publish the major module as `github.com/faustbrian/go-wire/v2`. Update all
+  Wire imports together; v1 and v2 error types and sentinels are distinct.
+
+- Harden XML and SOAP built-in charset conversion with bounded raw input and
+  labels, pre-read allowlist rejection, and private categorical diagnostics.
+  Add `xmlwire.CharsetReaderWithLimit` for explicit quotas. Custom charset callbacks remain caller-owned.
+
+- Make shared wire errors and SOAP fault errors render categorical text only,
+  retaining original diagnostic fields, causes, and error classification.
+  Use typed causes and fault fields instead of previous diagnostic text.
+  WIRE-DEC-014 sha256:1238f483bf726688031a864be2082b503cdc4566830dc16ecbaf25f58d12bac9
+
+- Validate nested BSON structure and CodeWithScope scopes before decoding,
+  retain structural checks with duplicate-key opt-in, and require consecutive
+  array indices. Iterative raw validation permits 100 nested containers below
+  the root; encoding checks output after codec work. These acceptance changes
+  do not provide pre-encoding allocation protection.
+  WIRE-DEC-012 sha256:bcc48febdf249b122ae7bbed2aff0ef5ba84ceeda0a501589276d6d673fec20c
+
+- Adopt MongoDB driver v2.9.1 while retaining external BSON driver aliases;
+  driver network and GridFS operations remain outside the module's imported
+  package boundary.
+
+### Documentation
+
+- Record the 2026-10-02 FIDO Alliance feed review while retaining the exact
+  CTAP 2.2 normative PDF and deterministic-CBOR profile.
+
+- Align the codec dependency table with the CBOR v2.9.4 and BSON v2.9.1
+  module pins.
 
 ## [1.0.0] - 2026-08-25
 
@@ -2595,8 +2656,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v2.0.0...HEAD
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
+[2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0
 
 ## Source: docs/dependencies.md
 
@@ -2611,8 +2673,8 @@ than incomplete local parsers.
 | YAML | `go.yaml.in/yaml/v4 v4.0.0-rc.6` | Official YAML organization implementation with duplicate-key handling, multi-document loading, and alias/depth limit plugins | v4 is the actively maintained line; v1-v3 are frozen except for security fixes. The release-candidate pin is a residual API risk tracked through Dependabot and the quality gate. `wire` adds explicit block-scalar indentation because rc.6 can emit tab-leading multiline scalars that its scanner rejects when indentation is implicit. |
 | TOML | `github.com/BurntSushi/toml v1.6.0` | Mature TOML parser/encoder with metadata for unknown fields and native datetime/numeric conversion | Stable tagged module with a small dependency surface. It documents TOML 1.1 compatibility; wire's contract remains the tested subset described in the format matrix. Duplicate keys and malformed trailing text are rejected by its parser. |
 | MessagePack | `github.com/vmihailenco/msgpack/v5 v5.4.1` | Mature v5 codec with timestamps, extension support, sorted maps, and stream APIs | Widely deployed stable major version, but older than the other binary codecs and without native structural limit options. `wire` adds bounded structural preflight and recursive numeric-fit validation because collection traversal and narrow integer methods otherwise rely directly on encoded structure and Go casts. The shamaton alternative was rejected because its v3 decoder has a published unfixed panic vulnerability. |
-| CBOR | `github.com/fxamacker/cbor/v2 v2.9.2` | Fuzzed RFC 8949 implementation with immutable encode/decode modes and explicit duplicate, tag, deterministic, and resource options | Active tagged releases, extensive fuzzing, and published security assessment history. `github.com/x448/float16` is its sole runtime helper. |
-| BSON | `go.mongodb.org/mongo-driver/v2 v2.8.0` | Official MongoDB BSON implementation and canonical ObjectID, datetime, raw document, and registry types | Actively maintained official stable driver. Only the BSON package is imported; network/client behavior is not part of `wire`. |
+| CBOR | `github.com/fxamacker/cbor/v2 v2.9.4` | Fuzzed RFC 8949 implementation with immutable encode/decode modes and explicit duplicate, tag, deterministic, and resource options | Active tagged releases, extensive fuzzing, and published security assessment history. `github.com/x448/float16` is its sole runtime helper. |
+| BSON | `go.mongodb.org/mongo-driver/v2 v2.9.1` | Official MongoDB BSON implementation and canonical ObjectID, datetime, raw document, and registry types | Actively maintained official stable driver. Only the BSON package is imported; network/client behavior is not part of `wire`. |
 
 All versions are pinned in `go.mod` and checksummed in `go.sum`. Dependabot,
 `govulncheck`, scheduled fuzzing, and the release gate monitor changes. A local
@@ -3051,14 +3113,17 @@ concepts.
 
 ## Mandatory Automation
 
-Every repository provides pinned-SHA workflows for CI, benchmarks, scheduled
-fuzzing, security, and tagged releases. CI tests Go 1.25.x as the supported
-minimum line and current stable Go. Dependency review runs on pull requests;
-reachable dependency scanning uses `govulncheck`.
+Wire uses an immutable reusable CI workflow for selected-module quality,
+benchmark, fuzz, and security gates. The supported minimum is Go 1.27.0,
+as declared in `go.mod` and the module manifest. Dependency review runs on
+pull requests; reachable dependency scanning uses `govulncheck`.
 
-The common Make interface is `format`, `format-check`, `test`,
-`test-race`, `coverage`, `vet`, `lint`, `fuzz`, `benchmark`,
-`safety`, `docs`, `vuln`, `check`, and semantic release targets.
+The current Make interface is `check`, `ci`, `cohesion`, `inventory`, and
+`repository-check`. Formatting, race, coverage, analyzer, fuzz, benchmark,
+and vulnerability checks are gates inside the library tool, not separate
+Make targets. A release rehearsal uses the manual CI input
+`release_dry_run`; tags do not automatically publish releases. Follow the
+[release guide](releasing.md) for guarded tagging and manual publication.
 
 The package family shares the `GO-SAFETY-1` baseline. It forbids `unsafe`,
 cgo, and `go:linkname` in production code and standardizes ownership,
@@ -3084,6 +3149,11 @@ repositories.
 ## Source: docs/specification-decisions.md
 
 # Wire Specification Decisions
+
+Version 2.0.0 implements the retained BSON-admission and diagnostic-privacy
+decisions. Prospective major-release wording in the rendered decision records
+refers to this v2 integration; their source bindings and decision hashes remain
+unchanged. Current adoption guidance is in [migration.md](migration.md).
 
 This register records observable choices where the supported wire-format
 specifications, Go codecs, dependency codecs, and package policy permit

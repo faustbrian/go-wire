@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/soap"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/soap"
 )
 
 func assertAllSOAPOutputCutoffs(t *testing.T, encode func(int64) ([]byte, error)) {

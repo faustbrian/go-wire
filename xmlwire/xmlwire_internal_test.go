@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire"
+	"github.com/faustbrian/go-wire/v2"
 )
 
 func TestDefaultCharsetReaderUsesDecodeQuota(t *testing.T) {

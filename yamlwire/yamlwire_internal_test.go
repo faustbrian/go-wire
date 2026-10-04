@@ -2,9 +2,10 @@ package yamlwire
 
 import (
 	"errors"
+	"math"
 	"testing"
 
-	"github.com/faustbrian/go-wire/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
 )
 
 func TestBoundaryPredicates(t *testing.T) {
@@ -25,9 +26,6 @@ func TestBoundaryPredicates(t *testing.T) {
 	}
 	if exceedsLimit(4, 4) || !exceedsLimit(5, 4) {
 		t.Fatal("exceedsLimit() did not preserve the exact boundary")
-	}
-	if got := outputCapacity(4, 2); got != 6 {
-		t.Fatalf("outputCapacity() = %d, want 6", got)
 	}
 	if depthLimitEnabled(0) || !depthLimitEnabled(1) {
 		t.Fatal("depthLimitEnabled() did not preserve the zero boundary")
@@ -64,16 +62,19 @@ func TestBlockScalarIndicatorBoundaries(t *testing.T) {
 
 	for input, expected := range map[string]int{
 		"x: |\n":    3,
+		"|":         0,
+		" |":        1,
 		"- |\n":     2,
+		"-   |\n":   4,
 		"x: |+\n":   3,
 		"x: >-\r\n": 3,
 	} {
-		if got := blockScalarIndicator([]byte(input)); got != expected {
+		if got := blockScalarHeader([]byte(input)).index; got != expected {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want %d", input, got, expected)
 		}
 	}
-	for _, input := range []string{"", "|", " |", "x: x", "xx |", "x:|"} {
-		if got := blockScalarIndicator([]byte(input)); got != -1 {
+	for _, input := range []string{"", "x: x", "xx |", "x:|", "text: 000- >", "- 000- |", "x: |0", "x: |--", "x: | text"} {
+		if got := blockScalarHeader([]byte(input)).index; got != -1 {
 			t.Fatalf("blockScalarIndicator(%q) = %d, want -1", input, got)
 		}
 	}
@@ -92,5 +93,64 @@ func TestAddBlockIndentIndicatorsHonorsExactCapacity(t *testing.T) {
 	}
 	if string(got) != "text: |2-\n  value\n" {
 		t.Fatalf("addBlockIndentIndicators() = %q", got)
+	}
+}
+
+// Admission outcomes exercise arithmetic and quota policy together without
+// materializing giant slices, including native 32-bit integer boundaries.
+func TestAdmitOutputCapacityWithoutAllocation(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		length, delta int
+		quota         int64
+		want          int
+		reject        bool
+	}{
+		{0, 0, 1, 0, false},
+		{0, 1, 1, 1, false},
+		{4, -4, 1, 0, false},
+		{4, -5, 1, 0, true},
+		{4, 2, 5, 0, true},
+		{4, 2, 6, 6, false},
+		{4, 2, 7, 6, false},
+		{math.MaxInt - 1, 1, math.MaxInt64, math.MaxInt, false},
+		{math.MaxInt, 0, math.MaxInt64, math.MaxInt, false},
+		{math.MaxInt, 1, math.MaxInt64, 0, true},
+		{math.MaxInt - 1, 2, math.MaxInt64, 0, true},
+		{math.MaxInt, -1, math.MaxInt64, math.MaxInt - 1, false},
+		{4, math.MinInt, math.MaxInt64, 0, true},
+		{0, -1, 1, 0, true},
+		{int(DefaultMaxBytes) - 1, 0, 0, int(DefaultMaxBytes) - 1, false},
+		{int(DefaultMaxBytes), 0, 0, int(DefaultMaxBytes), false},
+		{int(DefaultMaxBytes) + 1, 0, 0, 0, true},
+		{0, 0, -1, 0, true},
+	} {
+		got, err := admitOutputCapacity(test.length, test.delta, test.quota)
+		if test.reject {
+			if got != 0 || !errors.Is(err, outputlimit.ErrLimit) {
+				t.Fatalf("admission(%d, %d, %d) = (%d, %v), want rejection", test.length, test.delta, test.quota, got, err)
+			}
+			continue
+		}
+		if err != nil || got != test.want {
+			t.Fatalf("admission(%d, %d, %d) = (%d, %v), want (%d, nil)", test.length, test.delta, test.quota, got, err, test.want)
+		}
+	}
+}
+
+func TestIntermediateOutputLimitSaturatesWithoutAllocation(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct{ configured, want int64 }{
+		{-1, -1},
+		{0, 2 * DefaultMaxBytes},
+		{1, 2},
+		{math.MaxInt64/2 - 1, math.MaxInt64 - 3},
+		{math.MaxInt64 / 2, math.MaxInt64 - 1},
+		{math.MaxInt64/2 + 1, math.MaxInt64},
+		{math.MaxInt64, math.MaxInt64},
+	} {
+		if got := intermediateOutputLimit(test.configured); got != test.want {
+			t.Fatalf("scratch ceiling(%d) = %d, want %d", test.configured, got, test.want)
+		}
 	}
 }

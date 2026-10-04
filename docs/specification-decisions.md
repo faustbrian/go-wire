@@ -1,5 +1,10 @@
 # Wire Specification Decisions
 
+Version 2.0.0 implements the retained BSON-admission and diagnostic-privacy
+decisions. Prospective major-release wording in the rendered decision records
+refers to this v2 integration; their source bindings and decision hashes remain
+unchanged. Current adoption guidance is in [migration.md](migration.md).
+
 This register records observable choices where the supported wire-format
 specifications, Go codecs, dependency codecs, and package policy permit
 different outcomes. Each format remains an explicit package; this module does

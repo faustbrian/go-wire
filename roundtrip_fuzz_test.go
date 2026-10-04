@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire/bsonwire"
-	"github.com/faustbrian/go-wire/cborwire"
-	"github.com/faustbrian/go-wire/jsonwire"
-	"github.com/faustbrian/go-wire/msgpackwire"
-	"github.com/faustbrian/go-wire/soap"
-	"github.com/faustbrian/go-wire/tomlwire"
-	"github.com/faustbrian/go-wire/xmlwire"
-	"github.com/faustbrian/go-wire/yamlwire"
+	"github.com/faustbrian/go-wire/v2/bsonwire"
+	"github.com/faustbrian/go-wire/v2/cborwire"
+	"github.com/faustbrian/go-wire/v2/jsonwire"
+	"github.com/faustbrian/go-wire/v2/msgpackwire"
+	"github.com/faustbrian/go-wire/v2/soap"
+	"github.com/faustbrian/go-wire/v2/tomlwire"
+	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v2/yamlwire"
 )
 
 type roundTripDocument struct {
@@ -23,6 +23,8 @@ type roundTripDocument struct {
 
 func FuzzRoundTrip(f *testing.F) {
 	f.Add("shipment <ready> & safe", int64(42), true)
+	f.Add("000- >", int64(-56), true)
+	f.Add("first\n000- >\nfoo: |\n- >\nlast", int64(0), false)
 	f.Add(string([]byte{'b', 'a', 'd', 0xff}), int64(-1), false)
 	f.Add("\x00\t\n\r", int64(0), true)
 

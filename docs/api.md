@@ -29,7 +29,7 @@ source.
   carries structured context.
 - `(*Error).Error() string` renders only the stable classification. `Format`,
   `Op`, and `Err` remain inspectable trusted diagnostics and may contain peer
-  data. This text change is pending integration into the next major release.
+  data. Version 2 uses typed fields and cause inspection instead of diagnostic text.
 - `(*Error).Is(error) bool` matches the sentinel for `Kind` or an underlying
   cause.
 - `(*Error).Unwrap() error` returns the underlying cause.
@@ -195,7 +195,7 @@ source.
 
 ## Package `bsonwire`
 
-Pending the next major release, raw validation permits at most 100 nested
+Version 2 raw validation permits at most 100 nested
 documents, arrays, or CodeWithScope scope documents below the root (depth zero),
 even with duplicate-key opt-in. Array indices must be consecutive from zero;
 malformed nested structure fails before decoder callbacks. `DefaultMaxNestedLevels`

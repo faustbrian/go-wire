@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/msgpackwire"
+	"github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/msgpackwire"
 	"github.com/vmihailenco/msgpack/v5"
 )
 

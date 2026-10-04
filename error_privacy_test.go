@@ -5,15 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	wire "github.com/faustbrian/go-wire"
-	"github.com/faustbrian/go-wire/bsonwire"
-	"github.com/faustbrian/go-wire/cborwire"
-	"github.com/faustbrian/go-wire/jsonwire"
-	"github.com/faustbrian/go-wire/msgpackwire"
-	"github.com/faustbrian/go-wire/soap"
-	"github.com/faustbrian/go-wire/tomlwire"
-	"github.com/faustbrian/go-wire/xmlwire"
-	"github.com/faustbrian/go-wire/yamlwire"
+	wire "github.com/faustbrian/go-wire/v2"
+	"github.com/faustbrian/go-wire/v2/bsonwire"
+	"github.com/faustbrian/go-wire/v2/cborwire"
+	"github.com/faustbrian/go-wire/v2/jsonwire"
+	"github.com/faustbrian/go-wire/v2/msgpackwire"
+	"github.com/faustbrian/go-wire/v2/soap"
+	"github.com/faustbrian/go-wire/v2/tomlwire"
+	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v2/yamlwire"
 )
 
 func TestDecodeErrorsDoNotEchoSensitiveValues(t *testing.T) {

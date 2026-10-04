@@ -60,47 +60,30 @@ The release commit must have:
 - documentation links and examples validated;
 - specification decisions, source pins, and conformance evidence validated;
 - dependency and vulnerability scans passing;
-- `CHANGELOG.md` moved from Unreleased to the release version;
+- a dated `CHANGELOG.md` entry covering the release delta;
 - migration notes for every breaking change.
 
 ## Release procedure
 
-1. Choose a SemVer version from the compatibility impact.
-2. Replace the Unreleased changelog section with the version and UTC date, then
-   add a fresh Unreleased section.
-3. Run the guarded target for the intended compatibility level:
-
-   ```sh
-   make release-patch
-   make release-minor
-   make release-major
-   ```
-
-   Each target calculates the next stable version, requires a clean `main`
-   branch synchronized with `origin/main`, runs the complete release gate, and
-   creates a local annotated tag. It never pushes the tag.
-4. Merge the release commit through normal review.
-5. Review the local tag, then push only that tag:
-
-   ```sh
-   git push origin v1.0.0
-   ```
-
-6. The tagged-release workflow re-runs quality and security gates, builds a
-   source archive with checksums, and creates a GitHub Release from the matching
-   changelog section.
-7. Verify the release page, checksum artifact, module availability, and Go
-   documentation rendering.
+1. Choose a SemVer version from the compatibility impact and add a dated
+   changelog entry covering the release delta. Keep an Unreleased section for
+   subsequent work and document every breaking migration.
+2. Merge the reviewed release preparation through the normal required gates.
+3. Follow the [release guide](releasing.md) for the exact candidate rehearsal,
+   guarded local tag creation, and manual publication procedure. The repository
+   has no `make release-*` targets or automatic tag-triggered publisher.
+4. Verify the published tag, release assets, public module checksum record,
+   and clean-consumer resolution before reporting publication complete.
 
 Never move or recreate a published tag. Publish a new patch version if a
 release artifact or note needs correction.
 
 ## Release reproducibility
 
-The release contains source only; consumers compile it with Go modules. The
-workflow records the tag, commit, Go version, source archive, and SHA-256
-checksum. Runtime dependencies are pinned through `go.mod` and recorded with
-their selection rationale and residual risks in
+The release contains source only; consumers compile it with Go modules.
+Publication binds the tag and commit to a deterministic source archive and
+SHA-256 checksum. Runtime dependencies are pinned through `go.mod` and recorded
+with their selection rationale and residual risks in
 [`dependencies.md`](dependencies.md). Dependency upgrades require full wire
 compatibility, fuzz, benchmark, vulnerability, and license review.
 
