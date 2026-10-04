@@ -17,9 +17,16 @@ amplification from large values.
 
 Transport authentication, authorization, timeouts, cancellation, schemas,
 secret redaction, and safe logging remain application responsibilities. Encode
-inputs are already-resident application values. Encoders retain at most the
-configured output byte quota and writer APIs publish only a complete encoded
-value; destination failures remain `wire.ErrWrite`.
+inputs are already-resident application values. Returned payloads stay inside
+the configured output byte quota and writer APIs publish only a complete
+encoded value; destination failures remain `wire.ErrWrite`.
+
+YAML additionally retains provider output in a bounded normalization buffer
+of at most twice the final quota (saturated at the representable byte limit).
+The pinned folded emitter can add an extra LF beside an authored LF; correcting
+that output can shrink it before final admission. Each removed LF has a
+retained break partner. The buffer grows from produced bytes, not the quota,
+and final output includes all indentation hints and folding corrections.
 
 ## Findings
 

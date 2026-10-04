@@ -3,7 +3,9 @@ package yamlwire_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/faustbrian/go-wire/v2"
@@ -375,6 +377,434 @@ func TestEncodePreservesNonBlockTrailingComments(t *testing.T) {
 				} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
 					t.Fatalf("admitted quota changed output: %v/%v", encodeErr, writeErr)
 				}
+			}
+		}
+	}
+}
+
+func TestEncodePreservesEmittedContextBoundaries(t *testing.T) {
+	scalar := func(value string, style yaml.Style) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: style}
+	}
+	sequence := func(children ...*yaml.Node) *yaml.Node {
+		return &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq", Content: children}
+	}
+	withBlock := func(first *yaml.Node) *yaml.Node {
+		return sequence(first, scalar("\t\n0", yaml.LiteralStyle), scalar("sibling", 0))
+	}
+	for _, scenario := range []struct {
+		name string
+		make func() *yaml.Node
+	}{
+		{"closing continuation", func() *yaml.Node { return scalar("first\nfoo: | #tail", yaml.SingleQuotedStyle) }},
+		{"terminal single quote", func() *yaml.Node { return scalar("a", yaml.SingleQuotedStyle) }},
+		{"property before empty collection key", func() *yaml.Node {
+			key := sequence()
+			key.Style, key.Anchor = yaml.FlowStyle, "a'b"
+			return &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map", Content: []*yaml.Node{key, scalar("\t\n0", yaml.LiteralStyle)}}
+		}},
+		{"compact trailing comment", func() *yaml.Node {
+			first := scalar("unchanged", 0)
+			first.LineComment = "#foo: | #note: '["
+			return withBlock(first)
+		}},
+		{"property inside flow collection", func() *yaml.Node {
+			first := scalar("plain", 0)
+			first.Anchor = "a'b"
+			flow := sequence(first)
+			flow.Style = yaml.FlowStyle
+			return withBlock(flow)
+		}},
+		{"escaped quote before flow marker", func() *yaml.Node { return withBlock(scalar("quoted\": [", yaml.DoubleQuotedStyle)) }},
+		{"doubled apostrophe before flow marker", func() *yaml.Node { return withBlock(scalar("first's: [\nlast", yaml.SingleQuotedStyle)) }},
+		{"plain closer before flow continuation", func() *yaml.Node {
+			flow := sequence(scalar("plain", 0), scalar("first\nfoo: | #tail", yaml.SingleQuotedStyle))
+			flow.Style = yaml.FlowStyle
+			return sequence(scalar("x]", 0), flow)
+		}},
+		{"plain token before apostrophe", func() *yaml.Node { return withBlock(scalar("x 'open", 0)) }},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			want := emittedNodeSemantics(scenario.make())
+			for _, indent := range []int{0, 4, 9} {
+				for _, sequenceIndent := range []bool{false, true} {
+					options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+					payload, err := yamlwire.Encode(scenario.make(), options)
+					if err != nil {
+						t.Fatal(err)
+					}
+					var got yaml.Node
+					if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil || len(got.Content) != 1 {
+						t.Fatalf("parse %q: %v", payload, err)
+					}
+					if actual := emittedNodeSemantics(got.Content[0]); !reflect.DeepEqual(actual, want) {
+						t.Fatalf("authored values, properties, or comments changed: got %#v, want %#v; payload %q", actual, want, payload)
+					}
+					repeated, err := yamlwire.Encode(scenario.make(), options)
+					if err != nil || !bytes.Equal(repeated, payload) {
+						t.Fatalf("nondeterministic output: %q, %v", repeated, err)
+					}
+					for _, allowance := range []int64{-1, 0, 1} {
+						limited := options
+						limited.MaxBytes = int64(len(payload)) + allowance
+						encoded, encodeErr := yamlwire.Encode(scenario.make(), limited)
+						var output bytes.Buffer
+						output.WriteString("prior")
+						writeErr := yamlwire.EncodeWriter(&output, scenario.make(), limited)
+						if allowance < 0 {
+							if encoded != nil || !errors.Is(encodeErr, wire.ErrSizeLimit) || !errors.Is(writeErr, wire.ErrSizeLimit) || output.String() != "prior" {
+								t.Fatalf("below quota published %q/%q: %v/%v", encoded, output.String(), encodeErr, writeErr)
+							}
+						} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
+							t.Fatalf("admitted quota changed output: %v/%v", encodeErr, writeErr)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+type emittedSemantics struct {
+	kind                        yaml.Kind
+	value, tag, anchor, comment string
+	children                    []emittedSemantics
+}
+
+func emittedNodeSemantics(node *yaml.Node) emittedSemantics {
+	result := emittedSemantics{kind: node.Kind, value: node.Value, tag: node.Tag, anchor: node.Anchor, comment: node.LineComment}
+	for _, child := range node.Content {
+		result.children = append(result.children, emittedNodeSemantics(child))
+	}
+	return result
+}
+
+func TestEncodePreservesEmittedLogicalBreaks(t *testing.T) {
+	scalar := func(value string, style yaml.Style) *yaml.Node {
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: style}
+	}
+	sequence := func(children ...*yaml.Node) *yaml.Node {
+		return &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq", Content: children}
+	}
+	for _, lineBreak := range []string{"\n", "\r\n", "\r", "\u0085", "\u2028", "\u2029"} {
+		for _, placement := range []string{"head comment", "line comment", "block body", "quoted continuation"} {
+			if (placement == "block body" || placement == "quoted continuation") && lineBreak != "\u2028" && lineBreak != "\u2029" {
+				continue // Other authored scalar breaks are normalized or escaped by the dumper.
+			}
+			t.Run(fmt.Sprintf("%s/%q", placement, lineBreak), func(t *testing.T) {
+				makeNode := func() *yaml.Node {
+					block := scalar("\t\n0", yaml.LiteralStyle)
+					sibling := scalar("sibling", 0)
+					switch placement {
+					case "head comment":
+						block.HeadComment = "note" + lineBreak
+						return sequence(block, sibling)
+					case "line comment":
+						first := scalar("first", 0)
+						first.LineComment = "note" + lineBreak
+						return sequence(first, block, sibling)
+					case "block body":
+						return sequence(scalar("a"+lineBreak, yaml.LiteralStyle), block, sibling)
+					default:
+						return sequence(scalar("first"+lineBreak+"foo: | # '[", yaml.SingleQuotedStyle), block, sibling)
+					}
+				}
+				for _, indent := range []int{0, 4, 9} {
+					for _, sequenceIndent := range []bool{false, true} {
+						options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+						payload, err := yamlwire.Encode(makeNode(), options)
+						if err != nil {
+							t.Fatal(err)
+						}
+						var got yaml.Node
+						if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil {
+							t.Fatalf("independent parse of emitted logical breaks %q: %v", payload, err)
+						}
+						if len(got.Content) != 1 || !reflect.DeepEqual(scalarNodeSemantics(got.Content[0]), scalarNodeSemantics(makeNode())) {
+							t.Fatalf("authored values or siblings changed: %q", payload)
+						}
+						if placement == "head comment" || placement == "line comment" {
+							if !bytes.Contains(payload, []byte("# note"+lineBreak)) {
+								t.Fatalf("emitted comment bytes changed: %q", payload)
+							}
+						}
+						repeated, err := yamlwire.Encode(makeNode(), options)
+						if err != nil || !bytes.Equal(repeated, payload) {
+							t.Fatalf("nondeterministic output: %q, %v", repeated, err)
+						}
+						for _, allowance := range []int64{-1, 0, 1} {
+							limited := options
+							limited.MaxBytes = int64(len(payload)) + allowance
+							encoded, encodeErr := yamlwire.Encode(makeNode(), limited)
+							var output bytes.Buffer
+							output.WriteString("prior")
+							writeErr := yamlwire.EncodeWriter(&output, makeNode(), limited)
+							if allowance < 0 {
+								if encoded != nil || !errors.Is(encodeErr, wire.ErrSizeLimit) || !errors.Is(writeErr, wire.ErrSizeLimit) || output.String() != "prior" {
+									t.Fatalf("below quota published %q/%q: %v/%v", encoded, output.String(), encodeErr, writeErr)
+								}
+							} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
+								t.Fatalf("admitted quota changed output: %v/%v", encodeErr, writeErr)
+							}
+						}
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestEncodePreservesFoldedIndentTransitions(t *testing.T) {
+	for _, value := range []string{
+		"first\n last", "first\n\tlast", "first\n\n last",
+		"first\n last\nnext", "first\n last\n", " first\nlast",
+		" first\nsecond\nthird", "first\n\n", "first\nlast",
+		"first\n last\n\n", "first\n\nlast",
+		"first\n last\nnext\n other", "", "\n", "\n\n",
+		"first\n\u2028 last", " first\nnext\u2028last",
+		"first\n\u2028last", "first\n\u2029last", " first\nsecond\n\u2028third",
+		"first\n \nlast", "  \nfirst\nlast", "first\n\n\n",
+	} {
+		t.Run(fmt.Sprintf("%q", value), func(t *testing.T) {
+			for _, shape := range []string{"root", "sequence", "mapping"} {
+				makeNode := func() *yaml.Node {
+					scalar := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: yaml.FoldedStyle}
+					switch shape {
+					case "sequence":
+						return &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq", Content: []*yaml.Node{scalar, {Kind: yaml.ScalarNode, Tag: "!!str", Value: "sibling"}}}
+					case "mapping":
+						return &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map", Content: []*yaml.Node{{Kind: yaml.ScalarNode, Tag: "!!str", Value: "text"}, scalar}}
+					default:
+						return scalar
+					}
+				}
+				for _, marshaled := range []bool{false, true} {
+					makeValue := func() any {
+						if marshaled {
+							return scalarNodeMarshaler{makeNode()}
+						}
+						return makeNode()
+					}
+					for _, indent := range []int{0, 4, 9} {
+						for _, sequenceIndent := range []bool{false, true} {
+							options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+							payload, err := yamlwire.Encode(makeValue(), options)
+							if err != nil {
+								t.Fatal(err)
+							}
+							var got yaml.Node
+							if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil {
+								t.Fatal(err)
+							}
+							if len(got.Content) != 1 || !reflect.DeepEqual(scalarNodeSemantics(got.Content[0]), scalarNodeSemantics(makeNode())) {
+								t.Fatalf("folded %s value changed from %q: decoded %#v, payload %q", shape, value, scalarNodeSemantics(got.Content[0]), payload)
+							}
+							repeated, err := yamlwire.Encode(makeValue(), options)
+							if err != nil || !bytes.Equal(repeated, payload) {
+								t.Fatalf("nondeterministic folded output: %q, %v", repeated, err)
+							}
+							for _, allowance := range []int64{-1, 0, 1} {
+								limited := options
+								limited.MaxBytes = int64(len(payload)) + allowance
+								encoded, encodeErr := yamlwire.Encode(makeValue(), limited)
+								var output bytes.Buffer
+								output.WriteString("prior")
+								writeErr := yamlwire.EncodeWriter(&output, makeValue(), limited)
+								if allowance < 0 {
+									if encoded != nil || !errors.Is(encodeErr, wire.ErrSizeLimit) || !errors.Is(writeErr, wire.ErrSizeLimit) || output.String() != "prior" {
+										t.Fatalf("below quota published %q/%q: %v/%v", encoded, output.String(), encodeErr, writeErr)
+									}
+								} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
+									t.Fatalf("admitted folded quota changed output: %v/%v", encodeErr, writeErr)
+								}
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestEncodePreservesFoldedGraphCarriers(t *testing.T) {
+	makeGraph := func() *yaml.Node {
+		scalar := func(value string, style yaml.Style) *yaml.Node {
+			return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: style}
+		}
+		anchored := scalar("first\n last\nnext\n final\n\n", yaml.FoldedStyle|yaml.TaggedStyle)
+		anchored.Tag, anchored.Anchor = "!vendor", "folded"
+		key := scalar("anchored", 0)
+		key.HeadComment = "fold-head\u2028head-tail"
+		anchored.LineComment, anchored.FootComment = "fold-line", "fold-foot"
+		return &yaml.Node{Kind: yaml.MappingNode, Tag: "!collection", Anchor: "graph", Style: yaml.TaggedStyle, Content: []*yaml.Node{
+			key, anchored,
+			scalar("alias one", 0), {Kind: yaml.AliasNode, Value: "folded", Alias: anchored},
+			scalar("alias two", 0), {Kind: yaml.AliasNode, Value: "folded", Alias: anchored},
+			scalar("key\n indented\nnext", yaml.FoldedStyle), scalar("explicit key value", 0),
+			scalar("nested", 0), {Kind: yaml.SequenceNode, Tag: "!!seq", Content: []*yaml.Node{
+				scalar(" first\nsecond\nthird", yaml.FoldedStyle),
+				scalar("first\nfoo: |\n- >\nlast", yaml.LiteralStyle),
+				scalar("quoted\nfoo: >\nlast", yaml.SingleQuotedStyle),
+				{Kind: yaml.SequenceNode, Tag: "!!seq", Style: yaml.FlowStyle, Content: []*yaml.Node{scalar("first\n last", yaml.FoldedStyle)}},
+			}},
+			scalar("final sibling", 0), scalar("unchanged", 0),
+		}}
+	}
+	for _, carrier := range []string{"pointer", "value", "document", "marshaler", "nested marshaler"} {
+		t.Run(carrier, func(t *testing.T) {
+			makeValue := func() any {
+				graph := makeGraph()
+				switch carrier {
+				case "value":
+					return *graph
+				case "document":
+					return &yaml.Node{Kind: yaml.DocumentNode, Content: []*yaml.Node{graph}}
+				case "marshaler":
+					return scalarNodeMarshaler{graph}
+				case "nested marshaler":
+					return struct {
+						Graph scalarNodeMarshaler `yaml:"graph"`
+					}{scalarNodeMarshaler{graph}}
+				default:
+					return graph
+				}
+			}
+			for _, indent := range []int{0, 2, 3, 4, 5, 6, 7, 8, 9} {
+				for _, sequenceIndent := range []bool{false, true} {
+					options := yamlwire.EncodeOptions{Indent: indent, DefaultSequenceIndent: sequenceIndent}
+					payload, err := yamlwire.Encode(makeValue(), options)
+					if err != nil {
+						t.Fatal(err)
+					}
+					for _, decode := range []func([]byte, *yaml.Node) error{
+						func(b []byte, n *yaml.Node) error { return yaml.Load(b, n, yaml.WithV4Defaults()) },
+						func(b []byte, n *yaml.Node) error { return yamlwire.Decode(b, n, yamlwire.DecodeOptions{}) },
+					} {
+						var got yaml.Node
+						if err := decode(payload, &got); err != nil || len(got.Content) != 1 {
+							t.Fatalf("parse %q: %v", payload, err)
+						}
+						graph := got.Content[0]
+						if carrier == "nested marshaler" {
+							if len(graph.Content) != 2 || graph.Content[0].Value != "graph" {
+								t.Fatalf("nested carrier changed: %q", payload)
+							}
+							graph = graph.Content[1]
+						}
+						if !reflect.DeepEqual(scalarNodeSemantics(graph), scalarNodeSemantics(makeGraph())) {
+							t.Fatalf("folded graph changed at %+v: %q", options, payload)
+						}
+						anchor := graph.Content[1]
+						if graph.Tag != "!collection" || graph.Anchor != "graph" || anchor.Tag != "!vendor" || anchor.Anchor != "folded" || graph.Content[3].Alias != anchor || graph.Content[5].Alias != anchor {
+							t.Fatalf("tags or alias identity changed: %q", payload)
+						}
+					}
+					previous := -1
+					for _, token := range []string{"fold-head", "head-tail", "fold-line", "fold-foot"} {
+						index := bytes.Index(payload, []byte(token))
+						if bytes.Count(payload, []byte(token)) != 1 || index <= previous {
+							t.Fatalf("comment token %q duplicated, dropped or reordered: %q", token, payload)
+						}
+						previous = index
+					}
+					if !bytes.Contains(payload, []byte("\u2028")) {
+						t.Fatal("authored comment line separator lost")
+					}
+					repeated, err := yamlwire.Encode(makeValue(), options)
+					if err != nil || !bytes.Equal(repeated, payload) {
+						t.Fatalf("nondeterministic graph: %v", err)
+					}
+					for _, allowance := range []int64{-1, 0, 1} {
+						limited := options
+						limited.MaxBytes = int64(len(payload)) + allowance
+						encoded, encodeErr := yamlwire.Encode(makeValue(), limited)
+						var output bytes.Buffer
+						output.WriteString("prior")
+						writeErr := yamlwire.EncodeWriter(&output, makeValue(), limited)
+						if allowance < 0 {
+							if encoded != nil || !errors.Is(encodeErr, wire.ErrSizeLimit) || !errors.Is(encodeErr, yamlwire.ErrPayloadTooLarge) || !errors.Is(writeErr, wire.ErrSizeLimit) || output.String() != "prior" {
+								t.Fatalf("failed graph admission published bytes: %v/%v", encodeErr, writeErr)
+							}
+						} else if encodeErr != nil || writeErr != nil || !bytes.Equal(encoded, payload) || output.String() != "prior"+string(payload) {
+							t.Fatalf("graph final quota/parity changed: %v/%v", encodeErr, writeErr)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+type foldedOccurrenceMarshaler struct{ calls *int }
+
+func (v foldedOccurrenceMarshaler) MarshalYAML() (any, error) {
+	*v.calls++
+	value := "first\n last\nnext\n final"
+	if *v.calls > 1 {
+		value = "later visit"
+	}
+	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: yaml.FoldedStyle}, nil
+}
+
+func TestEncodeFoldedCallbacksRetainOccurrenceCounts(t *testing.T) {
+	for _, shared := range []bool{false, true} {
+		for _, writer := range []bool{false, true} {
+			calls := 0
+			callback := foldedOccurrenceMarshaler{&calls}
+			var value any = callback
+			if shared {
+				value = []any{callback, callback}
+			}
+			var payload []byte
+			var err error
+			if writer {
+				var output bytes.Buffer
+				err = yamlwire.EncodeWriter(&output, value, yamlwire.EncodeOptions{})
+				payload = output.Bytes()
+			} else {
+				payload, err = yamlwire.Encode(value, yamlwire.EncodeOptions{})
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got yaml.Node
+			if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil {
+				t.Fatal(err)
+			}
+			first := got.Content[0]
+			wantCalls := 1
+			if shared {
+				wantCalls = 2
+				if len(first.Content) != 2 || first.Content[1].Value != "later visit" {
+					t.Fatalf("shared callback occurrences merged or retried: %q", payload)
+				}
+				first = first.Content[0]
+			}
+			if calls != wantCalls || first.Value != "first\n last\nnext\n final" {
+				t.Fatalf("callback calls=%d, payload=%q", calls, payload)
+			}
+		}
+	}
+}
+
+func TestEncodeFoldedNormalizationHandlesBoundedLongBodies(t *testing.T) {
+	value := strings.Repeat("ordinary\n indented\n", 512) + "final\n\n"
+	for _, count := range []int{1, 64} {
+		graph := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
+		for i := 0; i < count; i++ {
+			graph.Content = append(graph.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value, Style: yaml.FoldedStyle})
+		}
+		payload, err := yamlwire.Encode(graph, yamlwire.EncodeOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		if err := yaml.Load(payload, &got, yaml.WithV4Defaults()); err != nil || len(got) != count {
+			t.Fatalf("bounded folded document changed: count=%d error=%v", len(got), err)
+		}
+		for _, decoded := range got {
+			if decoded != value {
+				t.Fatal("bounded folded body changed")
 			}
 		}
 	}

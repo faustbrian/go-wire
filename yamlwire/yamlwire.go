@@ -104,7 +104,22 @@ func encode(
 	if options.DefaultSequenceIndent {
 		yamlOptions = append(yamlOptions, yaml.WithCompactSeqIndent(false))
 	}
-	output, err := outputlimit.New(options.MaxBytes, DefaultMaxBytes)
+	// The pinned folded emitter can insert an extra LF beside each authored
+	// LF. Each removed byte has a retained break partner, so at most twice
+	// the final quota is needed before normalization. Do not allocate from
+	// this ceiling; the buffer grows only as the provider produces bytes.
+	intermediateMax := options.MaxBytes
+	if intermediateMax == 0 {
+		intermediateMax = DefaultMaxBytes
+	}
+	if intermediateMax > 0 {
+		if intermediateMax <= math.MaxInt64/2 {
+			intermediateMax *= 2
+		} else {
+			intermediateMax = math.MaxInt64
+		}
+	}
+	output, err := outputlimit.New(intermediateMax, DefaultMaxBytes)
 	if err != nil {
 		return nil, wrap(wire.ErrorKindValidation, "encode options", err)
 	}
@@ -142,7 +157,15 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 	if maxBytes == 0 {
 		maxBytes = DefaultMaxBytes
 	}
-	lines := bytes.SplitAfter(payload, []byte{'\n'})
+	// Authored comments and block bodies retain every YAML logical break,
+	// not just LF. Keep the separators byte-for-byte in their source slices.
+	var lines [][]byte
+	start := 0
+	for _, lineBreak := range dumperLineBreaks.FindAllIndex(payload, -1) {
+		lines = append(lines, payload[start:lineBreak[1]])
+		start = lineBreak[1]
+	}
+	lines = append(lines, payload[start:])
 	type hint struct {
 		line, index int
 		replace     bool
@@ -150,6 +173,7 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 	}
 	var hints []hint
 	additions, bodyIndent := 0, 0
+	foldedChanged := false
 	var context scalarTextContext
 	for lineIndex, line := range lines {
 		if len(bytes.TrimSpace(line)) == 0 {
@@ -175,6 +199,11 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 			width = 2
 		}
 		bodyIndent = header.parentIndent + width
+		if line[header.index] == '>' {
+			delta, changed := preserveFoldedBreaks(lines[lineIndex+1:], bodyIndent)
+			additions += delta
+			foldedChanged = foldedChanged || changed
+		}
 		index, replace := header.index+1, false
 		if header.digit > 0 {
 			index, replace = header.digit, true
@@ -188,13 +217,14 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 			additions++
 		}
 	}
-	if len(hints) == 0 {
-		return payload, nil
-	}
-	if exceedsLimit(additions, maxBytes-int64(len(payload))) {
+	finalLength := int64(len(payload)) + int64(additions)
+	if finalLength > maxBytes || finalLength > math.MaxInt {
 		return nil, outputlimit.ErrLimit
 	}
-	result := make([]byte, 0, outputCapacity(len(payload), additions))
+	if len(hints) == 0 && !foldedChanged {
+		return payload, nil
+	}
+	result := make([]byte, 0, int(finalLength))
 	next := 0
 	for lineIndex, line := range lines {
 		if next == len(hints) || hints[next].line != lineIndex {
@@ -213,6 +243,58 @@ func addBlockIndentIndicators(payload []byte, indent int, configuredMax int64) (
 	return result, nil
 }
 
+// preserveFoldedBreaks corrects the pinned emitter's fixed-origin LF
+// lookahead using its actual folded body. It never visits the represented
+// graph or re-evaluates a Marshaler. Blank logical lines belong to this body;
+// the first nonblank line outside its indentation ends it.
+func preserveFoldedBreaks(lines [][]byte, indent int) (int, bool) {
+	end, first := len(lines), -1
+	for i, line := range lines {
+		content := bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
+		if len(content) == 0 {
+			continue
+		}
+		if leadingSpaces(content) < indent {
+			end = i
+			break
+		}
+		if first < 0 && len(content) > indent {
+			first = i
+		}
+	}
+	if first < 0 {
+		return 0, false
+	}
+	leading := lines[first][indent] == ' ' || lines[first][indent] == '\t'
+	delta, changed := 0, false
+	for i := first; i < end; i++ {
+		line := lines[i]
+		content := bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
+		if len(content) <= indent || content[indent] == ' ' || content[indent] == '\t' || !bytes.HasSuffix(line, []byte{'\n'}) {
+			continue
+		}
+		// Every intervening blank line is crossed only once: the outer loop
+		// ignores them, and no two content lines share their following run.
+		next := i + 1
+		for next < end && len(bytes.TrimRight(lines[next], "\r\n\u0085\u2028\u2029")) <= indent {
+			next++
+		}
+		ordinary := next < end && lines[next][indent] != ' ' && lines[next][indent] != '\t'
+		if leading && ordinary {
+			lines[i] = append(append([]byte(nil), line...), '\n')
+			delta++
+			changed = true
+		} else if !leading && !ordinary && i+1 < end && bytes.Equal(lines[i+1], []byte{'\n'}) {
+			// A second LF proves a compensating break is present. A lone
+			// closing LF can be generated for a value without a final break.
+			lines[i] = line[:len(line)-1]
+			delta--
+			changed = true
+		}
+	}
+	return delta, changed
+}
+
 type scalarHeader struct {
 	index, digit, parentIndent int
 	sequence                   bool
@@ -225,6 +307,7 @@ func leadingSpaces(line []byte) int {
 // These expressions recognize only the pinned emitter's prefixes and hints.
 // Explicit-key/value and sequence indicators compose; hints put width first.
 var (
+	dumperLineBreaks   = regexp.MustCompile(`\r\n|[\r\n\x{0085}\x{2028}\x{2029}]`)
 	dumperScalarPrefix = regexp.MustCompile(`^ *(?:[-?:] +)*`)
 	dumperBlockHints   = regexp.MustCompile(`^(?:([2-9]))?[+-]?(?: +(?:#.*)?)?$`)
 )
@@ -234,7 +317,7 @@ var (
 // by the caller, so their text is never interpreted as another header.
 func blockScalarHeader(line []byte) scalarHeader {
 	absent := scalarHeader{index: -1}
-	line = bytes.TrimRight(line, "\r\n")
+	line = bytes.TrimRight(line, "\r\n\u0085\u2028\u2029")
 	prefix := dumperScalarPrefix.Find(line)
 	start := len(prefix)
 	parent, sequence := start, false
@@ -316,6 +399,8 @@ func blockScalarHeader(line []byte) scalarHeader {
 // scalarTextContext follows quoted and flow continuations emitted by the
 // pinned dumper. Block bodies are excluded before scanning: their characters
 // are data, including unmatched quotes and collection indicators.
+// Completed emission places delimiters, whitespace or logical breaks after
+// syntactic quotes and indicators; this is not an arbitrary-input parser.
 type scalarTextContext struct {
 	quote     byte
 	flowDepth int
@@ -340,7 +425,7 @@ func (context *scalarTextContext) scan(line []byte) {
 				continue
 			}
 			if value == context.quote {
-				if value == '\'' && index+1 < len(line) && line[index+1] == '\'' {
+				if value == '\'' && line[index+1] == '\'' {
 					skipNext = true
 					continue
 				}
@@ -376,11 +461,11 @@ func (context *scalarTextContext) scan(line []byte) {
 			start = true
 			continue
 		}
-		if value == ':' && index+1 < len(line) && line[index+1] == ' ' {
+		if value == ':' && line[index+1] == ' ' {
 			start = true
 			continue
 		}
-		if start && (value == '-' || value == '?' || value == ':') && index+1 < len(line) && line[index+1] == ' ' {
+		if start && (value == '-' || value == '?' || value == ':') && line[index+1] == ' ' {
 			continue
 		}
 		start = false

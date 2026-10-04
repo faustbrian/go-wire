@@ -91,6 +91,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve marker-like scalar text inside inline flow collections and
   trailing comments while repairing real blocks after empty collection keys.
 
+- Preserve emitted carriage returns and Unicode line breaks in comments and
+  scalar bodies while repairing subsequent tab-leading block values.
+
+- Preserve authored folded YAML values across ordinary and more-indented
+  line transitions and trailing breaks. Admit the inclusive final byte quota
+  after bounded provider-output normalization without repeating callbacks.
+
 - Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
   as parse errors instead of panicking. Comparable keys and the default
   prohibition on tags remain unchanged.
