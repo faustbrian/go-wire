@@ -236,7 +236,7 @@ func projectedKey(source any, target reflect.Type, loose bool) (any, bool) {
 				if !unsignedOK {
 					return nil, false
 				}
-				integer = int64(unsigned)
+				integer = int64(unsigned) // #nosec G115 -- Intentionally preserve msgpack v5.4.1's signed bit-pattern conversion for floating destination key equality.
 			}
 			number = float64(integer)
 		} else if target.Kind() == reflect.Float32 && reflect.TypeOf(source).Kind() == reflect.Float64 {
