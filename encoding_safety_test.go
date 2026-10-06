@@ -7,15 +7,15 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/bsonwire"
-	"github.com/faustbrian/go-wire/v2/cborwire"
-	"github.com/faustbrian/go-wire/v2/jsonwire"
-	"github.com/faustbrian/go-wire/v2/msgpackwire"
-	"github.com/faustbrian/go-wire/v2/soap"
-	"github.com/faustbrian/go-wire/v2/tomlwire"
-	"github.com/faustbrian/go-wire/v2/xmlwire"
-	"github.com/faustbrian/go-wire/v2/yamlwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/bsonwire"
+	"github.com/faustbrian/go-wire/v3/cborwire"
+	"github.com/faustbrian/go-wire/v3/jsonwire"
+	"github.com/faustbrian/go-wire/v3/msgpackwire"
+	"github.com/faustbrian/go-wire/v3/soap"
+	"github.com/faustbrian/go-wire/v3/tomlwire"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
+	"github.com/faustbrian/go-wire/v3/yamlwire"
 )
 
 func TestMessagePackCyclicEncodeReturnsError(t *testing.T) {

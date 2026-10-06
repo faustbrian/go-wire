@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	wire "github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/bsonwire"
-	"github.com/faustbrian/go-wire/v2/jsonwire"
-	"github.com/faustbrian/go-wire/v2/soap"
-	"github.com/faustbrian/go-wire/v2/tomlwire"
-	"github.com/faustbrian/go-wire/v2/xmlwire"
+	wire "github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/bsonwire"
+	"github.com/faustbrian/go-wire/v3/jsonwire"
+	"github.com/faustbrian/go-wire/v3/soap"
+	"github.com/faustbrian/go-wire/v3/tomlwire"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 type diagnosticCause struct{ text string }

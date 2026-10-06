@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v3/internal/outputlimit"
 )
 
 func TestBoundaryPredicates(t *testing.T) {

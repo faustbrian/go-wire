@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"unicode/utf8"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
-	"github.com/faustbrian/go-wire/v2/internal/valuecheck"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v3/internal/valuecheck"
 )
 
 // DefaultMaxBytes is the default maximum payload size accepted by decoders.

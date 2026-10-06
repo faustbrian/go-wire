@@ -2,7 +2,8 @@
 
 ## Supported Versions
 
-Security fixes are applied to the latest stable v1 release and `main`.
+Security fixes are applied to the latest stable v1 release, the published
+v2.0.0 release, and `main`, which prepares unpublished v3.
 Additional supported release lines and end-of-support dates will be documented
 here when offered.
 

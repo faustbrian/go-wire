@@ -10,9 +10,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
-	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 const (

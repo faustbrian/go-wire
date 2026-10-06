@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/internal/outputlimit"
-	"github.com/faustbrian/go-wire/v2/internal/valuecheck"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/internal/outputlimit"
+	"github.com/faustbrian/go-wire/v3/internal/valuecheck"
 	"go.yaml.in/yaml/v4"
 	"go.yaml.in/yaml/v4/plugin/limit"
 )

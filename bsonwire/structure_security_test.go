@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/bsonwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/bsonwire"
 )
 
 func structureDocument(elements ...[]byte) []byte {

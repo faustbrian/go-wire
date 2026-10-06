@@ -4,6 +4,9 @@
 
 Install the stable v2 release:
 
+Main's compiled examples use the unpublished `/v3` candidate. The command below
+selects the published `/v2` baseline; keep all imports within the selected major.
+
 ```sh
 go get github.com/faustbrian/go-wire/v2@v2.0.0
 ```
