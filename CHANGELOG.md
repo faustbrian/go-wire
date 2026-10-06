@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Prepare the root module as `github.com/faustbrian/go-wire/v3` for the
+  incompatible MessagePack option and accepted-input changes below. Migrate
+  all Wire imports together and use keyed decode options; cross-major errors
+  and sentinels have distinct identities. v3.0.0 is not yet published, and
+  v2.0.0 remains the latest stable release.
+
+- Determine recursive MessagePack key projection support before preparing
+  reflected values or tuples. Unsupported components retain driver-owned
+  decoding instead of uncharged projection preparation.
+
+- Admit aggregate MessagePack values and conservative raw/projected key work
+  before generic materialization, with finite inclusive decode defaults and
+  expanded built-in array-key preparation accounting. Limit refusal preserves
+  the destination and does not invoke destination codecs. New option fields
+  require keyed-literal migration and acceptance tightening in the next major
+  release; final driver allocations and cancellation remain separate work.
+
+- Reject built-in MessagePack destination map-key collisions before decoding
+  into the target, including numeric-width and string/binary projections in
+  known map and unambiguous field shapes. Explicit duplicate-key opt-in remains
+  last-key-wins. This acceptance tightening is pending the next major release;
+  opaque codecs and ambiguous struct projections remain separate boundaries.
+
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.
 - Pin reusable CI to the immutable v1.3.0 workflow and enforce cohesion

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/tomlwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/tomlwire"
 )
 
 func TestEncodeEnforcesOutputLimit(t *testing.T) {

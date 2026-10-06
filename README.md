@@ -16,8 +16,10 @@ write APIs.
 
 ## Status
 
-The package has a stable v2 API. Supported format behavior is fixture-backed, fuzzed,
-benchmarked, and held to meaningful 100% production coverage.
+The latest published stable release is v2.0.0. Main prepares the unpublished
+`github.com/faustbrian/go-wire/v3` module for bounded MessagePack admission and
+projection changes. Its qualification and publication are pending; the v2
+release remains available while consumers plan an explicit migration.
 
 ## Requirements
 
@@ -31,7 +33,8 @@ go get github.com/faustbrian/go-wire/v2@v2.0.0
 
 Import format packages explicitly, such as
 `github.com/faustbrian/go-wire/v2/jsonwire` or
-`github.com/faustbrian/go-wire/v2/soap`.
+`github.com/faustbrian/go-wire/v2/soap` for the published release. Main's source
+and examples use `/v3`; do not request v3.0.0 until it is published.
 
 ## Quickstart
 

@@ -1,5 +1,27 @@
 # Migration notes
 
+## From v2 to the unpublished v3 candidate
+
+Main prepares `github.com/faustbrian/go-wire/v3` for v3.0.0; the latest
+published stable release remains v2.0.0. After v3 is published, update the root
+and all codec imports together. Error types and sentinels from different
+major modules have distinct Go identities. Historical v1/v2 API inventories
+remain retained; no consumer is automatically migrated.
+
+Use keyed `msgpackwire.DecodeOptions` literals for the new `MaxTotalValues`
+and `MaxKeyComparisonWork` fields. Zero selects finite inclusive defaults:
+256 Ki aggregate values and 8 Mi conservative key-work units. Refusal occurs
+before destination mutation or destination codec callbacks. Supported built-in
+key projections also reject destination collisions; explicit duplicate-key
+opt-in retains its documented behavior and aggregate node limits. Custom
+codecs, ambiguous routing, final driver allocation and cancellation are
+separate boundaries. Set deliberately reviewed finite limits for larger valid
+inputs rather than assuming the v2 accepted-input set is unchanged.
+
+Public APIs exposing Wire types require an explicit compatibility decision
+before adopting a different major. Private integrations and test harnesses do
+not require unrelated SDK majors solely for their internal import update.
+
 ## From v1 to v2
 
 Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
@@ -32,7 +54,7 @@ encoded bytes are not promised to be identical across released versions.
 The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
-## Pending v2 charset boundary
+## Published v2 charset boundary
 
 Version 2 charset hardening changes admission and default quotas, not
 a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
@@ -44,7 +66,7 @@ XML and SOAP built-in callbacks follow their configured raw-input quotas;
 UTF-8 conversion may expand that input up to threefold. Custom callbacks and
 reader cancellation remain application responsibilities.
 
-## Pending v2 BSON structure boundary
+## Published v2 BSON structure boundary
 
 BSON validation now includes CodeWithScope scope documents and all nested
 document/array boundaries, including when duplicate keys are explicitly allowed.

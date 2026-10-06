@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "module_directory": ".",
+      "package_directory": "msgpackwire",
+      "source_digest": "382930f9aacc12035dc06fd460193aa94ca82544f0d26b7a2fa0ad899c57bb16",
+      "gremlins_version": "v0.6.0",
+      "gremlins_verifier_sha256": "c28707fd4ce35dd228260de564107c1fb7726e42d4e9ea2bf9e988083e1f3b5b",
+      "mutations": [
+        {
+          "file_name": "admission.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 79,
+          "column": 22,
+          "contract_domain": "Built-in array-key projection admission with a positive reflected array length and nonnegative remaining work",
+          "reason": "The multiplication equality admitted by the original comparison cannot produce a successful projection: subsequent preparation must additionally reserve the positive array length and child/storage work, so its residual checks refuse that equality. Zero-length arrays return before multiplication. The necessary multiplication overflow guard and its type-only zero-storage regression remain intact."
+        },
+        {
+          "file_name": "msgpackwire.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 297,
+          "column": 65,
+          "contract_domain": "Structural MessagePack map traversal with duplicate checks enabled and a singleton map",
+          "reason": "Changing length greater than one to greater than or equal to one only enables local snapshots for a singleton. The unchanged later length-greater-than-one accumulation and reservation guards do not consume those snapshots. Node traversal, admission errors and destination decoding therefore remain unchanged."
+        },
+        {
+          "file_name": "msgpackwire.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 316,
+          "column": 64,
+          "contract_domain": "Structural MessagePack map traversal with duplicate checks enabled and a singleton map",
+          "reason": "A singleton does not accumulate keyWeight because the unchanged accumulation guard requires length greater than one. Its newly reached reserveMap receives length one and weight zero, making all three reservations zero-work operations. Traversal and subsequent projection retain their original allowances and outcomes."
+        },
+        {
+          "file_name": "msgpackwire.go",
+          "type": "CONDITIONALS_BOUNDARY",
+          "line": 328,
+          "column": 10,
+          "contract_domain": "Key-weight accumulation reached after a successfully traversed MessagePack key in the structural owner",
+          "reason": "Every successfully traversed key consumes at least one value node before this sole production call. At span equal to remaining work, the unchanged node check already refuses because its remaining byte allowance is zero and nodes is positive. The nodes-zero private-helper distinction is outside this reachable production domain."
+        },
+        {
+          "file_name": "projection.go",
+          "type": "INVERT_LOOPCTRL",
+          "line": 65,
+          "column": 7,
+          "contract_domain": "Built-in destination struct routing admitted by projectionFields with unique supported field names",
+          "reason": "projectionFields rejects duplicate destination names and unsupported ambiguous routing before this loop. After the sole matching field assigns valueType and matched, continuing instead of breaking cannot find a second matching name or undo those assignments. Supported field routing, recursive admission and decoded results are unchanged."
+        }
+      ]
+    }
+  ]
+}

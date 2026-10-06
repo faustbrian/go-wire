@@ -1,7 +1,8 @@
 # Security and interoperability hardening audit
 
-Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-prepares its stable v2 contract. This report distinguishes format
+Audit date: 2026-07-14. The audited tree preceded v1.0.0; v2.0.0 is now
+published and main prepares unpublished v3. This historical report does not
+qualify that candidate. It distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -108,7 +109,8 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The current release preparation targets v2.0.0. The current module requires Go
+The following historical verdict is not qualification of the current v3.0.0
+preparation, whose gates and publication remain pending. The module requires Go
 1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller

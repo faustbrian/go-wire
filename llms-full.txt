@@ -20,8 +20,10 @@ write APIs.
 
 ## Status
 
-The package has a stable v2 API. Supported format behavior is fixture-backed, fuzzed,
-benchmarked, and held to meaningful 100% production coverage.
+The latest published stable release is v2.0.0. Main prepares the unpublished
+`github.com/faustbrian/go-wire/v3` module for bounded MessagePack admission and
+projection changes. Its qualification and publication are pending; the v2
+release remains available while consumers plan an explicit migration.
 
 ## Requirements
 
@@ -35,7 +37,8 @@ go get github.com/faustbrian/go-wire/v2@v2.0.0
 
 Import format packages explicitly, such as
 `github.com/faustbrian/go-wire/v2/jsonwire` or
-`github.com/faustbrian/go-wire/v2/soap`.
+`github.com/faustbrian/go-wire/v2/soap` for the published release. Main's source
+and examples use `/v3`; do not request v3.0.0 until it is published.
 
 ## Quickstart
 
@@ -158,6 +161,9 @@ Use this index to select an explicit wire format and understand its limits.
 ## Install
 
 Install the stable v2 release:
+
+Main's compiled examples use the unpublished `/v3` candidate. The command below
+selects the published `/v2` baseline; keep all imports within the selected major.
 
 ```sh
 go get github.com/faustbrian/go-wire/v2@v2.0.0
@@ -518,7 +524,7 @@ wire-compatibility review as first-party changes.
 
 # Public API reference
 
-This document describes every exported v1-candidate symbol. Go signatures and
+This document describes the unpublished v3 candidate API. Go signatures and
 package comments remain authoritative; use `go doc` for locally installed
 source.
 
@@ -687,9 +693,15 @@ source.
   failures.
 - `DefaultMaxNestedLevels` is 32, `DefaultMaxArrayElements` is 131,072, and
   `DefaultMaxMapPairs` is 65,536.
+- `DefaultMaxTotalValues` is 262,144 and `DefaultMaxKeyComparisonWork` is
+  8,388,608 conservative examined-byte/value units, not a CPU or heap quota.
 - `DecodeOptions` contains `MaxBytes`, `MaxNestedLevels`, `MaxArrayElements`,
-  `MaxMapPairs`, `AllowDuplicateKeys`, `DisallowUnknownFields`, and
-  `NormalizeNumericWidths`. Zero limits select the exported safe defaults.
+  `MaxMapPairs`, `MaxTotalValues`, `MaxKeyComparisonWork`,
+  `AllowDuplicateKeys`, `DisallowUnknownFields`, and `NormalizeNumericWidths`.
+  Zero limits select the exported safe defaults. Aggregate values include
+  every container, scalar, key and value; key work includes supported
+  expanded array-key preparation. Duplicate-key opt-in skips comparison
+  reservations but retains total-value admission.
 - `EncodeOptions` contains `MaxBytes`, `CompactIntegers`, `CompactFloats`, and
   `StructAsArray`. Map keys are always sorted for deterministic output.
 - `Decode`, `DecodeReader`, `Encode`, and `EncodeWriter` process exactly one
@@ -748,7 +760,7 @@ normalization behavior are SemVer-governed.
 `wire` uses format-specific packages rather than a universal codec:
 
 ```text
-github.com/faustbrian/go-wire/v2        shared Format and Error vocabulary
+github.com/faustbrian/go-wire/v3        shared Format and Error vocabulary
 ├── jsonwire                         JSON boundary policy
 ├── xmlwire                          XML boundary policy and charsets
 ├── soap                             SOAP envelope and fault semantics
@@ -1562,6 +1574,28 @@ only execute a line without proving its contract.
 
 # Migration notes
 
+## From v2 to the unpublished v3 candidate
+
+Main prepares `github.com/faustbrian/go-wire/v3` for v3.0.0; the latest
+published stable release remains v2.0.0. After v3 is published, update the root
+and all codec imports together. Error types and sentinels from different
+major modules have distinct Go identities. Historical v1/v2 API inventories
+remain retained; no consumer is automatically migrated.
+
+Use keyed `msgpackwire.DecodeOptions` literals for the new `MaxTotalValues`
+and `MaxKeyComparisonWork` fields. Zero selects finite inclusive defaults:
+256 Ki aggregate values and 8 Mi conservative key-work units. Refusal occurs
+before destination mutation or destination codec callbacks. Supported built-in
+key projections also reject destination collisions; explicit duplicate-key
+opt-in retains its documented behavior and aggregate node limits. Custom
+codecs, ambiguous routing, final driver allocation and cancellation are
+separate boundaries. Set deliberately reviewed finite limits for larger valid
+inputs rather than assuming the v2 accepted-input set is unchanged.
+
+Public APIs exposing Wire types require an explicit compatibility decision
+before adopting a different major. Private integrations and test harnesses do
+not require unrelated SDK majors solely for their internal import update.
+
 ## From v1 to v2
 
 Use `go get github.com/faustbrian/go-wire/v2@v2.0.0` and update the root and
@@ -1594,7 +1628,7 @@ encoded bytes are not promised to be identical across released versions.
 The module follows stable v2 compatibility. Pin a released version, keep the
 integration behind boundary adapters, and review `CHANGELOG.md` whenever updating.
 
-## Pending v2 charset boundary
+## Published v2 charset boundary
 
 Version 2 charset hardening changes admission and default quotas, not
 a partial v1 publication. Direct `xmlwire.CharsetReader` calls now accept at
@@ -1606,7 +1640,7 @@ XML and SOAP built-in callbacks follow their configured raw-input quotas;
 UTF-8 conversion may expand that input up to threefold. Custom callbacks and
 reader cancellation remain application responsibilities.
 
-## Pending v2 BSON structure boundary
+## Published v2 BSON structure boundary
 
 BSON validation now includes CodeWithScope scope documents and all nested
 document/array boundaries, including when duplicate keys are explicitly allowed.
@@ -1933,8 +1967,9 @@ multiple runs and `benchstat` outside the release gate.
 
 # Security and interoperability hardening audit
 
-Audit date: 2026-07-14. The audited tree preceded v1.0.0; the package has since
-prepares its stable v2 contract. This report distinguishes format
+Audit date: 2026-07-14. The audited tree preceded v1.0.0; v2.0.0 is now
+published and main prepares unpublished v3. This historical report does not
+qualify that candidate. It distinguishes format
 requirements, dependency behavior, and package policy.
 
 ## Threat model
@@ -2041,7 +2076,8 @@ non-pointer values for every decoder.
 
 ## Release verdict
 
-The current release preparation targets v2.0.0. The current module requires Go
+The following historical verdict is not qualification of the current v3.0.0
+preparation, whose gates and publication remain pending. The module requires Go
 1.27.0 or newer and has bounded reader and writer APIs for all eight formats,
 including typed, raw, and fault SOAP output. There are no open high findings or
 unmitigated medium package defects. Retained compatibility choices and caller
@@ -2082,6 +2118,66 @@ structures require limits. Binary formats require byte, depth, collection, and
 allocation bounds. Never assume equivalent semantics across formats.
 
 ## Application Responsibilities
+
+MessagePack preflight retains recursive raw-key duplicate rejection. Its
+additional destination-projection check covers built-in, unregistered scalar
+and array keys in known maps, nested arrays/slices, and unambiguous direct or
+`noinline` struct fields. It preserves numeric-width normalization and explicit
+`AllowDuplicateKeys` behavior; it is not a general driver emulator.
+
+Custom decoder/unmarshaler interfaces are not invoked by projection preflight.
+Opaque `msgpack.Register` overrides cannot be detected through the driver's
+public API. Applications own these trusted collaborators and their key
+normalization policy: use a codec-specific duplicate check or explicit
+last-key-wins policy, and review it whenever registration or codec behavior
+changes. This limitation avoids executing callbacks twice; it does not prove
+that arbitrary custom projections preserve nominal key equality.
+
+Wire maintainers still own projection gaps for struct and non-empty interface
+keys, alias, automatic
+embedding, shadowed or interned field routing, and existing dynamic interface
+destinations. Raw-key and numeric-fit checks remain active, but these surfaces
+are not certified for destination-projected uniqueness. Review these gaps
+before expanding the supported projection contract or the next major release.
+
+MessagePack's per-decode admission owner counts every container, scalar, key
+and value once before generic materialization. `MaxTotalValues` defaults to
+256 Ki values. `MaxKeyComparisonWork` defaults to 8 Mi abstract examined-byte
+or value units. Both bounds are inclusive; zero selects the finite default,
+and negative options are rejected before reading.
+
+For each map with `n` keys, a key weight is its exact encoded byte span plus
+four times its subtree value count. Before generic decoding, the owner
+reserves two passes of `n*(n-1)/2 + (n-1)*sum(key weights)`. Arithmetic is
+checked against the remaining allowance before multiplication. Duplicate-key
+opt-in skips this comparison reservation, but never structural admission.
+This conservative reservation bounds admitted comparison inputs and weighted
+pairwise work; it does not establish a wall-clock CPU or actual heap quota.
+
+Known built-in array-key projections additionally reserve expanded target
+preparation and comparison through the same owner, before reflected arrays
+or projection tuples are allocated. For a scalar leaf, storage/preparation
+weights are one and comparison weight is zero. An array of `n` elements has
+storage `n*child storage`, preparation `storage+n+n*child preparation`, and
+comparison weight `n+n*child comparison`. A map reserves preparation for
+each key and comparison weight for each key's possible peers, including zero
+padding. Byte arrays use this same conservative estimate even when no tuple
+is needed. This estimate does not emulate opaque custom keys.
+Array components must themselves be supported built-in scalars or arrays;
+pointer, struct, interface and custom components are not covered by expanded
+preparation accounting.
+Projection preflight declines unsupported shapes before preparing reflected
+values or tuples; their final driver allocations remain a separate boundary.
+
+Wire maintainers still own final driver destination allocations, unsupported
+or ambiguous projection shapes, and context-aware reader/decode APIs. Custom
+objects and callback work remain trusted collaborator responsibilities.
+Review these residual boundaries before claiming aggregate memory, CPU-time,
+or cancellation protection beyond the admitted preflight operations.
+
+The new option fields and finite aggregate admission are pending next-major
+changes. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
+literals; named limit overrides may be needed for accepted larger workloads.
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
 in version 2. Structured fields and wrapped causes are
@@ -2201,7 +2297,8 @@ policy, compatibility plan, and release dry-run.
 
 ## Supported Versions
 
-Security fixes are applied to the latest stable v1 release and `main`.
+Security fixes are applied to the latest stable v1 release, the published
+v2.0.0 release, and `main`, which prepares unpublished v3.
 Additional supported release lines and end-of-support dates will be documented
 here when offered.
 
@@ -2291,6 +2388,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
+- Prepare the root module as `github.com/faustbrian/go-wire/v3` for the
+  incompatible MessagePack option and accepted-input changes below. Migrate
+  all Wire imports together and use keyed decode options; cross-major errors
+  and sentinels have distinct identities. v3.0.0 is not yet published, and
+  v2.0.0 remains the latest stable release.
+
+- Determine recursive MessagePack key projection support before preparing
+  reflected values or tuples. Unsupported components retain driver-owned
+  decoding instead of uncharged projection preparation.
+
+- Admit aggregate MessagePack values and conservative raw/projected key work
+  before generic materialization, with finite inclusive decode defaults and
+  expanded built-in array-key preparation accounting. Limit refusal preserves
+  the destination and does not invoke destination codecs. New option fields
+  require keyed-literal migration and acceptance tightening in the next major
+  release; final driver allocations and cancellation remain separate work.
+
+- Reject built-in MessagePack destination map-key collisions before decoding
+  into the target, including numeric-width and string/binary projections in
+  known map and unambiguous field shapes. Explicit duplicate-key opt-in remains
+  last-key-wins. This acceptance tightening is pending the next major release;
+  opaque codecs and ambiguous struct projections remain separate boundaries.
 
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
   `make cohesion` gate without changing wire APIs or runtime behavior.

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/cborwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/cborwire"
 	"github.com/fxamacker/cbor/v2"
 )
 

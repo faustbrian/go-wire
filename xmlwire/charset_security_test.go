@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 type charsetProbeReader struct {

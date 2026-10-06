@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 func TestDefaultCharsetReaderUsesParseQuota(t *testing.T) {

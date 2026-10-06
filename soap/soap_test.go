@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/faustbrian/go-wire/v2"
-	"github.com/faustbrian/go-wire/v2/soap"
-	"github.com/faustbrian/go-wire/v2/xmlwire"
+	"github.com/faustbrian/go-wire/v3"
+	"github.com/faustbrian/go-wire/v3/soap"
+	"github.com/faustbrian/go-wire/v3/xmlwire"
 )
 
 func TestParseSOAP11EnvelopePreservesRawSections(t *testing.T) {
