@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-06
+
 ### Changed
 
-- Prepare the root module as `github.com/faustbrian/go-wire/v3` for the
+- Update the documentation TOML parser dependency to 1.9.0 to fix its
+  reported resource-exhaustion issue without changing Go runtime dependencies.
+
+- Use the root module `github.com/faustbrian/go-wire/v3` for the
   incompatible MessagePack option and accepted-input changes below. Migrate
   all Wire imports together and use keyed decode options; cross-major errors
-  and sentinels have distinct identities. v3.0.0 is not yet published, and
-  v2.0.0 remains the latest stable release.
+  and sentinels have distinct identities. Version 2 remains available for
+  consumers not migrating to the new major.
 
 - Determine recursive MessagePack key projection support before preparing
   reflected values or tuples. Unsupported components retain driver-owned
@@ -23,13 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before generic materialization, with finite inclusive decode defaults and
   expanded built-in array-key preparation accounting. Limit refusal preserves
   the destination and does not invoke destination codecs. New option fields
-  require keyed-literal migration and acceptance tightening in the next major
-  release; final driver allocations and cancellation remain separate work.
+  require keyed-literal migration and tighten acceptance in this major;
+  final driver allocations and cancellation remain separate work.
 
 - Reject built-in MessagePack destination map-key collisions before decoding
   into the target, including numeric-width and string/binary projections in
   known map and unambiguous field shapes. Explicit duplicate-key opt-in remains
-  last-key-wins. This acceptance tightening is pending the next major release;
+  last-key-wins. This major tightens acceptance;
   opaque codecs and ambiguous struct projections remain separate boundaries.
 
 - Adopt the `go-library-tools` v1.3.0 schema-v2 cohesion contract and local
@@ -121,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   line transitions and trailing breaks. Admit the inclusive final byte quota
   after bounded provider-output normalization without repeating callbacks.
 
-- Upgrade CBOR decoding to reject dynamically uncomparable typed map keys
+- Upgrade CBOR decoding to reject dynamically non-comparable typed map keys
   as parse errors instead of panicking. Comparable keys and the default
   prohibition on tags remain unchanged.
 
@@ -396,6 +401,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v3.0.0
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
 [2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0

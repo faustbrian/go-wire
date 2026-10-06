@@ -1,10 +1,9 @@
 # Migration notes
 
-## From v2 to the unpublished v3 candidate
+## From v2 to v3
 
-Main prepares `github.com/faustbrian/go-wire/v3` for v3.0.0; the latest
-published stable release remains v2.0.0. After v3 is published, update the root
-and all codec imports together. Error types and sentinels from different
+Version 3 uses `github.com/faustbrian/go-wire/v3`. After publication, update
+the root and all codec imports together. Error types and sentinels from different
 major modules have distinct Go identities. Historical v1/v2 API inventories
 remain retained; no consumer is automatically migrated.
 

@@ -2,13 +2,12 @@
 
 ## Install
 
-Install the stable v2 release:
-
-Main's compiled examples use the unpublished `/v3` candidate. The command below
-selects the published `/v2` baseline; keep all imports within the selected major.
+Install v3 after publication. The compiled examples and command below select
+the same major; keep all imports within it. Existing v2 consumers remain on
+their selected version until deliberately migrated.
 
 ```sh
-go get github.com/faustbrian/go-wire/v2@v2.0.0
+go get github.com/faustbrian/go-wire/v3@v3.0.0
 ```
 
 The module supports Go 1.27.0 and newer. The
