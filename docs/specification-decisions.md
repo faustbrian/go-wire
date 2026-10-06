@@ -510,6 +510,17 @@ Additional authoritative source: `{"id":"ctap22-source","version":"CTAP 2.2 Prop
   `TestDecodeEnforcesUnknownFieldsNumericAndResourceLimits` cover `cborwire`.
   Reconsider if profile naming or minimum-version defaults change.
 
+### CTAP authority review, 2026-10-06
+
+The monitored FIDO news feed changed; its current news entries were reviewed
+before updating only that feed's digest. The pinned CTAP 2.2 PDF remains
+byte-identical. The [official publication index](https://fidoalliance.org/specifications/download/)
+also lists newer CTAP editions. Comparing section 8 of CTAP 2.2 with
+[CTAP 2.3](https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-encoded-message)
+identified no change to the encoding rules consumed by this decision.
+The selected target remains CTAP 2.2; this review does not claim broader
+CTAP 2.3 conformance or renew the review date of unrelated authorities.
+
 ## WIRE-DEC-012: BSON document identity, order, duplicates, and conversion
 
 <details>
