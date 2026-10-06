@@ -145,10 +145,12 @@ func TestOrdinaryProjectionScalarOwners(t *testing.T) {
 
 func TestOrdinaryProjectionKnownFieldRouting(t *testing.T) {
 	type destination struct {
-		Ignored  int      `msgpack:"-"`
+		Ignored int `msgpack:"-"`
+		//lint:ignore U1000 Reflection fixture verifies the driver's metadata field is not projected.
 		_msgpack struct{} //nolint:unused // Reflection fixture verifies the driver's metadata field is not projected.
-		private  int      //nolint:unused // Reflection fixture verifies an unexported field is not projected.
-		Values   map[[1]int]int
+		//lint:ignore U1000 Reflection fixture verifies an unexported field is not projected.
+		private int //nolint:unused // Reflection fixture verifies an unexported field is not projected.
+		Values  map[[1]int]int
 	}
 	target := reflect.TypeFor[destination]()
 	fields, supported := projectionFields(target)
