@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
-[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v2.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
 [![Go](https://img.shields.io/badge/go-1.27.0-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -16,10 +16,10 @@ write APIs.
 
 ## Status
 
-The latest published stable release is v2.0.0. Main prepares the unpublished
-`github.com/faustbrian/go-wire/v3` module for bounded MessagePack admission and
-projection changes. Its qualification and publication are pending; the v2
-release remains available while consumers plan an explicit migration.
+This major uses `github.com/faustbrian/go-wire/v3` for bounded MessagePack
+admission and projection changes. Version 2 remains available for consumers
+not migrating. Release tags define public availability; an untagged main
+checkout is not a published release.
 
 ## Requirements
 
@@ -28,13 +28,13 @@ release remains available while consumers plan an explicit migration.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire/v2@v2.0.0
+go get github.com/faustbrian/go-wire/v3@v3.0.0
 ```
 
 Import format packages explicitly, such as
-`github.com/faustbrian/go-wire/v2/jsonwire` or
-`github.com/faustbrian/go-wire/v2/soap` for the published release. Main's source
-and examples use `/v3`; do not request v3.0.0 until it is published.
+`github.com/faustbrian/go-wire/v3/jsonwire` or
+`github.com/faustbrian/go-wire/v3/soap`. Keep imports within the selected major;
+the installation command becomes available only after publication.
 
 ## Quickstart
 
