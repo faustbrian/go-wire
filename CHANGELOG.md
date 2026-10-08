@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-08
+
+### Changed
+
+- Align the reusable CI workflow and bootstrap verifier sources so
+  metadata-only verification uses the supported history scanner.
+  Codec implementations and runtime dependency locks remain unchanged.
+
 ## [3.0.0] - 2026-10-06
 
 ### Changed
@@ -401,7 +409,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/faustbrian/go-wire/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v3.0.0
 [1.0.0]: https://github.com/faustbrian/go-wire/releases/tag/v1.0.0
 [2.0.0]: https://github.com/faustbrian/go-wire/compare/v1.0.1...v2.0.0
