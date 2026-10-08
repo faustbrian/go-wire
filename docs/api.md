@@ -1,6 +1,6 @@
 # Public API reference
 
-This document describes the unpublished v3 candidate API. Go signatures and
+This document describes the published v3 API. Go signatures and
 package comments remain authoritative; use `go doc` for locally installed
 source.
 

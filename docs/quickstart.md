@@ -2,12 +2,12 @@
 
 ## Install
 
-Install v3 after publication. The compiled examples and command below select
+Install the published v3 release. The compiled examples and command below select
 the same major; keep all imports within it. Existing v2 consumers remain on
 their selected version until deliberately migrated.
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.0.0
+go get github.com/faustbrian/go-wire/v3@v3.0.1
 ```
 
 The module supports Go 1.27.0 and newer. The

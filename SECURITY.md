@@ -2,10 +2,14 @@
 
 ## Supported Versions
 
-Security fixes are applied to the latest stable v1 release, the published
-v2.0.0 release, and `main`, which prepares unpublished v3.
-Additional supported release lines and end-of-support dates will be documented
-here when offered.
+The latest published stable major is
+[`github.com/faustbrian/go-wire/v3` v3.0.1](https://github.com/faustbrian/go-wire/releases/tag/v3.0.1).
+V2.0.0 remains available at its separate module path, without v3's narrowed
+MessagePack admission and projection contract. The original v1 default-error
+rendering is not the categorical error contract introduced in v2; do not
+assume a v1 backport. Review the
+[versioned threat model](docs/security-threat-model-v1.md) and
+[migration guidance](docs/migration.md).
 
 ## Reporting A Vulnerability
 
@@ -30,6 +34,7 @@ authorization, rate limiting, deadlines, secret handling, deployment policy,
 and business-level validation. Package safeguards do not replace those
 controls.
 
-See [docs/security.md](docs/security.md) and
-[docs/hardening.md](docs/hardening.md) for adoption guidance and maintained
-evidence.
+See [docs/security.md](docs/security.md) and the
+[current model](docs/security-threat-model-v1.md) for adoption boundaries.
+[docs/hardening.md](docs/hardening.md) is a historical pre-v1 audit, not
+current-release qualification.

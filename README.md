@@ -16,10 +16,11 @@ write APIs.
 
 ## Status
 
-This major uses `github.com/faustbrian/go-wire/v3` for bounded MessagePack
-admission and projection changes. Version 2 remains available for consumers
-not migrating. Release tags define public availability; an untagged main
-checkout is not a published release.
+The latest published stable release is v3.0.1, using
+`github.com/faustbrian/go-wire/v3` for the v3 MessagePack admission and
+projection contract. Version 2 remains available for consumers not migrating,
+but does not include those narrowed controls. See the
+[versioned threat model](docs/security-threat-model-v1.md) before adoption.
 
 ## Requirements
 
@@ -28,13 +29,12 @@ checkout is not a published release.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.0.0
+go get github.com/faustbrian/go-wire/v3@v3.0.1
 ```
 
 Import format packages explicitly, such as
 `github.com/faustbrian/go-wire/v3/jsonwire` or
-`github.com/faustbrian/go-wire/v3/soap`. Keep imports within the selected major;
-the installation command becomes available only after publication.
+`github.com/faustbrian/go-wire/v3/soap`. Keep imports within the selected major.
 
 ## Quickstart
 

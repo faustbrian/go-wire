@@ -555,7 +555,8 @@ Authority URL: https://bsonspec.org/spec.html
   compatibility opt-in. Structural validation remains enabled with that opt-in.
   Iterative traversal checks each document, array, and CodeWithScope scope before
   decoding, with at most 100 nesting levels below the root and consecutive array
-  indices. These acceptance changes are pending the next major release.
+  indices. These acceptance changes shipped in v2 and remain in v3; the
+  machine binding's next-major wording records the original pre-v2 decision.
   Encoding validates serialized output after codec work; raw validation does not
   bound driver buffering or trusted custom codec work.
   Official driver types are re-exported rather than copied. Struct, `D`, and

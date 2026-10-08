@@ -20,6 +20,7 @@ Use this index to select an explicit wire format and understand its limits.
 - [Compatibility](compatibility.md)
 - [Performance](performance.md)
 - [Security](security.md)
+- [Versioned threat model](security-threat-model-v1.md)
 - [Hardening](hardening.md)
 
 ## Maintain And Troubleshoot

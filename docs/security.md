@@ -77,12 +77,12 @@ objects and callback work remain trusted collaborator responsibilities.
 Review these residual boundaries before claiming aggregate memory, CPU-time,
 or cancellation protection beyond the admitted preflight operations.
 
-The new option fields and finite aggregate admission are pending next-major
-changes. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
+The new option fields and finite aggregate admission shipped in v3.0.0 and
+remain in v3.0.1. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
 literals; named limit overrides may be needed for accepted larger workloads.
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
-in version 2. Structured fields and wrapped causes are
+starting in version 2 and retained in version 3. Structured fields and wrapped causes are
 retained for trusted inspection, not automatic logging or disclosure. Explicit
 field dumps, formatting underlying causes, and application-added error prefixes
 require application redaction. This is not a guarantee about arbitrary caller
@@ -92,6 +92,11 @@ Apply transport body limits, deadlines, authentication, authorization, and
 rate limits before decoding. Do not expose raw parser errors when they may
 contain sensitive input.
 
-See [dependencies](dependencies.md), [formats](formats.md), and
-[hardening](hardening.md) for the maintained boundary evidence. Report
+The [versioned threat model](security-threat-model-v1.md) records current
+controls, retained risks, owners, mitigations, and review conditions. The
+[hardening audit](hardening.md) records pre-v1 history; its fixed findings do
+not establish affected published versions or a current scanner result.
+
+See [dependencies](dependencies.md) and [formats](formats.md) for boundary
+details. Report
 vulnerabilities through [SECURITY.md](../SECURITY.md).

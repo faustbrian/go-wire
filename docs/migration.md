@@ -2,7 +2,7 @@
 
 ## From v2 to v3
 
-Version 3 uses `github.com/faustbrian/go-wire/v3`. After publication, update
+Published version 3 uses `github.com/faustbrian/go-wire/v3`. Update
 the root and all codec imports together. Error types and sentinels from different
 major modules have distinct Go identities. Historical v1/v2 API inventories
 remain retained; no consumer is automatically migrated.
@@ -209,11 +209,11 @@ are opt-in compatibility choices.
 
 ## Error mapping
 
-Pending next-major behavior: `wire.Error.Error()` renders only classification,
+Published v2/v3 behavior: `wire.Error.Error()` renders only classification,
 and `soap.FaultError.Error()` renders `soap fault`. Format, operation, original
 causes, and SOAP fault fields remain inspectable; `errors.Is` and `errors.As`
 contracts are unchanged. Replace assumptions about contextual error text before
-adopting that major version. Released v1 retains its existing text behavior.
+adopting those major versions. Released v1 retains its existing text behavior.
 
 Do not match message strings. Replace legacy string checks with `errors.Is` and
 `errors.As`. Preserve the underlying cause only for redacted diagnostic logging and do
