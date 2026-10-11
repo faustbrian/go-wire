@@ -33,10 +33,60 @@ operations:
   - module: .
     gate: fuzz
     steps:
-      - type: make
-        makefile: verification/package.mk
-        target: fuzz
-        timeout: 20m
+      - type: go-test
+        packages: ["."]
+        fuzz: '^FuzzRoundTrip$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./jsonwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./xmlwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./soap"]
+        fuzz: '^FuzzParse$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./yamlwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./tomlwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./msgpackwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./cborwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
+      - type: go-test
+        packages: ["./bsonwire"]
+        fuzz: '^FuzzDecode$'
+        budget: 2s
+        count: 1
+        timeout: 2m
   - module: .
     gate: benchmark
     steps:
