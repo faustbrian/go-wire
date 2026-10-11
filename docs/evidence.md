@@ -40,7 +40,7 @@ the Go test gate.
 | Determinism/canonical claims | Only documented profiles and ordered shapes claim stable bytes | JSON/XML/YAML/TOML/MessagePack deterministic tests, CBOR profile tests, BSON ordered-document test |
 | Dependency differentials | Wrapper policy, not permissive dependency defaults, is the public contract | `TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary`, duplicate dependency tests, `TestYAMLRepairsDependencyBlockIndentDifferential` |
 | Allocation and rejection cost | Forged binary lengths have a broad 200-allocation ceiling; representative and hostile paths report allocations | `TestForgedBinaryLengthsHaveBoundedAllocationCounts`, `BenchmarkRejectAdversarialDecode`, `BenchmarkRejectCyclicEncode`, package benchmarks |
-| Panic, hang, and race resistance | Regressions, fuzzing, race tests, structural limits, and cycle/depth preflight cover known recursion/allocation paths | `make test`, `make fuzz`, 100% coverage, and the full `make check` gate |
+| Panic, hang, and race resistance | Regressions, fuzzing, race tests, structural limits, and cycle/depth preflight cover known recursion/allocation paths | `make test`, `make fuzz`, 100% coverage, and the full `make check-full` gate |
 | Detection uncertainty | Only leading JSON object/array and XML are identified; SOAP reports XML and ambiguous/binary formats remain explicit | `TestDetectFormat`, `TestDetectFormatRejectsUnknownAndEmptyPayloads` |
 | Error privacy | Classified decode errors may expose diagnostic field names or small lexemes, but never echo the tested sensitive value | `TestDecodeErrorsDoNotEchoSensitiveValues` |
 

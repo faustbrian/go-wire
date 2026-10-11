@@ -9,7 +9,7 @@ migration notes, and verify dependency/provenance changes.
 ## Verification
 
 ```sh
-make check
+make check-full
 ```
 
 Format-specific fuzz targets, 100% meaningful production coverage, API
@@ -23,7 +23,7 @@ The repository has no automatic tag-triggered publisher. Dispatch the owned
 for the actual candidate. Hosted gates do not publish a release.
 
 For the local maintainer route, `scripts/release.sh major` checks a clean,
-synchronized main and the dated changelog, runs `make check`, and creates an
+synchronized main and the dated changelog, runs `make check-full`, and creates an
 annotated tag. Use the trusted maintainer signing key for publication,
 verify the new remote tag target, and never move an existing release tag.
 

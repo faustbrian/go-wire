@@ -7,7 +7,7 @@
 [![CI](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-100%25_required-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-local_or_scheduled-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
@@ -94,9 +94,11 @@ and its [Integration and data movement family](https://github.com/faustbrian/go-
 
 ## Development
 
-Run `make check` before submitting a change. This enforces formatting, static
-analysis, race tests, meaningful 100% coverage, format fuzz smoke, benchmarks,
-documentation, and vulnerability scanning.
+Start with `go test ./...` for ordinary source work, then use `make check` for
+bounded local verification. See [contributor guidance](CONTRIBUTING.md#verification)
+for focused format fuzzing and selected compatibility, race, integration and
+release checks. Mutation is optional local or scheduled assurance, not a PR
+prerequisite; `make check-full` retains explicit full assurance.
 
 ## Contributing
 
@@ -2213,7 +2215,7 @@ migration notes, and verify dependency/provenance changes.
 ## Verification
 
 ```sh
-make check
+make check-full
 ```
 
 Format-specific fuzz targets, 100% meaningful production coverage, API
@@ -2227,7 +2229,7 @@ The repository has no automatic tag-triggered publisher. Dispatch the owned
 for the actual candidate. Hosted gates do not publish a release.
 
 For the local maintainer route, `scripts/release.sh major` checks a clean,
-synchronized main and the dated changelog, runs `make check`, and creates an
+synchronized main and the dated changelog, runs `make check-full`, and creates an
 annotated tag. Use the trusted maintainer signing key for publication,
 verify the new remote tag target, and never move an existing release tag.
 
@@ -2242,15 +2244,20 @@ push alone does not establish a successful release or consumer adoption.
 
 ## Before Editing
 
-1. Read [`AGENTS.md`](AGENTS.md) and the affected module's goals and docs.
-2. Run `make inventory` and the narrow baseline gate for the module.
-3. Identify owned dependencies and reverse dependants in `modules.json`.
+1. Read the README, [`AGENTS.md`](AGENTS.md) and the affected API contract.
+2. Start with `go test ./...` or a focused package/test selector.
+3. Inspect direct consumers when changing a public or composition contract.
 4. Preserve unrelated work and generated/corpus provenance.
+
+An ordinary fix stays in this repository. It does not require sibling checkouts,
+Tools edits, ecosystem catalog updates or agent-goal ledgers. Change manifests
+only when their owned facts change, not merely because source changed.
 
 ## Changes
 
-Keep commits focused and conventional. Update every affected changelog with
-the behavior and migration impact. Public API changes require compatibility
+Keep commits focused and conventional. Update changelogs for material public
+behavior, compatibility or adoption changes, not CI-only administration.
+Public API changes require compatibility
 evidence and documentation. Specification behavior requires a decision record,
 fixture coverage, and interoperability evidence.
 
@@ -2266,7 +2273,10 @@ complete the Specification Decisions section of the pull request template. An
 unresolved interpretation or stale source pin is release-blocking; peer
 behavior cannot silently select policy.
 
-Required mutation gates must finish with zero surviving viable mutants.
+Mutation is optional developer-local or selected scheduled assurance, not a PR
+prerequisite. Investigate viable survivors and add focused regressions for real
+defects; moving a campaign off PRs does not waive a confirmed correctness or
+security defect. Equivalent/invalid mutants retain reviewed narrow dispositions.
 
 Do not add package-local workflows, permanent replacements, machine-specific
 paths, bypass flags, broad mutation exclusions, or aggregate quality metrics
@@ -2274,21 +2284,38 @@ that hide a failing package.
 
 ## Verification
 
-Run during development:
+For ordinary source work, `go test ./...` runs deterministic tests, fuzz seeds
+and saved corpus regressions. With the qualified verifier selected by repository
+policy, use:
 
 ```bash
 make inventory
 make check
-```
-
-Before submitting a repository-wide change:
-
-```bash
 make ci
 ```
 
-The full scheduled and release gate is `make ci`. Report every unavailable or
-failing command; do not describe partial results as release-ready.
+`check` and `ci` use bounded local checks, not full mutation, conformance or
+benchmark campaigns. CI consumes the checksum-pinned public Tools binary;
+it does not build the verifier from source for ordinary contributions.
+Documentation changes need relevant structure, links and examples, not unrelated
+runtime work. Public API, concurrency and external-boundary changes retain their
+affected compatibility, race or integration checks.
+
+For active exploration, select one fuzz target and a small budget; long campaigns
+belong in scheduled assurance. Optional local mutation selects one package with
+the qualified verifier. These examples are not all-change requirements:
+
+```bash
+GOMAXPROCS=2 go test -run '^$' -fuzz '^FuzzDecode$' -fuzztime=2s -parallel=1 -timeout=2m ./jsonwire
+golib mutation --module . --package ./jsonwire
+```
+
+`make check-full` retains explicit full assurance; relevant release qualification
+uses `golib release dry-run --module .`. The local maintainer release script
+also runs `check-full` before tagging; see [release guidance](docs/releasing.md).
+Select full or release checks for their material risk or release boundary, not
+every commit. Report unavailable/failed checks honestly; a fast local pass is not
+public-release or hosted-CI qualification.
 
 ## Adding A Module
 
@@ -2883,7 +2910,7 @@ the Go test gate.
 | Determinism/canonical claims | Only documented profiles and ordered shapes claim stable bytes | JSON/XML/YAML/TOML/MessagePack deterministic tests, CBOR profile tests, BSON ordered-document test |
 | Dependency differentials | Wrapper policy, not permissive dependency defaults, is the public contract | `TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary`, duplicate dependency tests, `TestYAMLRepairsDependencyBlockIndentDifferential` |
 | Allocation and rejection cost | Forged binary lengths have a broad 200-allocation ceiling; representative and hostile paths report allocations | `TestForgedBinaryLengthsHaveBoundedAllocationCounts`, `BenchmarkRejectAdversarialDecode`, `BenchmarkRejectCyclicEncode`, package benchmarks |
-| Panic, hang, and race resistance | Regressions, fuzzing, race tests, structural limits, and cycle/depth preflight cover known recursion/allocation paths | `make test`, `make fuzz`, 100% coverage, and the full `make check` gate |
+| Panic, hang, and race resistance | Regressions, fuzzing, race tests, structural limits, and cycle/depth preflight cover known recursion/allocation paths | `make test`, `make fuzz`, 100% coverage, and the full `make check-full` gate |
 | Detection uncertainty | Only leading JSON object/array and XML are identified; SOAP reports XML and ambiguous/binary formats remain explicit | `TestDetectFormat`, `TestDetectFormatRejectsUnknownAndEmptyPayloads` |
 | Error privacy | Classified decode errors may expose diagnostic field names or small lexemes, but never echo the tested sensitive value | `TestDecodeErrorsDoNotEchoSensitiveValues` |
 
