@@ -15,6 +15,8 @@ import (
 	"github.com/faustbrian/go-wire/v3/yamlwire"
 )
 
+// BenchmarkRejectAdversarialDecode measures selected fixed malformed/over-limit
+// refusals with fixture construction excluded, not all hostile-input complexity.
 func BenchmarkRejectAdversarialDecode(b *testing.B) {
 	jsonDeep := []byte(strings.Repeat("[", 10_001) + "0" + strings.Repeat("]", 10_001))
 	xmlDeep := []byte(strings.Repeat("<a>", 33) + strings.Repeat("</a>", 33))
@@ -56,6 +58,8 @@ func BenchmarkRejectAdversarialDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkRejectCyclicEncode measures active-path cycle refusal across encoders;
+// graph construction is excluded and dependency serialization is never reached.
 func BenchmarkRejectCyclicEncode(b *testing.B) {
 	cyclic := map[string]any{}
 	cyclic["self"] = cyclic

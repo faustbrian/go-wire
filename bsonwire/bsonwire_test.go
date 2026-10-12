@@ -303,6 +303,8 @@ func TestEncodeWriterWritesAndClassifiesFailures(t *testing.T) {
 	assertKind(t, bsonwire.EncodeWriter(&bytes.Buffer{}, 42, bsonwire.EncodeOptions{}), wire.ErrUnsupportedFormat)
 }
 
+// FuzzDecode exercises arbitrary bsonwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "event.bson.hex"))
 	f.Add([]byte{0x05, 0x00, 0x00})
@@ -317,6 +319,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode includes iterative raw admission and typed decoding of the
+// ObjectID/datetime/int32 fixture; file and hex decoding are outside b.Loop.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "event.bson.hex")
 	b.ReportAllocs()
@@ -328,6 +332,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := event{ID: bsonwire.ObjectID{1}, CreatedAt: time.Unix(0, 0).UTC(), Attempts: 42}
 	b.ReportAllocs()

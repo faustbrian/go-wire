@@ -16,6 +16,9 @@ const (
 	mutationTestWallLimit = 2 * time.Second
 )
 
+// TestMain enables process-wide heap/wall guards only for the explicit mutation
+// coverage environment. Stop closes after M.Run; process exit, not a joined worker
+// lifecycle, ends the harness. Ordinary examples/tests do not enable these guards.
 func TestMain(testingMain *testing.M) {
 	coverageProfile := os.Getenv("GOLIB_GREMLINS_COVERAGE_PROFILE")
 	if coverageProfile == "" {

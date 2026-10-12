@@ -1,3 +1,6 @@
+// Package semver supplies release-script tag syntax and stable bump helpers.
+// It owns no Git operations, IO or release policy. Use ValidateTag for syntax
+// only; NextStable assumes small machine-int version components.
 package semver
 
 import (
@@ -18,6 +21,8 @@ var stableTagPattern = regexp.MustCompile(
 	`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`,
 )
 
+// ValidateTag checks v-prefixed SemVer syntax including prerelease/build suffixes,
+// not tag existence, release authorization or machine-integer representability.
 func ValidateTag(tag string) error {
 	if !tagPattern.MatchString(tag) {
 		return errors.New("tag must be a v-prefixed semantic version")
@@ -25,6 +30,9 @@ func ValidateTag(tag string) error {
 	return nil
 }
 
+// NextStable bumps patch/minor/major on a stable v-prefixed tag and resets lower
+// components. Prerelease/build tags and unknown parts fail. Numeric conversion
+// errors and increment overflow are not checked; use representable small versions.
 func NextStable(tag, part string) (string, error) {
 	matches := stableTagPattern.FindStringSubmatch(tag)
 	if matches == nil {

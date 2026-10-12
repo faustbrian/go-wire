@@ -1,4 +1,7 @@
-// Package valuecheck validates reflection values before recursive encoding.
+// Package valuecheck uses Validate for active-path cycle/depth admission before
+// encoding. It borrows reflection graphs, owns invocation-local traversal state
+// and executes no custom codec callbacks. It is not an allocation/time quota or
+// codec support check; no workers or shared traversal state are introduced.
 package valuecheck
 
 import (
@@ -16,7 +19,9 @@ var ErrCycle = errors.New("cyclic value")
 var ErrDepth = errors.New("value nesting limit exceeded")
 
 // Validate rejects cycles and excessive nesting before a codec recursively
-// traverses an application-owned value.
+// traverses an application-owned value. Nil is accepted, unexported fields are
+// skipped and shared acyclic references are allowed. Keep input stable; custom
+// marshalers may traverse other data and remain caller-owned work.
 func Validate(value any) error {
 	return walk(reflect.ValueOf(value), make(map[identity]struct{}), 0)
 }
@@ -53,6 +58,8 @@ func walk(value reflect.Value, path map[identity]struct{}, depth int) error {
 				return ErrCycle
 			}
 			path[current] = struct{}{}
+			// Active-path ownership rejects cycles but permits the same acyclic
+			// object in independent branches; a global visited set changes that policy.
 			defer delete(path, current)
 		}
 	}

@@ -525,6 +525,8 @@ func TestEncodeWriterWritesAndClassifiesFailures(t *testing.T) {
 	assertKind(t, msgpackwire.EncodeWriter(&bytes.Buffer{}, make(chan int), msgpackwire.EncodeOptions{}), wire.ErrUnsupportedFormat)
 }
 
+// FuzzDecode exercises arbitrary msgpackwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "shipment.msgpack.hex"))
 	f.Add([]byte{0xd9, 0x05, 'x'})
@@ -542,6 +544,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode includes raw/numeric/projection admission and driver decoding
+// of the fixed shipment item; file/hex setup is outside b.Loop.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "shipment.msgpack.hex")
 	b.ReportAllocs()
@@ -553,6 +557,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := shipment{ID: 42, Status: "ready", Carrier: "postnord"}
 	b.ReportAllocs()

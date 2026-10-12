@@ -21,6 +21,9 @@ type roundTripDocument struct {
 	Flag   bool   `json:"flag" xml:"flag" yaml:"flag" toml:"flag" msgpack:"flag" cbor:"flag" bson:"flag"`
 }
 
+// FuzzRoundTrip compares a shared string/int64/bool document through eight codecs.
+// Text is truncated, repaired to UTF-8 and filtered to XML-compatible characters;
+// this intentionally narrow intersection does not imply a universal value model.
 func FuzzRoundTrip(f *testing.F) {
 	f.Add("shipment <ready> & safe", int64(42), true)
 	f.Add("000- >", int64(-56), true)

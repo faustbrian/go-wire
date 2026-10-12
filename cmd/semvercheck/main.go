@@ -1,3 +1,5 @@
+// Command semvercheck validates release-tag syntax or prints the next stable
+// patch/minor/major tag using internal/semver. It does not create or publish tags.
 package main
 
 import (

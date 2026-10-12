@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Clarify codec ownership, partial target/write failures, callback and reader
+  lifecycle, phase-specific limits and deterministic-versus-canonical output.
+- Document JSON normalization's default output quota and XML root inspection
+  scope while preserving executable behavior and pinned protocol inputs.
+- State the existing SOAP raw-capture corruption/panic boundary for
+  length-changing charset conversion and the UTF-8 input alternative.
+
 ## [3.0.1] - 2026-10-08
 
 ### Changed

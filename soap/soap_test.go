@@ -585,6 +585,8 @@ func TestParseDoesNotClassifyFaultLookalikes(t *testing.T) {
 	}
 }
 
+// FuzzParse admits arbitrary envelope bytes under 64 KiB and default token depth;
+// version/fault/malformed seeds do not certify header processing or interoperability.
 func FuzzParse(f *testing.F) {
 	f.Add(readFixture(f, "soap11-response.xml"))
 	f.Add(readFixture(f, "soap11-fault.xml"))
@@ -599,6 +601,8 @@ func FuzzParse(f *testing.F) {
 	})
 }
 
+// BenchmarkParse includes both XML passes and raw extraction of a fixed SOAP 1.1
+// fixture; file setup is outside b.Loop and no service execution is measured.
 func BenchmarkParse(b *testing.B) {
 	payload := readFixture(b, "soap11-response.xml")
 	b.ReportAllocs()
@@ -609,6 +613,8 @@ func BenchmarkParse(b *testing.B) {
 	}
 }
 
+// BenchmarkMarshal validates and wraps fixed raw body XML with default quotas;
+// fragment construction is outside b.Loop, not typed encoding or HTTP transport.
 func BenchmarkMarshal(b *testing.B) {
 	body := []byte(`<GetRate xmlns="urn:rates"><PostalCode>00100</PostalCode></GetRate>`)
 	b.ReportAllocs()

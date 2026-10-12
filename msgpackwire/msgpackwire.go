@@ -38,36 +38,60 @@ var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 
 // DecodeOptions controls MessagePack decoding and integer interoperability.
 type DecodeOptions struct {
-	MaxBytes         int64
-	MaxNestedLevels  int
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// MaxNestedLevels caps recursive array/map levels; zero selects DefaultMaxNestedLevels.
+	MaxNestedLevels int
+	// MaxArrayElements caps each declared array length before generic materialization; zero
+	// selects its finite default.
 	MaxArrayElements int
-	MaxMapPairs      int
+	// MaxMapPairs caps each declared map length before generic materialization; zero selects
+	// its finite default.
+	MaxMapPairs int
 	// MaxTotalValues counts every container, scalar, key and value once.
 	// Zero selects DefaultMaxTotalValues; negative values are invalid.
 	MaxTotalValues int
 	// MaxKeyComparisonWork bounds conservative examined-byte/value units,
 	// including supported expanded array-key preparation. Zero selects the
 	// default; negative values are invalid. This is not a CPU or heap quota.
-	MaxKeyComparisonWork   int64
-	AllowDuplicateKeys     bool
-	DisallowUnknownFields  bool
+	MaxKeyComparisonWork int64
+	// AllowDuplicateKeys skips raw/projected duplicate checks and comparison reservations, but
+	// retains structural and numeric-fit admission.
+	AllowDuplicateKeys bool
+	// DisallowUnknownFields requests driver rejection of unknown struct fields.
+	DisallowUnknownFields bool
+	// NormalizeNumericWidths selects loose interface decoding, including numeric widening and
+	// binary-to-string conversion; typed destination policy remains separate.
 	NormalizeNumericWidths bool
 }
 
 // EncodeOptions controls deterministic MessagePack serialization.
 type EncodeOptions struct {
-	MaxBytes        int64
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// CompactIntegers selects compact driver integer representation instead of retaining
+	// encoded widths.
 	CompactIntegers bool
-	CompactFloats   bool
-	StructAsArray   bool
+	// CompactFloats selects compact driver float representation where supported.
+	CompactFloats bool
+	// StructAsArray encodes structs positionally; peers must share the same field order.
+	StructAsArray bool
 }
 
-// Decode parses exactly one MessagePack object into target.
+// Decode borrows payload and parses exactly one object into a non-nil pointer.
+// Raw and supported projected-key refusal precede destination assignment, but
+// failed driver decoding is not transactional. Numeric preflight rejects integer
+// narrowing and floating-point narrowing loss, not all integer-to-float changes;
+// the pinned driver can convert uint64 through int64 for floating destinations.
+// Use explicit integer targets when exact integer representation is required.
 func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads one bounded MessagePack object into target.
+// DecodeReader buffers a borrowed reader through EOF or size refusal before target
+// decoding. Reader is never closed and there is no context API. Target must be a
+// non-nil pointer; codec/strictness failures can leave it mutated. Keep custom
+// codecs bounded and do not reuse a failed target without resetting it.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return wrap(wire.ErrorKindTarget, "decode", err)
@@ -129,7 +153,10 @@ func validateOptions(options DecodeOptions) error {
 	}
 }
 
-// Encode serializes value with lexically sorted map keys.
+// Encode borrows a stable acyclic graph and requests the driver's sorted-map
+// encoding. Sorting is shape-dependent, not a universal canonical MessagePack
+// profile. MaxBytes caps retained output, not custom codec work or preflight heap.
+// Errors return no payload; compact/array options change peer representation.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, wrap(wire.ErrorKindEncode, "encode", err)
@@ -156,7 +183,9 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-// EncodeWriter serializes value and writes one complete MessagePack object.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not an atomic publication API.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {

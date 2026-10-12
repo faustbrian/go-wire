@@ -30,54 +30,85 @@ var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 type Version string
 
 const (
+	// Version11 identifies the SOAP 1.1 envelope namespace.
 	Version11 Version = "1.1"
+	// Version12 identifies the SOAP 1.2 envelope namespace.
 	Version12 Version = "1.2"
 )
 
 // ParseOptions controls SOAP envelope parsing.
 type ParseOptions struct {
-	MaxBytes      int64
-	MaxDepth      int
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// MaxDepth caps parsed XML element depth; zero selects xmlwire.DefaultMaxDepth; negative
+	// values fail.
+	MaxDepth int
+	// CharsetReader is a borrowed conversion callback used by independent XML passes. Nil uses
+	// xmlwire charset admission; it provides no context/deadline API.
 	CharsetReader func(string, io.Reader) (io.Reader, error)
 }
 
 // EncodeOptions controls XML serialization for typed SOAP header and body
 // values.
 type EncodeOptions struct {
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
 	MaxBytes int64
-	Indent   string
+	// Indent selects indentation of typed header/body fragments, not envelope
+	// canonicalization.
+	Indent string
 }
 
 // MarshalOptions controls raw SOAP envelope and fault serialization.
 type MarshalOptions struct {
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
 	MaxBytes int64
 }
 
 // FaultReason is one localized SOAP 1.2 fault reason.
 type FaultReason struct {
+	// Language retains the SOAP 1.2 reason xml:lang value; empty does not negotiate a
+	// language.
 	Language string
-	Text     string
+	// Text contains reason text, trimmed when parsed and escaped when emitted.
+	Text string
 }
 
-// Fault is a version-neutral representation of SOAP 1.1 and 1.2 faults.
+// Fault is a mutable version-neutral SOAP 1.1/1.2 projection. Codes remain lexical,
+// reasons can disclose peer data, and Raw/Detail are not standalone namespace
+// snapshots. MarshalFault interprets fields for Version rather than replaying Raw.
 type Fault struct {
-	Version  Version
-	Code     string
+	// Version identifies the parsed/emitted SOAP namespace; zero is not a supported version.
+	Version Version
+	// Code retains lexical fault-code text, not an expanded QName or resolved namespace.
+	Code string
+	// Subcodes contains SOAP 1.2 lexical subcodes in nesting order.
 	Subcodes []string
-	Reason   string
-	Reasons  []FaultReason
-	Actor    string
-	Node     string
-	Role     string
-	Detail   []byte
-	Raw      []byte
+	// Reason is the SOAP 1.1 reason or first parsed SOAP 1.2 reason; it is sensitive
+	// diagnostic text.
+	Reason string
+	// Reasons contains SOAP 1.2 localized reasons; MarshalFault prefers it over Reason when
+	// nonempty.
+	Reasons []FaultReason
+	// Actor contains the optional SOAP 1.1 actor; empty omits it during marshaling.
+	Actor string
+	// Node contains the optional SOAP 1.2 node; empty omits it during marshaling.
+	Node string
+	// Role contains the optional SOAP 1.2 role; empty omits it during marshaling.
+	Role string
+	// Detail contains mutable inner fault XML, validated as a fragment when marshaled.
+	Detail []byte
+	// Raw contains mutable captured fault XML and is not replayed by MarshalFault.
+	Raw []byte
 }
 
 // FaultError reports a valid SOAP fault response.
 type FaultError struct {
+	// Fault contains a parsed fault, if present; FaultError copies the struct shallowly, so
+	// slices alias the envelope fault.
 	Fault Fault
 }
 
+// Error returns the fixed fault category without disclosing fault fields.
 func (e *FaultError) Error() string {
 	return "soap fault"
 }
@@ -87,10 +118,16 @@ func (e *FaultError) Unwrap() error {
 	return &wire.Error{Kind: wire.ErrorKindFault, Format: wire.FormatSOAP, Op: "parse fault"}
 }
 
-// Envelope is a validated SOAP envelope with preserved raw sections.
+// Envelope retains parsed SOAP structure and owned raw bytes. Construct it with
+// Parse rather than the zero value; methods require a non-nil receiver. Exported
+// Version/Fault remain mutable, so synchronize shared use and do not change the
+// parsed version before DecodeBody. FaultError shares nested fault slices.
 type Envelope struct {
+	// Version identifies the parsed/emitted SOAP namespace; zero is not a supported version.
 	Version Version
-	Fault   *Fault
+	// Fault contains a parsed fault, if present; FaultError copies the struct shallowly, so
+	// slices alias the envelope fault.
+	Fault *Fault
 
 	raw     []byte
 	header  []byte
@@ -103,18 +140,25 @@ func (e *Envelope) RawXML() []byte {
 	return bytes.Clone(e.raw)
 }
 
-// HeaderXML returns a copy of the exact XML inside the Header element.
+// HeaderXML returns a copy of captured Header content. See Parse for the
+// length-changing charset limitation; it does not add inherited namespaces.
 func (e *Envelope) HeaderXML() []byte {
 	return bytes.Clone(e.header)
 }
 
-// BodyXML returns a copy of the exact XML inside the Body element.
+// BodyXML returns a copy of captured Body content. See Parse for the
+// length-changing charset limitation; it does not add inherited namespaces.
 func (e *Envelope) BodyXML() []byte {
 	return bytes.Clone(e.body)
 }
 
-// Parse validates and extracts a SOAP envelope. Valid SOAP faults return both
-// the envelope and a *FaultError.
+// Parse borrows payload until return and extracts SOAP structure. Valid faults
+// return both the envelope and a *FaultError; other classified errors return nil.
+// Raw capture indexes original payload using decoded XML offsets. A charset
+// conversion that changes byte lengths can capture incorrect sections or panic
+// when converted offsets exceed original capacity. Supply UTF-8 XML with a
+// matching declaration (or none) to avoid this coordinate mismatch. Custom
+// callbacks are borrowed and no context, schema or header-role processing is owned.
 func Parse(payload []byte, options ParseOptions) (*Envelope, error) {
 	if options.MaxBytes < 0 {
 		return nil, validationError("parse", errors.New("max bytes must not be negative"))
@@ -151,6 +195,8 @@ func Parse(payload []byte, options ParseOptions) (*Envelope, error) {
 		return nil, parseError("parse envelope", err)
 	}
 	if envelope.Fault != nil {
+		// Keep the envelope available on a protocol fault; this is not parse failure.
+		// Copying Fault preserves shared nested slices, not an immutable snapshot.
 		return envelope, &FaultError{Fault: *envelope.Fault}
 	}
 
@@ -187,8 +233,10 @@ func ParseReader(reader io.Reader, options ParseOptions) (*Envelope, error) {
 	return Parse(payload, options)
 }
 
-// DecodeBody decodes the single body child while retaining namespace bindings
-// declared on the source envelope.
+// DecodeBody reparses owned raw XML so the child retains inherited namespace
+// bindings. A fault is returned before target validation. A non-nil pointer
+// target is required, and it can be mutated before a later child/count/type
+// failure; discard it on error. Nil receivers panic and custom codecs are borrowed.
 func (e *Envelope) DecodeBody(target any) error {
 	if e.Fault != nil {
 		return &FaultError{Fault: *e.Fault}
@@ -254,8 +302,11 @@ func Marshal(version Version, header, body []byte) ([]byte, error) {
 	return MarshalWithOptions(version, header, body, MarshalOptions{})
 }
 
-// MarshalWithOptions creates a deterministic, size-bounded SOAP envelope
-// around validated raw header and body fragments.
+// MarshalWithOptions borrows stable fragments, checks their XML syntax under a
+// wrapper namespace, and emits a fresh envelope within the complete output quota.
+// Empty header is omitted; empty body is allowed. It does not enforce Parse
+// depth, single-body-child, schema or header-role rules, nor canonical XML.
+// No payload is returned on error; fragment copies precede final output admission.
 func MarshalWithOptions(version Version, header, body []byte, options MarshalOptions) ([]byte, error) {
 	if options.MaxBytes < 0 {
 		return nil, validationError("marshal options", errors.New("max bytes must not be negative"))
@@ -362,8 +413,10 @@ func MarshalFault(fault Fault) ([]byte, error) {
 	return MarshalFaultWithOptions(fault, MarshalOptions{})
 }
 
-// MarshalFaultWithOptions validates and serializes a size-bounded SOAP fault
-// envelope.
+// MarshalFaultWithOptions checks version, required code/reasons and Detail XML,
+// then emits an owned size-bounded envelope. It escapes typed text but does not
+// resolve lexical code prefixes or validate a SOAP schema. Stable input is
+// borrowed; recursive subcode work and fragment prework are not heap/time quotas.
 func MarshalFaultWithOptions(fault Fault, options MarshalOptions) ([]byte, error) {
 	if options.MaxBytes < 0 {
 		return nil, validationError("marshal fault options", errors.New("max bytes must not be negative"))
@@ -610,6 +663,9 @@ func parseEnvelope(decoder *xml.Decoder, payload []byte, root xml.StartElement, 
 	}
 }
 
+// Decoder offsets count the post-charset byte stream, while payload remains
+// original bytes. Length-changing conversion violates this coordinate assumption;
+// Parse documents the retained corruption/panic boundary, not a checked mapping.
 func captureElement(decoder *xml.Decoder, payload []byte, start xml.StartElement) ([]byte, error) {
 	contentStart := int(decoder.InputOffset())
 	var discard struct{}
@@ -620,6 +676,9 @@ func captureElement(decoder *xml.Decoder, payload []byte, start xml.StartElement
 	return bytes.Clone(payload[contentStart:contentEnd]), nil
 }
 
+// Body and fault slicing share captureElement's original/decoded coordinate
+// assumption. Keep the public charset caveat until byte-coordinate ownership is
+// separately repaired; depth admission alone cannot make these slices safe.
 func parseBody(decoder *xml.Decoder, payload []byte, start xml.StartElement, version Version) ([]byte, *Fault, error) {
 	contentStart := int(decoder.InputOffset())
 	elements := 0

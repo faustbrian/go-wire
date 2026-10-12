@@ -323,6 +323,8 @@ func TestEncodeWriterWritesAndClassifiesFailures(t *testing.T) {
 	assertKind(t, yamlwire.EncodeWriter(&bytes.Buffer{}, make(chan int), yamlwire.EncodeOptions{}), wire.ErrUnsupportedFormat)
 }
 
+// FuzzDecode exercises arbitrary yamlwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "manifest.yaml"))
 	f.Add([]byte("service: [broken\n"))
@@ -340,6 +342,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode includes node preflight and typed loading of the fixed mapping
+// fixture; file setup is excluded, not the pinned parser/alias protections.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "manifest.yaml")
 	b.ReportAllocs()
@@ -351,6 +355,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := manifest{Service: "tracking", Image: "registry.invalid/tracking:v1"}
 	b.ReportAllocs()

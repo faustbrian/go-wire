@@ -33,20 +33,35 @@ var (
 // Zero limits retain safe library defaults. AllowMultipleDocuments requires a
 // pointer to a slice and decodes every document into that slice.
 type DecodeOptions struct {
-	MaxBytes               int64
-	MaxDepth               int
-	MaxAliases             int
-	DisallowUnknownFields  bool
-	AllowDuplicateKeys     bool
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// MaxDepth adds an explicit positive depth limit; zero keeps dependency defaults, not
+	// unlimited parsing.
+	MaxDepth int
+	// MaxAliases adds an explicit positive alias-count limit; zero keeps dependency
+	// protections.
+	MaxAliases int
+	// DisallowUnknownFields requests known-field checking for struct destinations.
+	DisallowUnknownFields bool
+	// AllowDuplicateKeys opts out of unique-key rejection in the pinned YAML loader.
+	AllowDuplicateKeys bool
+	// AllowMultipleDocuments decodes all documents into a slice target; false requires exactly
+	// one document.
 	AllowMultipleDocuments bool
-	DisallowAliases        bool
-	DisallowMergeKeys      bool
+	// DisallowAliases refuses aliases regardless of MaxAliases; anchors themselves remain
+	// permitted.
+	DisallowAliases bool
+	// DisallowMergeKeys refuses merge-tag nodes during preflight before target loading.
+	DisallowMergeKeys bool
 }
 
 // EncodeOptions controls deterministic YAML serialization.
 type EncodeOptions struct {
-	MaxBytes              int64
-	Indent                int
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// Indent selects 2..9 columns; zero selects the pinned dumper default of two.
+	Indent int
+	// DefaultSequenceIndent disables compact sequence indentation in the pinned dumper.
 	DefaultSequenceIndent bool
 }
 
@@ -55,7 +70,10 @@ func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded YAML stream and decodes it into target.
+// DecodeReader buffers a borrowed reader through EOF or size refusal before target
+// decoding. Reader is never closed and there is no context API. Target must be a
+// non-nil pointer; codec/strictness failures can leave it mutated. Keep custom
+// codecs bounded and do not reuse a failed target without resetting it.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateOptions(options); err != nil {
 		return wrap(wire.ErrorKindValidation, "decode options", err)
@@ -78,7 +96,10 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
-// Encode serializes value deterministically using sorted mapping keys.
+// Encode borrows a stable acyclic value and uses the pinned dumper with sorted
+// mappings and block-scalar repair, not arbitrary YAML canonicalization. Custom
+// node order/marshalers remain caller-owned. A bounded scratch stream can be up
+// to twice the final byte quota before normalization; failure returns no payload.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	return encode(value, options, yaml.NewDumper)
 }
@@ -472,7 +493,9 @@ func scalarPropertiesEnd(line []byte, index int) int {
 	return len(line) - len(rest)
 }
 
-// EncodeWriter serializes value and writes one complete YAML document.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not an atomic publication API.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {

@@ -62,7 +62,8 @@ document.
 - No JSON Schema, JSON-RPC, JSON:API, JSON Patch, streaming token facade, or
   canonical JSON standard is implemented.
 - `Normalize` is presentation normalization, not cryptographic
-  canonicalization.
+  canonicalization. Its configurable quota admits input; output uses the default
+  1 MiB encode quota.
 
 ### XML
 
@@ -70,6 +71,8 @@ document.
   the budget; zero selects the default.
 - No DTD validation, XSD validation, XPath, XSLT, canonical XML, digital
   signatures, entity fetching, or arbitrary charset registry.
+- Root token scanning does not reject character data outside the root, and
+  `Root` returns its actual name without applying `ExpectedRoot`.
 - Directives may be present, but declared entities are not expanded and unknown
   entity references and embedded NUL bytes are parse failures.
 - `AllowNonStrict` inherits `encoding/xml` recovery behavior and can change the
@@ -77,6 +80,11 @@ document.
 - Encoding may choose namespace declarations different from a source document.
 
 ### SOAP
+
+- Length-changing charset conversion can corrupt raw section capture or panic
+  because decoder offsets index the original payload. Supply UTF-8 XML with a
+  matching declaration (or none); supported charset conversion is not a raw
+  preservation guarantee. See [security](security.md).
 
 - Envelope parsing applies the same configurable 1,000-element XML token-depth
   default before structural extraction.
@@ -118,8 +126,10 @@ document.
 - Untyped maps require string keys; a typed target can explicitly use another
   comparable key type.
 - Encoded integer widths are preserved in `any` by default. Loose mode widens
-  small integers. Recursive narrowing overflow and float precision loss are
-  rejected before assignment.
+  small integers. Integer narrowing and float-to-float narrowing loss are checked
+  before assignment, not every integer-to-float conversion. The pinned driver
+  can convert uint64 through int64 for float destinations; use explicit integer
+  targets when exact integer representation is required.
 - An allocation-safe structural preflight rejects truncation, trailing objects,
   nesting beyond 32 levels, arrays beyond 131,072 elements, maps beyond 65,536
   pairs, and forged collection lengths before generic or target decoding
@@ -157,9 +167,10 @@ document.
 - Transport status, headers, timeouts, cancellation, retries, and logging are
   owned by the calling application.
 - Decode targets can be partially mutated before a codec reports a later
-  error; discard the target on every error. Encode inputs are caller-owned and
-  have no output byte quota, so bound source collections when output size can
-  be influenced externally.
+  error; discard the target on every error. Encode inputs are caller-owned;
+  output quotas cap retained encoded bytes, not source traversal, codec buffering
+  or custom callback work. Bound source
+  collections separately when influenced externally.
 - Typed encoders reject cyclic values and application-value nesting beyond
   1,000 traversed levels before dependency recursion. A custom marshaler's own
   implementation remains application code and must terminate.

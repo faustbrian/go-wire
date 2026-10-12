@@ -23,29 +23,45 @@ var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 
 // DecodeOptions controls JSON decoding behavior.
 type DecodeOptions struct {
-	MaxBytes               int64
-	DisallowUnknownFields  bool
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// DisallowUnknownFields rejects unknown object fields when decoding into structs.
+	DisallowUnknownFields bool
+	// DisallowDuplicateNames rejects recursively repeated object names before target decoding;
+	// default retains encoding/json replacement/merge behavior.
 	DisallowDuplicateNames bool
 }
 
 // EncodeOptions controls JSON encoding behavior.
 type EncodeOptions struct {
-	MaxBytes            int64
-	Indent              string
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// Indent selects encoding/json indentation; empty produces compact output.
+	Indent string
+	// DisableHTMLEscaping disables escaping of HTML-sensitive characters; it does not make
+	// output safe for HTML embedding.
 	DisableHTMLEscaping bool
 }
 
 // NormalizeOptions controls JSON normalization behavior.
 type NormalizeOptions struct {
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
 	MaxBytes int64
 }
 
-// Decode decodes exactly one JSON value from payload into target.
+// Decode borrows payload until return and decodes exactly one UTF-8 JSON value
+// into a non-nil pointer. Untyped numbers follow encoding/json float64 mapping;
+// choose typed numeric destinations when that representation is insufficient.
+// Duplicate rejection is opt-in and failed targets are indeterminate.
 func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded payload and decodes exactly one JSON value.
+// DecodeReader buffers borrowed input through EOF or a size refusal and decodes
+// exactly one UTF-8 JSON value into a non-nil pointer. It never closes reader.
+// Duplicate preflight, when enabled, precedes assignment; other errors, including
+// trailing values, can leave target mutated. Blocking/custom codec work is not
+// cancellable through this API. Size refusals match wire.ErrSizeLimit.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return &wire.Error{Kind: wire.ErrorKindTarget, Format: wire.FormatJSON, Op: "decode", Err: err}
@@ -126,8 +142,10 @@ func validateUniqueValue(decoder *json.Decoder) error {
 	return decodeError(err)
 }
 
-// Encode serializes value deterministically. Map keys are ordered according to
-// encoding/json's stable key ordering.
+// Encode borrows a stable acyclic value, orders built-in map keys using encoding/json
+// and returns owned bytes without the encoder newline. MaxBytes bounds final
+// output, not graph preflight or custom marshaler work. Errors return no payload;
+// caller marshalers can change determinism and must terminate.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, validationError("encode", err)
@@ -168,8 +186,9 @@ func encodeSizeError(err error) error {
 	}
 }
 
-// EncodeWriter serializes value deterministically and writes the complete JSON
-// document to writer.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not atomic publication.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {
@@ -188,7 +207,10 @@ func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 // Normalize strips a UTF-8 BOM and insignificant whitespace, validates that
 // the payload contains exactly one value, and emits compact, key-ordered JSON.
 // Number lexemes are retained so normalization does not silently change vendor
-// precision or representation.
+// precision or representation. Duplicate names follow encoding/json replacement
+// behavior; no RFC 8785/signing profile is claimed. MaxBytes only admits input:
+// re-encoding uses the default 1 MiB output limit, even when input admission is raised.
+// Source bytes are not mutated; failure returns no payload.
 func Normalize(payload []byte, options NormalizeOptions) ([]byte, error) {
 	if options.MaxBytes < 0 {
 		return nil, validationError("normalize", fmt.Errorf("max bytes must not be negative"))
@@ -219,6 +241,8 @@ func Normalize(payload []byte, options NormalizeOptions) ([]byte, error) {
 		return nil, err
 	}
 
+	// Normalization has its own input allowance but retains Encode defaults for
+	// output; forwarding input MaxBytes would change accepted output behavior.
 	return Encode(value, EncodeOptions{})
 }
 

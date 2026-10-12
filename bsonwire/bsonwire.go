@@ -14,29 +14,51 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-// Official BSON data types are re-exported for complete interoperability
-// without a second, subtly different local type system.
+// Official BSON data types are aliases rather than a second local type system;
+// the pinned driver retains their methods, representation and ownership semantics.
 type (
-	A             = bson.A
-	D             = bson.D
-	E             = bson.E
-	M             = bson.M
-	Raw           = bson.Raw
-	RawArray      = bson.RawArray
-	RawValue      = bson.RawValue
-	ObjectID      = bson.ObjectID
-	DateTime      = bson.DateTime
-	Decimal128    = bson.Decimal128
-	Binary        = bson.Binary
-	Regex         = bson.Regex
-	Timestamp     = bson.Timestamp
-	JavaScript    = bson.JavaScript
+	// A is the official driver array type; it is not a top-level BSON document.
+	A = bson.A
+	// D is an ordered driver document; retain field order and explicit duplicate opt-in.
+	D = bson.D
+	// E is one key/value element of D.
+	E = bson.E
+	// M is a driver map document with unspecified encoding order.
+	M = bson.M
+	// Raw is the driver byte-backed document type; alias conversion does not copy its bytes.
+	Raw = bson.Raw
+	// RawArray is the driver byte-backed array type, not a top-level document.
+	RawArray = bson.RawArray
+	// RawValue is a driver type tag and encoded value view; underlying bytes can alias their
+	// owner.
+	RawValue = bson.RawValue
+	// ObjectID is the official driver 12-byte object identifier.
+	ObjectID = bson.ObjectID
+	// DateTime is the driver signed millisecond Unix-time representation.
+	DateTime = bson.DateTime
+	// Decimal128 is the official driver BSON decimal128 representation.
+	Decimal128 = bson.Decimal128
+	// Binary is the driver binary value including subtype and mutable byte data.
+	Binary = bson.Binary
+	// Regex is the driver pattern/options description, not a compiled regular expression.
+	Regex = bson.Regex
+	// Timestamp is the driver BSON timestamp pair, not a DateTime alias.
+	Timestamp = bson.Timestamp
+	// JavaScript is BSON JavaScript source data; this package does not execute it.
+	JavaScript = bson.JavaScript
+	// CodeWithScope is driver JavaScript source and scope data; Encode/Decode validate
+	// scope structure without executing code.
 	CodeWithScope = bson.CodeWithScope
-	MinKey        = bson.MinKey
-	MaxKey        = bson.MaxKey
-	Undefined     = bson.Undefined
-	DBPointer     = bson.DBPointer
-	Symbol        = bson.Symbol
+	// MinKey is the driver BSON minimum-key marker.
+	MinKey = bson.MinKey
+	// MaxKey is the driver BSON maximum-key marker.
+	MaxKey = bson.MaxKey
+	// Undefined is the driver BSON undefined marker.
+	Undefined = bson.Undefined
+	// DBPointer is the driver legacy database-pointer value.
+	DBPointer = bson.DBPointer
+	// Symbol is the driver BSON symbol string.
+	Symbol = bson.Symbol
 )
 
 // DefaultMaxBytes is the default maximum BSON document size.
@@ -56,18 +78,30 @@ var errNestingLimit = errors.New("BSON nesting limit exceeded")
 
 // DecodeOptions controls BSON decoding and explicit interoperability choices.
 type DecodeOptions struct {
-	MaxBytes               int64
-	AllowDuplicateKeys     bool
-	ObjectIDAsHexString    bool
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// AllowDuplicateKeys opts into duplicate document names; structural validation remains
+	// active, and preservation depends on the driver target.
+	AllowDuplicateKeys bool
+	// ObjectIDAsHexString permits the driver to decode ObjectID values into string targets.
+	ObjectIDAsHexString bool
+	// AllowTruncatingDoubles permits the driver to truncate fractional double values when
+	// assigning integer targets.
 	AllowTruncatingDoubles bool
 }
 
 // EncodeOptions controls BSON document encoding.
 type EncodeOptions struct {
-	MaxBytes             int64
-	AllowDuplicateKeys   bool
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// AllowDuplicateKeys opts into duplicate document names; structural validation remains
+	// active, and preservation depends on the driver target.
+	AllowDuplicateKeys bool
+	// MinimizeIntegerWidth enables driver integer-width minimization, which changes BSON
+	// representation.
 	MinimizeIntegerWidth bool
-	UseJSONStructTags    bool
+	// UseJSONStructTags uses JSON tags for fields lacking BSON tags, according to the driver.
+	UseJSONStructTags bool
 }
 
 // Decode parses exactly one complete BSON document into target.
@@ -75,7 +109,10 @@ func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded stream and parses exactly one BSON document.
+// DecodeReader buffers a borrowed reader through EOF or size refusal before target
+// decoding. Reader is never closed and there is no context API. Target must be a
+// non-nil pointer; codec/strictness failures can leave it mutated. Keep custom
+// codecs bounded and do not reuse a failed target without resetting it.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return wrap(wire.ErrorKindTarget, "decode", err)
@@ -109,6 +146,9 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 
 // Encode serializes a BSON document. Struct and D ordering is stable; M map
 // ordering follows Go map iteration and is intentionally not guaranteed.
+// Input/custom codecs are borrowed and must remain stable. The output buffer
+// limit does not bound driver buffering; raw depth/duplicate validation follows
+// encoding. Failure returns no payload, including post-encoding validation.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, wrap(wire.ErrorKindEncode, "encode", err)
@@ -142,7 +182,9 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-// EncodeWriter serializes value and writes one complete BSON document.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not an atomic publication API.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {

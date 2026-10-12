@@ -363,6 +363,8 @@ func TestEncodeWriterClassifiesWriterFailures(t *testing.T) {
 	assertKind(t, xmlwire.EncodeWriter(&bytes.Buffer{}, make(chan int), xmlwire.EncodeOptions{}), wire.ErrValidation)
 }
 
+// FuzzDecode exercises arbitrary xmlwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "shipment.xml"))
 	f.Add(readFixture(f, "malformed.xml"))
@@ -380,6 +382,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode runs root/depth validation and typed decoding of the namespace
+// shipment fixture; file setup is excluded, but both XML passes are measured.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "shipment.xml")
 	b.ReportAllocs()
@@ -391,6 +395,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := shipment{ID: 42, Label: "carrier"}
 	b.ReportAllocs()

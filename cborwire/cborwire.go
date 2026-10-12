@@ -35,29 +35,52 @@ const (
 // DecodeOptions controls CBOR interoperability and resource constraints.
 // Zero resource limits use fxamacker/cbor's bounded defaults.
 type DecodeOptions struct {
-	MaxBytes              int64
-	MaxNestedLevels       int
-	MaxArrayElements      int
-	MaxMapPairs           int
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// MaxNestedLevels selects the pinned decoder nesting limit; zero retains its finite
+	// default and invalid values fail mode construction.
+	MaxNestedLevels int
+	// MaxArrayElements selects the pinned decoder per-array bound; zero retains its finite
+	// default.
+	MaxArrayElements int
+	// MaxMapPairs selects the pinned decoder per-map bound; zero retains its finite default.
+	MaxMapPairs int
+	// DisallowUnknownFields requests errors for unrecognized struct fields.
 	DisallowUnknownFields bool
-	AllowTags             bool
+	// AllowTags allows tagged items; default forbids tags independently of byte/profile
+	// policy.
+	AllowTags bool
+	// AllowIndefiniteLength allows indefinite-length items without disabling structural
+	// budgets.
 	AllowIndefiniteLength bool
 }
 
 // EncodeOptions controls the deterministic profile and tag behavior.
 type EncodeOptions struct {
-	MaxBytes  int64
-	Profile   DeterministicProfile
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// Profile selects Canonical (zero), CoreDeterministic or CTAP2Deterministic; unknown
+	// profiles fail.
+	Profile DeterministicProfile
+	// AllowTags allows tagged items; default forbids tags independently of byte/profile
+	// policy.
 	AllowTags bool
-	TimeTag   bool
+	// TimeTag requires a time tag for Unix-time encoding and therefore requires AllowTags.
+	TimeTag bool
 }
 
-// Decode parses exactly one CBOR data item into target.
+// Decode borrows payload and parses one complete item into a non-nil pointer.
+// Untyped integers use the driver's IntDecConvertNone policy (unsigned positives
+// and signed negatives); this is not a JSON-number mapping. Duplicate keys are
+// refused, tags/indefinite items need opt-in, and failed targets are indeterminate.
 func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded stream and parses exactly one CBOR data item.
+// DecodeReader buffers a borrowed reader through EOF or size refusal before target
+// decoding. Reader is never closed and there is no context API. Target must be a
+// non-nil pointer; codec/strictness failures can leave it mutated. Keep custom
+// codecs bounded and do not reuse a failed target without resetting it.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return wrap(wire.ErrorKindTarget, "decode", err)
@@ -79,7 +102,10 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
-// Encode serializes value using a defined deterministic CBOR profile.
+// Encode borrows a stable acyclic value and returns owned bytes for Profile.
+// Zero selects Canonical; tags are forbidden unless enabled, and TimeTag needs
+// AllowTags. Time uses the driver Unix-time mode. Output limits do not bound
+// intermediate codec allocation or custom marshalers; errors return no payload.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, wrap(wire.ErrorKindEncode, "encode", err)
@@ -121,7 +147,9 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-// EncodeWriter serializes value and writes one complete CBOR data item.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not an atomic publication API.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {

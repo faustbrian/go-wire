@@ -32,17 +32,28 @@ var ErrNestingTooDeep = errors.New("XML nesting exceeds depth limit")
 
 // DecodeOptions controls XML parsing and validation.
 type DecodeOptions struct {
-	MaxBytes       int64
-	MaxDepth       int
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// MaxDepth caps nested input elements; zero selects DefaultMaxDepth; negative values fail.
+	MaxDepth int
+	// AllowNonStrict opts into encoding/xml recovery and can change the interpreted tree.
 	AllowNonStrict bool
-	ExpectedRoot   xml.Name
-	CharsetReader  func(string, io.Reader) (io.Reader, error)
+	// ExpectedRoot requires an exact namespace/local-name match in Decode; zero disables the
+	// check and Root only returns the actual name.
+	ExpectedRoot xml.Name
+	// CharsetReader is a borrowed conversion callback, invoked independently by validation and
+	// target decoding. Nil uses the bounded built-in allowlist; custom work/output admission
+	// is caller-owned.
+	CharsetReader func(string, io.Reader) (io.Reader, error)
 }
 
 // EncodeOptions controls XML serialization.
 type EncodeOptions struct {
-	MaxBytes      int64
-	Indent        string
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// Indent selects encoding/xml indentation, not canonical XML.
+	Indent string
+	// IncludeHeader prepends the XML declaration and counts it toward MaxBytes.
 	IncludeHeader bool
 }
 
@@ -51,7 +62,10 @@ func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded stream and parses one complete XML document.
+// DecodeReader buffers borrowed reader input, checks one root/depth and optional
+// ExpectedRoot, then independently decodes into a non-nil pointer. It never closes
+// the reader; there is no cancellation API. Target mutation can precede failure.
+// Custom charset/target callbacks must be bounded and input-stable across passes.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return &wire.Error{Kind: wire.ErrorKindTarget, Format: wire.FormatXML, Op: "decode", Err: err}
@@ -86,7 +100,10 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
-// Root validates an XML document and returns its namespace-resolved root name.
+// Root scans a bounded XML token stream and requires exactly one root element
+// within the depth policy. It returns the resolved namespace/local name, ignoring
+// ExpectedRoot. It is not schema/DTD validation and does not reject non-element
+// character data outside that root. Charset callbacks own their conversion work.
 func Root(payload []byte, options DecodeOptions) (xml.Name, error) {
 	if err := validateDecodeOptions(options); err != nil {
 		return xml.Name{}, err
@@ -135,8 +152,9 @@ func encodeSizeError(err error) error {
 	}
 }
 
-// EncodeWriter serializes value and writes the complete XML document to
-// writer.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not atomic publication.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {

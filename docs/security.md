@@ -15,6 +15,14 @@ is shallow, so the package validates every entered container before decoding.
 Post-encoding validation does not bound driver buffering or custom codec work;
 pre-encoding allocation protection remains separate work.
 
+SOAP raw extraction indexes original input using post-charset decoder offsets.
+Length-changing conversion can return incorrect captured sections or panic when
+an offset exceeds the original slice capacity. A windows-1252 envelope with 32
+`0x80` body bytes demonstrates both outcomes depending on payload capacity;
+matching-declaration UTF-8 input avoids that observed mismatch. Supply UTF-8 XML
+with a matching declaration (or none); charset availability is not a raw-capture
+safety guarantee. Coordinate ownership needs a separate behavioral repair.
+
 XML and SOAP require entity and nesting discipline. YAML aliases and recursive
 structures require limits. Binary formats require byte, depth, collection, and
 allocation bounds. Never assume equivalent semantics across formats.

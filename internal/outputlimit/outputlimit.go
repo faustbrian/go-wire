@@ -1,4 +1,6 @@
-// Package outputlimit provides bounded in-memory encoding destinations.
+// Package outputlimit supplies New for private retained-output quotas, not codec
+// allocation or atomic publication. Buffers are mutable and not concurrency-safe;
+// Bytes aliases their storage. No external handles or workers are owned.
 package outputlimit
 
 import (
@@ -15,7 +17,9 @@ type Buffer struct {
 	max    int64
 }
 
-// New returns a buffer using fallback when configured is zero.
+// New rejects negative configured limits and uses fallback when configured is
+// zero. Callers must provide a nonnegative fallback; it is not validated here.
+// Construction does not preallocate the entire quota.
 func New(configured, fallback int64) (*Buffer, error) {
 	if configured < 0 {
 		return nil, errors.New("max bytes must not be negative")
@@ -40,7 +44,8 @@ func (b *Buffer) Write(payload []byte) (int, error) {
 	return written, ErrLimit
 }
 
-// Bytes returns the retained encoded bytes.
+// Bytes returns an alias of retained output; later writes can invalidate or
+// modify it. Clone when an independent snapshot is required.
 func (b *Buffer) Bytes() []byte {
 	return b.buffer.Bytes()
 }

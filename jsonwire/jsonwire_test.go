@@ -279,6 +279,8 @@ func TestNormalizeRejectsInvalidPayloadAndOptions(t *testing.T) {
 	}
 }
 
+// FuzzDecode exercises arbitrary jsonwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add([]byte(`{"id":42,"label":"carrier"}`))
 	f.Add(readFixture(f, "malformed.json"))
@@ -301,6 +303,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode buffers and decodes the fixed JSON message fixture using default
+// duplicate compatibility; fixture IO and message construction are outside b.Loop.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "valid.json")
 	b.ReportAllocs()
@@ -313,6 +317,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := message{ID: 42, Label: "carrier"}
 	b.ReportAllocs()

@@ -228,6 +228,8 @@ func TestEncodeWriterWritesAndClassifiesFailures(t *testing.T) {
 	assertKind(t, cborwire.EncodeWriter(&bytes.Buffer{}, cbor.Tag{Number: 42}, cborwire.EncodeOptions{}), wire.ErrUnsupportedFormat)
 }
 
+// FuzzDecode exercises arbitrary cborwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "shipment.cbor.hex"))
 	f.Add([]byte{0x65, 'x'})
@@ -244,6 +246,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode constructs the decode mode and assigns the fixed CBOR shipment
+// item; file/hex setup is excluded, with default tag and duplicate policy.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "shipment.cbor.hex")
 	b.ReportAllocs()
@@ -255,6 +259,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := shipment{ID: 42, Status: "ready", Carrier: "postnord"}
 	b.ReportAllocs()

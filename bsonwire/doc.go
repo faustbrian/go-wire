@@ -8,4 +8,10 @@
 // stable field order; M map order is intentionally not deterministic. BSON is
 // excluded from wire.DetectFormat because arbitrary binary data cannot be
 // identified reliably.
+//
+// Use Decode/Encode for the pinned BSON 1.1 document grammar. Byte/raw aliases
+// retain driver ownership semantics, not automatic copies. Reader calls buffer
+// one document and never close the reader. Borrowed values, custom codecs and
+// shared targets need caller synchronization; failed targets are indeterminate.
+// No context API, transport, database client, cgo or workers are introduced.
 package bsonwire

@@ -187,6 +187,8 @@ func TestEncodeWriterWritesAndClassifiesFailures(t *testing.T) {
 	assertKind(t, tomlwire.EncodeWriter(&bytes.Buffer{}, make(chan int), tomlwire.EncodeOptions{}), wire.ErrUnsupportedFormat)
 }
 
+// FuzzDecode exercises arbitrary tomlwire bytes with a 64 KiB admission quota,
+// including malformed/trailing and format-policy seeds; it is not conformance proof.
 func FuzzDecode(f *testing.F) {
 	f.Add(readFixture(f, "service.toml"))
 	f.Add([]byte("service = [broken\n"))
@@ -202,6 +204,8 @@ func FuzzDecode(f *testing.F) {
 	})
 }
 
+// BenchmarkDecode buffers and assigns the fixed service TOML document with
+// default field policy; file setup is excluded, not decoder metadata work.
 func BenchmarkDecode(b *testing.B) {
 	payload := readFixture(b, "service.toml")
 	b.ReportAllocs()
@@ -213,6 +217,8 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+// BenchmarkEncode includes graph admission and default-budget encoding of one
+// fixed typed value; construction is outside b.Loop, with no external IO measured.
 func BenchmarkEncode(b *testing.B) {
 	value := service{Name: "billing", Retries: 3, Enabled: true}
 	b.ReportAllocs()

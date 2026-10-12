@@ -23,15 +23,21 @@ var ErrPayloadTooLarge = errors.New("payload exceeds size limit")
 
 // DecodeOptions controls TOML decoding and schema strictness.
 type DecodeOptions struct {
-	MaxBytes              int64
+	// MaxBytes caps supplied input bytes; zero selects DefaultMaxBytes; negative values fail.
+	MaxBytes int64
+	// DisallowUnknownFields rejects Undecoded keys after target decoding, which may already
+	// have mutated target.
 	DisallowUnknownFields bool
 }
 
 // EncodeOptions controls TOML serialization. Indent may contain only spaces
 // and tabs; the default is two spaces.
 type EncodeOptions struct {
+	// MaxBytes caps returned encoded bytes; zero selects DefaultMaxBytes; negative values fail.
 	MaxBytes int64
-	Indent   string
+	// Indent overrides the two-space encoder default using only spaces/tabs; empty keeps that
+	// default.
+	Indent string
 }
 
 // Decode parses one complete TOML document into target.
@@ -39,7 +45,10 @@ func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
-// DecodeReader reads a bounded stream and parses one complete TOML document.
+// DecodeReader buffers a borrowed reader through EOF or size refusal before target
+// decoding. Reader is never closed and there is no context API. Target must be a
+// non-nil pointer; codec/strictness failures can leave it mutated. Keep custom
+// codecs bounded and do not reuse a failed target without resetting it.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return wrap(wire.ErrorKindTarget, "decode", err)
@@ -63,7 +72,10 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
-// Encode serializes value deterministically with lexically ordered map keys.
+// Encode borrows a stable acyclic document value and returns owned bytes with
+// codec-sorted map keys. It preserves TOML-specific native values, not a universal
+// cross-format model. The output quota does not bound custom marshaler work or
+// intermediate allocations; failure returns no payload.
 func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, wrap(wire.ErrorKindEncode, "encode", err)
@@ -93,7 +105,9 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-// EncodeWriter serializes value and writes one complete TOML document.
+// EncodeWriter completes serialization before touching a borrowed writer, which
+// it never closes. Encoding failure writes nothing; a later write error can leave
+// a prefix visible and matches wire.ErrWrite. It is not an atomic publication API.
 func EncodeWriter(writer io.Writer, value any, options EncodeOptions) error {
 	payload, err := Encode(value, options)
 	if err != nil {
