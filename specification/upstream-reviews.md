@@ -185,3 +185,71 @@ callers. `WIRE-DEC-004` examines leading payload bytes and neither consumes
 HTTP fields nor negotiates media types. No selected behavior or source binding
 changes. Reconsider this disposition if Errata ID 9162 becomes Verified or if
 the package later owns HTTP field combination.
+
+## 2026-10-13: Go releases feed
+
+- **Authority:** `go-releases`
+- **URL:** https://go.dev/dl/?mode=json&include=all
+- **Previous SHA-256:**
+  `1ed915f72633d0a72eaa2f462740153db4fe347cb56f7d1e25ec44868568f13e`
+- **Reviewed SHA-256:**
+  `e69a2c3effdcfb9f41c15305b1d959524f1ff5f8e8500bac4548e6e355bda0dc`
+- **Retrieved and reviewed:** 2026-10-13
+- **Applicability:** `WIRE-DEC-001`, `WIRE-DEC-014`, and `WIRE-DEC-015`;
+  `WIRE-DEC-006` for the delegated XML contract.
+- **Disposition:** Behavior-neutral discovery update for the selected Go
+  1.26.6 source contracts and the XML charset-capture repair.
+
+Three consecutive TLS retrievals produced the reviewed digest. The inventory
+now includes Go 1.27.2 and Go 1.26.9, both released 2026-10-08; the previous
+review recorded Go 1.27.1 and Go 1.26.8. The old response body was not retained,
+so this is an attributable release/source comparison, not a reconstructed
+byte-level feed diff.
+
+The authenticated Go 1.27.1-to-1.27.2 comparison spans 138 changed files and
+46 commits; the Go 1.26.8-to-1.26.9 comparison spans 81 files and 24 commits.
+Neither changes `src/encoding/xml`, `src/errors`, or `doc/go_spec.html`.
+Go 1.27.2 changes JSON tests, internal helpers and the json/v2 bridge; the
+Go 1.26 patch comparison does not change `src/encoding/json`.
+See the [official release history](https://go.dev/doc/devel/release),
+[Go 1.27 comparison](https://github.com/golang/go/compare/go1.27.1...go1.27.2)
+and [Go 1.26 comparison](https://github.com/golang/go/compare/go1.26.8...go1.26.9).
+
+Independent retrievals reproduced all four selected Go 1.26.6 JSON, XML,
+errors and language authority digests. The Go 1.26.6 source archive still has
+SHA-256 `a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1`.
+No source edition, codec option, decision binding, fixture or runtime behavior
+changes with this discovery acknowledgement. The existing Go 1.27 toolchain
+selection is not introduced by this record. The global monitoring review date
+is preserved because this entry reviews this authority delta, not every
+upstream authority anew.
+
+## 2026-10-13: CTAP releases feed
+
+- **Authority:** `ctap-releases`
+- **URL:** https://fidoalliance.org/feed/
+- **Previous SHA-256:**
+  `a292cce5e9ff7738c54d3042cf30a55afde83743003a9e0d5e9700f38da48280`
+- **Reviewed SHA-256:**
+  `09b1da8cb47381680a1bd10d7f0d096286be350972e7b3d3e5e16f66077f9011`
+- **Retrieved and reviewed:** 2026-10-13
+- **Applicability:** `WIRE-DEC-011` directly; `WIRE-DEC-001` as source inventory.
+- **Disposition:** Behavior-neutral for the selected CTAP 2.2 deterministic
+  CBOR profile.
+
+Three consecutive TLS retrievals produced the reviewed digest (396,871 bytes).
+The general-news feed still contains 99 items and now reports its build time
+as 2026-10-12. Items since the previous 2026-10-02 review concern fingerprint
+security-key certification, passkey products and agent-payment/access policy.
+The newest CTAP-related article describes a product certified using CTAP 2.1,
+not a revision to CTAP 2.2 or its deterministic CBOR rules:
+[SecuGen certification](https://fidoalliance.org/id-tech-secugen-unity-20-fingerprint-security-key-gains-fido2-certification/).
+The old feed body was not retained, so this is a publication/content comparison,
+not a reconstructed byte-level delta.
+
+Independent retrieval reproduced the selected CTAP 2.2 Proposed Standard
+2025-07-14 PDF digest:
+`2ef853c63fd0835e609e16fbe6a7fcd5965fd6a21d86752f46df54c5cfb81f73`
+(2,994,984 bytes). This acknowledgement does not adopt another CTAP edition,
+change decision bindings or modify CBOR behavior. The immutable source pin and
+global monitoring review date remain unchanged.
