@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.2] - 2026-10-13
 
+This entry records a prepared patch; adopt it only after the public v3.0.2 tag
+and module artifacts are available.
+
 ### Fixed
 
 - Preserve SOAP Header, Body and Fault lexical XML through length-changing
@@ -50,6 +53,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connect adoption navigation and source-package maps without treating frozen
   ecosystem cohorts as current package-release qualification.
   [5d750e39b4](https://github.com/faustbrian/go-wire/commit/5d750e39b44c439796004f402292255a06ad15d2)
+
+### Maintenance
+
+- Prepare the patch metadata without changing codec APIs or dependency locks.
+  [98b3ad686e](https://github.com/faustbrian/go-wire/commit/98b3ad686e40cd2186a031085aae19b94ede0abd)
+- Add regression coverage for live charset handoff and readers returned with
+  conversion errors, preserving partial-reader ownership and error causes.
+  [74e5359fd6](https://github.com/faustbrian/go-wire/commit/74e5359fd6a036d0c6a751cf4d230d0f105c83c4),
+  [ce691b1e75](https://github.com/faustbrian/go-wire/commit/ce691b1e7522a9a95e5a894a6823c5cb07639690)
+- Reconcile reviewed specification discovery feeds and narrow source-bound
+  mutation dispositions without treating historical failures as passing runs.
+  [b6d7d14cd6](https://github.com/faustbrian/go-wire/commit/b6d7d14cd69771d7188d1723b27e7272857e9d73),
+  [e16e4f032a](https://github.com/faustbrian/go-wire/commit/e16e4f032ab08a6797dfbc6a9d1b46afaa324b3f)
+
+Prepared source accountability covers the 17 non-merge commits from public
+`v3.0.1` (`060791370b0035fcdfd61b3883e13b7d1b2bc1e6`) through
+`ce691b1e7522a9a95e5a894a6823c5cb07639690`, each linked once above. This
+prose-only release alignment is outside that frozen history range.
 
 ## [3.0.1] - 2026-10-08
 
