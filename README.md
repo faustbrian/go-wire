@@ -22,6 +22,12 @@ projection contract. Version 2 remains available for consumers not migrating,
 but does not include those narrowed controls. See the
 [versioned threat model](docs/security-threat-model-v1.md) before adoption.
 
+This source tree prepares the v3.0.2 patch release, fixing lexical SOAP section
+capture after length-changing charset conversion. Its dated changelog and
+module version identify a release candidate, not completed publication. Adopt
+v3.0.2 only after its immutable release tag is published; the installation
+command below intentionally selects the already-published v3.0.1 release.
+
 ## Requirements
 
 - Go 1.27.0 or later

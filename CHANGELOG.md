@@ -7,19 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-10-13
+
 ### Fixed
 
 - Preserve SOAP Header, Body and Fault lexical XML through length-changing
   charset conversion without source-coordinate corruption or exact-capacity
   panics. Captured sections are UTF-8 after conversion; `RawXML` remains the
   exact original envelope. UTF-8 inputs and public signatures are unchanged.
+  [fcb3439362](https://github.com/faustbrian/go-wire/commit/fcb3439362e44e01b0f8d4cf5742dcdfcfd84939)
+
+### Changed
+
+- Declare the nine native format and round-trip fuzz targets and use bounded
+  published verification while retaining full release qualification. Align
+  authenticated shared tooling and enforce source-documentation checks.
+  [acbcbc154a](https://github.com/faustbrian/go-wire/commit/acbcbc154a6f3f221b17ca1b455f7e09582889fa),
+  [a27b06cf5e](https://github.com/faustbrian/go-wire/commit/a27b06cf5ef3b1fed4bccf767ad5f8d5206da209),
+  [1ee9b83aed](https://github.com/faustbrian/go-wire/commit/1ee9b83aedc4d2e224e071b73311108aa9436489),
+  [b8c41894d0](https://github.com/faustbrian/go-wire/commit/b8c41894d0659f67df8c1391df7135a456de0165)
+- Add monthly main-only selected assurance for one declared native fuzz target,
+  without making mutation or full campaigns ordinary pull-request gates.
+  [df0b01f785](https://github.com/faustbrian/go-wire/commit/df0b01f7859b0f6518e59fd3222b568e0f0cc100)
+- Pin development and CI to Go 1.27.2 while preserving the public Go 1.27.0
+  minimum and unchanged Go runtime dependency locks.
+  [da3c782122](https://github.com/faustbrian/go-wire/commit/da3c7821229f513626b9e2a09a36745f6bd97a7a)
+- Include npm documentation-tool dependencies in repository update monitoring.
+  [f3b6c8d513](https://github.com/faustbrian/go-wire/commit/f3b6c8d5135fefcf1d5357e4b51bafec666f0b6b)
 
 ### Documentation
 
+- Clarify the published v3 security boundary, separate earlier major-version
+  contracts, and distinguish current adoption limits from historical audits.
+  [693b66be7f](https://github.com/faustbrian/go-wire/commit/693b66be7f305df5d0e8bbdeec10db548f0ff51c)
 - Clarify codec ownership, partial target/write failures, callback and reader
   lifecycle, phase-specific limits and deterministic-versus-canonical output.
-- Document JSON normalization's default output quota and XML root inspection
+  Document JSON normalization's default output quota and XML root inspection
   scope while preserving executable behavior and pinned protocol inputs.
+  [e8d4c0c85e](https://github.com/faustbrian/go-wire/commit/e8d4c0c85e024766ee9901083d26a649f57addb2)
+- Standardize the repository's risk-based development and release policy.
+  [57d269be30](https://github.com/faustbrian/go-wire/commit/57d269be30ace3978e39c3a5d428377e67272e65)
+- Connect adoption navigation and source-package maps without treating frozen
+  ecosystem cohorts as current package-release qualification.
+  [5d750e39b4](https://github.com/faustbrian/go-wire/commit/5d750e39b44c439796004f402292255a06ad15d2)
 
 ## [3.0.1] - 2026-10-08
 

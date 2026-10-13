@@ -121,5 +121,12 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
+The prepared v3.0.2 candidate repairs lexical SOAP Header, Body and Fault XML
+capture when charset conversion changes byte length; published v3.0.1 does not
+include this repair. Adopt the v3.0.2 tag after publication. Captured sections
+are UTF-8 after conversion, while `RawXML` remains the original envelope bytes.
+UTF-8 inputs and v3 public signatures remain compatible; no major-import change
+is required for this patch.
+
 Choose the next guide in the [documentation index](README.md)
 or return to the [repository entry](../README.md) for installation and ownership.
