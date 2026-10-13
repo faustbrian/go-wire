@@ -1,5 +1,7 @@
 # Troubleshooting
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Start with classification
 
 ```go
@@ -164,3 +166,6 @@ go tool cover -func=coverage.out
 
 Add behavior-focused tests for the missing branch. Do not add assertions that
 only execute a line without proving its contract.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

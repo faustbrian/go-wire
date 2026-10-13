@@ -1,5 +1,7 @@
 # Migration notes
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## From v2 to v3
 
 Published version 3 uses `github.com/faustbrian/go-wire/v3`. Update
@@ -240,3 +242,6 @@ Major upgrades will document:
 
 Never infer migration requirements only from compiler errors; wire behavior can
 change without a signature change.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

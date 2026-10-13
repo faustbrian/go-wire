@@ -1,5 +1,7 @@
 # Architecture
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Package boundaries
 
 `wire` uses format-specific packages rather than a universal codec:
@@ -100,3 +102,6 @@ The runtime implementation uses only the Go standard library. The built-in XML
 charset converter is intentionally small and auditable. Applications needing a
 larger charset registry inject `CharsetReader` rather than forcing every
 consumer to inherit another dependency.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

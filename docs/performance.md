@@ -1,5 +1,7 @@
 # Performance and allocation policy
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Benchmarks are smoke evidence and comparison tools, not pass/fail latency
 contracts. Run them with:
 
@@ -44,3 +46,6 @@ Record Go version, OS/architecture, CPU, command, fixtures, and option profile
 when comparing samples. Do not turn single-run nanosecond or allocation samples
 into correctness gates; investigate statistically meaningful regressions with
 multiple runs and `benchstat` outside the release gate.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

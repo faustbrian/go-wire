@@ -1,5 +1,7 @@
 # Public API reference
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 This document describes the published v3 API. Go signatures and
 package comments remain authoritative; use `go doc` for locally installed
 source.
@@ -226,3 +228,6 @@ after codec work; this is not a pre-encoding allocation or callback-work bound.
 These symbols are stable at v1. Exported names,
 signatures, default limits, error classifications, wire output, and documented
 normalization behavior are SemVer-governed.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

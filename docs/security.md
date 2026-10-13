@@ -1,5 +1,7 @@
 # Security
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Trust Boundary
 
 Treat all JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON input as
@@ -108,3 +110,6 @@ not establish affected published versions or a current scanner result.
 See [dependencies](dependencies.md) and [formats](formats.md) for boundary
 details. Report
 vulnerabilities through [SECURITY.md](../SECURITY.md).
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

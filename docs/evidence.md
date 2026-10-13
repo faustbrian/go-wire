@@ -1,5 +1,7 @@
 # Audit evidence and traceability
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 This ledger maps the 2026-07-14 hardening mission to implementation and test
 evidence. Test names are stable evidence pointers; source and `go doc` remain
 authoritative for signatures.
@@ -64,3 +66,6 @@ Staticcheck-compatible lint, race tests, exact production coverage, all nine
 fuzz targets, representative and adversarial benchmarks, documentation checks,
 dependency review, and `govulncheck`. Exact final commands and results belong
 in the final audit handoff and must not be copied from an older run.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

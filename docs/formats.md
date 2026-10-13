@@ -1,5 +1,7 @@
 # Supported formats and behavior matrix
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Format support
 
 | Format | Read/write | Determinism | Strict defaults | Notable explicit options |
@@ -176,3 +178,6 @@ document.
   implementation remains application code and must terminate.
 - Automatic YAML/TOML/binary detection, queues, persistence, and business
   mapping are out of scope.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

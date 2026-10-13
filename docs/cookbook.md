@@ -1,5 +1,7 @@
 # Scenario cookbook
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Reject additive JSON fields
 
 Use this only when an upstream contract is intentionally closed:
@@ -207,3 +209,6 @@ err := bsonwire.Decode(payload, &document, bsonwire.DecodeOptions{
 ```
 
 Use ordered `D`; decoding duplicates into `M` loses information.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

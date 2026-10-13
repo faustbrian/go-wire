@@ -1,5 +1,7 @@
 # Wire Specification Decisions
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Version 2.0.0 implements the retained BSON-admission and diagnostic-privacy
 decisions. Prospective major-release wording in the rendered decision records
 refers to this v2 integration; their source bindings and decision hashes remain
@@ -746,3 +748,6 @@ registration, validation of incoming CBOR deterministic form, BSON scalar
 encoding, HTTP policy, WSDL/XSD, schema validation, signatures, compression,
 and application mapping are outside the current claim. Adding one requires a
 new decision before runtime implementation.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

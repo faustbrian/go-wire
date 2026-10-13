@@ -1,5 +1,7 @@
 # Codec dependencies
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 The standard library remains the implementation for JSON and XML. SOAP is
 built on `encoding/xml`. The five additional formats use focused codecs rather
 than incomplete local parsers.
@@ -28,3 +30,6 @@ at its latest reported version. Older indirect versions shown in the module
 graph are selected by dependencies and are not imported by production package
 code; `govulncheck ./...` reported no reachable vulnerabilities. This is a
 point-in-time result, not a permanent safety claim.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

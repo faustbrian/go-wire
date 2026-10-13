@@ -1,5 +1,7 @@
 # Frequently asked questions
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Why not call `encoding/json` or `encoding/xml` directly?
 
 Do so when their defaults already satisfy the boundary. `wire` adds value
@@ -101,3 +103,6 @@ explicit opt-in.
 
 `bsonwire.M` is a Go map. Use a struct, ordered `bsonwire.D`, or validated
 `bsonwire.Raw` when stable field order or exact bytes matter.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

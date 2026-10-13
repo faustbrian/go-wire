@@ -1,5 +1,7 @@
 # Quickstart
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Install
 
 Install the published v3 release. The compiled examples and command below select
@@ -237,3 +239,6 @@ field order; `M` map order is intentionally unspecified.
 
 Use `errors.As(err, &wireError)` to inspect `Kind`, `Format`, `Op`, and the
 underlying cause.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

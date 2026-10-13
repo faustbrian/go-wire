@@ -1,5 +1,7 @@
 # Versioning and release guide
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Compatibility contract
 
 The project uses Semantic Versioning. Beginning with v1.0.0, compatibility
@@ -93,3 +95,6 @@ Use GitHub's private vulnerability reporting flow. Prepare the fix and advisory
 privately, run the complete gate, then publish the advisory, patch release, and
 changelog entry together. Do not disclose exploit details in a public issue
 before users can upgrade.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

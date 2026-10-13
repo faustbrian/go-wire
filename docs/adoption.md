@@ -1,5 +1,7 @@
 # Adoption guide
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## 1. Identify the boundary
 
 Adopt `wire` where bytes enter or leave a service: an HTTP handler, carrier
@@ -118,3 +120,6 @@ normalization, SOAP fault mapping, accepted syntax, numeric conversion, emitted
 bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

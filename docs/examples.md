@@ -1,5 +1,7 @@
 # End-to-end examples
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 These examples keep transport and domain policy outside `wire`. Replace the
 placeholder URLs and DTOs with the peer's documented contract.
 
@@ -222,3 +224,6 @@ return bsonwire.DecodeReader(input, &response, bsonwire.DecodeOptions{})
 
 Use `D`, structs, or `Raw` when byte order matters. `M` is a Go map and does
 not have stable output order.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

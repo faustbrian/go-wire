@@ -1,5 +1,7 @@
 # Security and interoperability hardening audit
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 Audit date: 2026-07-14. The audited tree preceded v1.0.0. This historical
 report does not qualify a later release or identify affected published
 versions. See the [current versioned model](security-threat-model-v1.md)
@@ -128,3 +130,6 @@ their direct owners, and `govulncheck` reports no reachable vulnerability.
 Residual dependency risks remain the YAML v4 release candidate and the
 MessagePack v5 codec; wrapper limits and fuzzing reduce but cannot eliminate
 upstream parser risk.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

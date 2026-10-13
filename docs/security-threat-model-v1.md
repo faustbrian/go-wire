@@ -1,5 +1,7 @@
 # Wire threat model
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 - Model: `WIRE-THREAT-MODEL-1.0.0`
 - Applies to: `github.com/faustbrian/go-wire/v3` v3.0.0 and v3.0.1
 - Reviewed: 2026-10-09
@@ -116,3 +118,6 @@ historical finding label.
 
 Review this model after changes to format admission, projection, dependencies,
 errors, I/O ownership, cancellation, release tooling, or public guarantees.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

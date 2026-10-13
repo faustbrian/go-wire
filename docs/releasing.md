@@ -1,5 +1,7 @@
 # Releasing
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 ## Preconditions
 
 A release must originate from a clean, synchronized `main` branch. Update
@@ -31,3 +33,6 @@ Publish changelog-derived notes with a deterministic source archive and checksum
 bound to the verified main commit. Verify public asset bytes, the public Go
 module and its checksum record, and a clean consumer after publication. A tag
 push alone does not establish a successful release or consumer adoption.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
