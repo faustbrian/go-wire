@@ -180,3 +180,34 @@ func TestParseRepeatedCharsetConversionUsesCurrentStream(t *testing.T) {
 		t.Fatalf("BodyXML=%q", envelope.BodyXML())
 	}
 }
+
+// TestParseRepeatedStreamingCharsetPreservesLexicalSections keeps prior
+// converters live after a later switch, rather than eagerly buffering them.
+func TestParseRepeatedStreamingCharsetPreservesLexicalSections(t *testing.T) {
+	header := `<v a='keep'><!--header-->€&amp;</v>`
+	body := `<v><![CDATA[€]]></v>`
+	payload := []byte(`<?xml version="1.0" encoding="custom"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Header>` + header + `</s:Header><?xml version="1.0" encoding="custom"?><s:Body>` + body + `</s:Body></s:Envelope>`)
+	calls := 0
+	callback := func(_ string, input io.Reader) (io.Reader, error) {
+		calls++
+		return iotest.OneByteReader(input), nil
+	}
+	envelope, err := soap.Parse(payload, soap.ParseOptions{CharsetReader: callback})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls < 2 {
+		t.Fatal("repeated charset instruction did not invoke another converter")
+	}
+	if string(envelope.HeaderXML()) != header || string(envelope.BodyXML()) != body {
+		t.Fatalf("streaming sections changed: header=%q body=%q", envelope.HeaderXML(), envelope.BodyXML())
+	}
+	raw := envelope.RawXML()
+	if !bytes.Equal(raw, payload) {
+		t.Fatal("RawXML changed original input")
+	}
+	raw[0] = '!'
+	if !bytes.Equal(envelope.RawXML(), payload) {
+		t.Fatal("RawXML returned an alias instead of a defensive copy")
+	}
+}
