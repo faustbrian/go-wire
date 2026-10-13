@@ -118,6 +118,10 @@ source.
 - `Envelope.Version` is the parsed SOAP version.
 - `Envelope.Fault` is non-nil for a valid fault body.
 - `Envelope.RawXML()`, `HeaderXML()`, and `BodyXML()` return defensive copies.
+  `RawXML` preserves original input bytes; sections and `Fault.Raw`/`Detail`
+  retain lexical UTF-8 XML after charset conversion, without re-encoding markup
+  or adding inherited namespace declarations. Custom converter output and work
+  remain caller-owned; `MaxBytes` limits supplied raw input.
 - `Envelope.DecodeBody(any) error` decodes exactly one body child with inherited
   namespace bindings.
 

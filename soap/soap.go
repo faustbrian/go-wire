@@ -95,9 +95,9 @@ type Fault struct {
 	Node string
 	// Role contains the optional SOAP 1.2 role; empty omits it during marshaling.
 	Role string
-	// Detail contains mutable inner fault XML, validated as a fragment when marshaled.
+	// Detail contains mutable UTF-8 inner fault XML, validated as a fragment when marshaled.
 	Detail []byte
-	// Raw contains mutable captured fault XML and is not replayed by MarshalFault.
+	// Raw contains mutable captured UTF-8 fault XML and is not replayed by MarshalFault.
 	Raw []byte
 }
 
@@ -140,25 +140,25 @@ func (e *Envelope) RawXML() []byte {
 	return bytes.Clone(e.raw)
 }
 
-// HeaderXML returns a copy of captured Header content. See Parse for the
-// length-changing charset limitation; it does not add inherited namespaces.
+// HeaderXML returns a copy of lexical Header content after UTF-8 charset
+// conversion. It does not add inherited namespaces.
 func (e *Envelope) HeaderXML() []byte {
 	return bytes.Clone(e.header)
 }
 
-// BodyXML returns a copy of captured Body content. See Parse for the
-// length-changing charset limitation; it does not add inherited namespaces.
+// BodyXML returns a copy of lexical Body content after UTF-8 charset
+// conversion. It does not add inherited namespaces.
 func (e *Envelope) BodyXML() []byte {
 	return bytes.Clone(e.body)
 }
 
 // Parse borrows payload until return and extracts SOAP structure. Valid faults
 // return both the envelope and a *FaultError; other classified errors return nil.
-// Raw capture indexes original payload using decoded XML offsets. A charset
-// conversion that changes byte lengths can capture incorrect sections or panic
-// when converted offsets exceed original capacity. Supply UTF-8 XML with a
-// matching declaration (or none) to avoid this coordinate mismatch. Custom
-// callbacks are borrowed and no context, schema or header-role processing is owned.
+// RawXML preserves the original source. Captured Header, Body and Fault XML
+// retain lexical bytes from the decoder's UTF-8 stream after charset conversion,
+// without re-encoding markup or adding inherited namespaces. MaxBytes caps raw
+// input, not custom callback expansion. Custom callbacks are borrowed and own
+// their output/work bounds; no context, schema or header-role processing is owned.
 func Parse(payload []byte, options ParseOptions) (*Envelope, error) {
 	if options.MaxBytes < 0 {
 		return nil, validationError("parse", errors.New("max bytes must not be negative"))
@@ -177,7 +177,7 @@ func Parse(payload []byte, options ParseOptions) (*Envelope, error) {
 		return nil, err
 	}
 
-	decoder := decoderFor(payload, options)
+	decoder, source := decoderForCapture(payload, options)
 	root, err := nextStart(decoder)
 	if err != nil {
 		return nil, parseError("parse envelope", err)
@@ -188,7 +188,7 @@ func Parse(payload []byte, options ParseOptions) (*Envelope, error) {
 	}
 
 	envelope := &Envelope{Version: version, raw: bytes.Clone(payload), options: options}
-	if err := parseEnvelope(decoder, payload, root, envelope); err != nil {
+	if err := parseEnvelope(decoder, source, root, envelope); err != nil {
 		return nil, err
 	}
 	if err := requireDocumentEnd(decoder); err != nil {
@@ -610,7 +610,7 @@ type rawDetail struct {
 	Inner []byte `xml:",innerxml"`
 }
 
-func parseEnvelope(decoder *xml.Decoder, payload []byte, root xml.StartElement, envelope *Envelope) error {
+func parseEnvelope(decoder *xml.Decoder, source *capturedXML, root xml.StartElement, envelope *Envelope) error {
 	headerSeen := false
 	bodySeen := false
 	for {
@@ -629,7 +629,7 @@ func parseEnvelope(decoder *xml.Decoder, payload []byte, root xml.StartElement, 
 					return envelopeError("validate envelope", errors.New("header must occur at most once before body"))
 				}
 				headerSeen = true
-				inner, err := captureElement(decoder, payload, typed)
+				inner, err := captureElement(decoder, source, typed)
 				if err != nil {
 					return err
 				}
@@ -639,7 +639,7 @@ func parseEnvelope(decoder *xml.Decoder, payload []byte, root xml.StartElement, 
 					return envelopeError("validate envelope", errors.New("body must occur exactly once"))
 				}
 				bodySeen = true
-				body, fault, err := parseBody(decoder, payload, typed, envelope.Version)
+				body, fault, err := parseBody(decoder, source, typed, envelope.Version)
 				if err != nil {
 					return err
 				}
@@ -663,23 +663,22 @@ func parseEnvelope(decoder *xml.Decoder, payload []byte, root xml.StartElement, 
 	}
 }
 
-// Decoder offsets count the post-charset byte stream, while payload remains
-// original bytes. Length-changing conversion violates this coordinate assumption;
-// Parse documents the retained corruption/panic boundary, not a checked mapping.
-func captureElement(decoder *xml.Decoder, payload []byte, start xml.StartElement) ([]byte, error) {
+// Capture from the same lexical stream counted by decoder offsets, not from
+// original encoded bytes or reserialized tokens.
+func captureElement(decoder *xml.Decoder, source *capturedXML, start xml.StartElement) ([]byte, error) {
 	contentStart := int(decoder.InputOffset())
 	var discard struct{}
 	if err := decoder.DecodeElement(&discard, &start); err != nil {
 		return nil, parseError("parse envelope", err)
 	}
+	payload := source.bytes()
 	contentEnd := innerEnd(payload, contentStart, int(decoder.InputOffset()))
 	return bytes.Clone(payload[contentStart:contentEnd]), nil
 }
 
-// Body and fault slicing share captureElement's original/decoded coordinate
-// assumption. Keep the public charset caveat until byte-coordinate ownership is
-// separately repaired; depth admission alone cannot make these slices safe.
-func parseBody(decoder *xml.Decoder, payload []byte, start xml.StartElement, version Version) ([]byte, *Fault, error) {
+// Body and fault slices use captured decoder bytes so charset conversion cannot
+// shift their offsets into the original source or beyond its capacity.
+func parseBody(decoder *xml.Decoder, source *capturedXML, start xml.StartElement, version Version) ([]byte, *Fault, error) {
 	contentStart := int(decoder.InputOffset())
 	elements := 0
 	var fault *Fault
@@ -692,12 +691,12 @@ func parseBody(decoder *xml.Decoder, payload []byte, start xml.StartElement, ver
 		case xml.StartElement:
 			elements++
 			if typed.Name.Local == "Fault" && typed.Name.Space == namespaceForVersion(version) {
-				faultStart := bytes.LastIndexByte(payload[:decoder.InputOffset()], '<')
+				faultStart := bytes.LastIndexByte(source.bytes()[:decoder.InputOffset()], '<')
 				var raw rawFault
 				if err := decoder.DecodeElement(&raw, &typed); err != nil {
 					return nil, nil, parseError("parse fault", err)
 				}
-				parsed, err := makeFault(version, raw, bytes.Clone(payload[faultStart:decoder.InputOffset()]))
+				parsed, err := makeFault(version, raw, bytes.Clone(source.bytes()[faultStart:decoder.InputOffset()]))
 				if err != nil {
 					return nil, nil, err
 				}
@@ -707,6 +706,7 @@ func parseBody(decoder *xml.Decoder, payload []byte, start xml.StartElement, ver
 			}
 		case xml.EndElement:
 			if typed.Name == start.Name {
+				payload := source.bytes()
 				contentEnd := innerEnd(payload, contentStart, int(decoder.InputOffset()))
 				if fault != nil && elements != 1 {
 					return nil, nil, envelopeError("validate fault", errors.New("fault must be the only body child"))
@@ -754,6 +754,72 @@ func makeFault(version Version, raw rawFault, source []byte) (*Fault, error) {
 		return nil, envelopeError("validate fault", errors.New("fault code and reason are required"))
 	}
 	return fault, nil
+}
+
+// capturedXML owns converted lexical bytes only when a charset callback runs.
+// Otherwise it borrows original input for the duration of Parse.
+type capturedXML struct {
+	// original is the supplied document, used without conversion.
+	original []byte
+	// converted retains the composite stream counted by InputOffset.
+	converted *bytes.Buffer
+	// sink records only the currently active conversion reader.
+	sink *captureSink
+}
+
+// captureSink can be detached when a conversion wraps its previous input.
+// Detached readers must not duplicate bytes or retain obsolete capture buffers.
+type captureSink struct {
+	// buffer is nil after a later charset switch takes over capture ownership.
+	buffer *bytes.Buffer
+}
+
+// Write records active bytes and discards bytes from superseded reader layers.
+func (sink *captureSink) Write(payload []byte) (int, error) {
+	if sink.buffer != nil {
+		return sink.buffer.Write(payload)
+	}
+	return len(payload), nil
+}
+
+// bytes returns the current lexical stream, including bytes buffered ahead by
+// the decoder. The caller must not retain this alias across another token read.
+func (source *capturedXML) bytes() []byte {
+	if source.converted != nil {
+		return source.converted.Bytes()
+	}
+	return source.original
+}
+
+// decoderForCapture preserves consumed lexical bytes across charset switches.
+// The initial bytes.Reader has no read-ahead; each switch keeps the consumed
+// prefix and records the returned reader's UTF-8 suffix, not converter input.
+// Custom callback expansion remains caller-owned, just as its parsing work is.
+func decoderForCapture(payload []byte, options ParseOptions) (*xml.Decoder, *capturedXML) {
+	decoder := decoderFor(payload, options)
+	source := &capturedXML{original: payload}
+	charsetReader := decoder.CharsetReader
+	decoder.CharsetReader = func(label string, input io.Reader) (io.Reader, error) {
+		if source.sink != nil {
+			source.sink.buffer = nil
+		}
+		reader, err := charsetReader(label, input)
+		if err != nil || reader == nil {
+			return reader, err
+		}
+		// A subsequent encoding instruction may run another callback; its
+		// prefix is already converted and cannot be indexed in original input.
+		offset := int(decoder.InputOffset())
+		if source.converted == nil {
+			source.converted = new(bytes.Buffer)
+			_, _ = source.converted.Write(source.original[:offset])
+		} else {
+			source.converted.Truncate(offset)
+		}
+		source.sink = &captureSink{buffer: source.converted}
+		return io.TeeReader(reader, source.sink), nil
+	}
+	return decoder, source
 }
 
 func decoderFor(payload []byte, options ParseOptions) *xml.Decoder {

@@ -320,8 +320,11 @@ Additional authoritative source: `{"id":"soap11-source","version":"SOAP 1.1","ur
   The namespace selects exactly SOAP
   1.1 or 1.2. Header is optional and precedes one required Body; unexpected
   envelope children or text fail. Typed body decoding requires exactly one
-  child; raw sections remain copied bytes with inherited namespaces preserved
-  for decoding. A valid fault returns both the envelope and `*FaultError`, with
+  child; raw sections remain copied lexical bytes from the decoder's UTF-8
+  stream after charset conversion, with inherited namespaces preserved for
+  decoding. `RawXML` alone retains the complete original-encoding source;
+  custom converter expansion and work remain caller-owned. A valid fault
+  returns both the envelope and `*FaultError`, with
   version-specific code, reasons, subcodes, actor/node/role, and Detail. HTTP,
   SOAPAction, header processing, WSDL, WS-* and application mapping are outside
   this package.
@@ -329,7 +332,9 @@ Additional authoritative source: `{"id":"soap11-source","version":"SOAP 1.1","ur
   `TestParseSOAP11EnvelopePreservesRawSections`,
   `TestParseSOAP12FaultReturnsTypedErrorAndEnvelope`,
   `TestParseRejectsInvalidEnvelopeStructure`,
-  `TestDecodeBodyRetainsInheritedNamespaces`, and
+  `TestDecodeBodyRetainsInheritedNamespaces`,
+  `TestParseCharsetSectionsUseConvertedCoordinates`,
+  `TestParseCharsetFaultCapture`, `TestParseCustomCharsetCoordinates`, and
   `TestMarshalFaultRoundTripsBothVersions` cover `soap`. Reconsider for a new
   separately specified processing profile, not by weakening this one.
 

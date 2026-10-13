@@ -588,6 +588,8 @@ func TestParseDoesNotClassifyFaultLookalikes(t *testing.T) {
 // FuzzParse admits arbitrary envelope bytes under 64 KiB and default token depth;
 // version/fault/malformed seeds do not certify header processing or interoperability.
 func FuzzParse(f *testing.F) {
+	f.Add([]byte(`<?xml version="1.0" encoding="windows-1252"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><v>` + strings.Repeat("\x80", 32) + `</v></s:Body></s:Envelope>`))
+	f.Add([]byte(`<?xml version="1.0" encoding="ISO-8859-1"?><s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Header><v>` + "\xe4" + `</v></s:Header><s:Body/></s:Envelope>`))
 	f.Add(readFixture(f, "soap11-response.xml"))
 	f.Add(readFixture(f, "soap11-fault.xml"))
 	f.Add(readFixture(f, "soap12-fault.xml"))

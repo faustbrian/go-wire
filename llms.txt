@@ -27,6 +27,7 @@
 - [Audit evidence and traceability](docs/evidence.md)
 - [Supported formats and behavior matrix](docs/formats.md)
 - [Go Safety And Concurrency](docs/go-safety-and-concurrency.md)
+- [Package map](docs/package-map.md)
 - [Repository Standards](docs/repository-standards.md)
 - [Wire threat model](docs/security-threat-model-v1.md)
 - [Source documentation audit](docs/source-documentation-audit.md)

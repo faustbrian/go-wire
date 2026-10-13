@@ -7,14 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve SOAP Header, Body and Fault lexical XML through length-changing
+  charset conversion without source-coordinate corruption or exact-capacity
+  panics. Captured sections are UTF-8 after conversion; `RawXML` remains the
+  exact original envelope. UTF-8 inputs and public signatures are unchanged.
+
 ### Documentation
 
 - Clarify codec ownership, partial target/write failures, callback and reader
   lifecycle, phase-specific limits and deterministic-versus-canonical output.
 - Document JSON normalization's default output quota and XML root inspection
   scope while preserving executable behavior and pinned protocol inputs.
-- State the existing SOAP raw-capture corruption/panic boundary for
-  length-changing charset conversion and the UTF-8 input alternative.
 
 ## [3.0.1] - 2026-10-08
 

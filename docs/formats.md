@@ -83,10 +83,11 @@ document.
 
 ### SOAP
 
-- Length-changing charset conversion can corrupt raw section capture or panic
-  because decoder offsets index the original payload. Supply UTF-8 XML with a
-  matching declaration (or none); supported charset conversion is not a raw
-  preservation guarantee. See [security](security.md).
+- `RawXML` preserves the complete original source. Header, Body and Fault
+  sections preserve lexical XML from the parser's UTF-8 stream after charset
+  conversion, including authored prefixes, quotes, comments and CDATA. They do
+  not add inherited namespace declarations. UTF-8 inputs remain byte-exact.
+  Custom converters own their output and work bounds; `MaxBytes` caps raw input.
 
 - Envelope parsing applies the same configurable 1,000-element XML token-depth
   default before structural extraction.

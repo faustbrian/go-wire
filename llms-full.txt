@@ -6,8 +6,8 @@
 
 [![CI](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
 [![CodeQL](https://img.shields.io/badge/CodeQL-required-blue)](https://github.com/faustbrian/go-wire/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25_required-blue)](CONTRIBUTING.md#verification)
-[![Mutation](https://img.shields.io/badge/mutation-local_or_scheduled-blue)](CONTRIBUTING.md#verification)
+[![Coverage](https://img.shields.io/badge/coverage-risk_selected-blue)](CONTRIBUTING.md#verification)
+[![Mutation](https://img.shields.io/badge/mutation-optional_local%2Fselected_scheduled-blue)](CONTRIBUTING.md#verification)
 [![Documentation](https://img.shields.io/badge/docs-checked_in_CI-blue)](docs/)
 [![Go Reference](https://pkg.go.dev/badge/github.com/faustbrian/go-wire/v3.svg)](https://pkg.go.dev/github.com/faustbrian/go-wire/v3)
 [![Release](https://img.shields.io/github/v/release/faustbrian/go-wire?sort=semver)](https://github.com/faustbrian/go-wire/releases)
@@ -117,9 +117,20 @@ Review [docs/security.md](docs/security.md) before decoding untrusted payloads.
 third-party policy are recorded in [NOTICE](NOTICE) and
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
+## Documentation navigation
+
+[Complete documentation map](docs/README.md#complete-documentation-map) · [Current source package map](docs/package-map.md)
+
+Use the [versioned ecosystem entry](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem) for package
+selection. The [frozen compatibility cohort](https://github.com/faustbrian/go-library-tools/blob/v1.8.4/docs/ecosystem/compatibility-sets.md)
+is separate from current package releases and unpublished source changes.
+Adopting them does not silently update that cohort.
+
 ## Source: docs/README.md
 
 # wire Documentation
+
+[Repository entry](../README.md) · [Versioned ecosystem](https://github.com/faustbrian/go-library-tools/tree/v1.4.0/docs/ecosystem)
 
 Use this index to select an explicit wire format and understand its limits.
 
@@ -157,9 +168,37 @@ Use this index to select an explicit wire format and understand its limits.
 
 - [Shared repository standards](repository-standards.md)
 
+## Complete documentation map
+
+- [Adoption guide](adoption.md) — `docs/adoption.md`
+- [Public API reference](api.md) — `docs/api.md`
+- [Architecture](architecture.md) — `docs/architecture.md`
+- [Versioning and release guide](compatibility.md) — `docs/compatibility.md`
+- [Scenario cookbook](cookbook.md) — `docs/cookbook.md`
+- [Codec dependencies](dependencies.md) — `docs/dependencies.md`
+- [Audit evidence and traceability](evidence.md) — `docs/evidence.md`
+- [End-to-end examples](examples.md) — `docs/examples.md`
+- [Frequently asked questions](faq.md) — `docs/faq.md`
+- [Supported formats and behavior matrix](formats.md) — `docs/formats.md`
+- [Go Safety And Concurrency](go-safety-and-concurrency.md) — `docs/go-safety-and-concurrency.md`
+- [Security and interoperability hardening audit](hardening.md) — `docs/hardening.md`
+- [Migration notes](migration.md) — `docs/migration.md`
+- [Package map](package-map.md) — `docs/package-map.md`
+- [Performance and allocation policy](performance.md) — `docs/performance.md`
+- [Quickstart](quickstart.md) — `docs/quickstart.md`
+- [Releasing](releasing.md) — `docs/releasing.md`
+- [Repository Standards](repository-standards.md) — `docs/repository-standards.md`
+- [Wire threat model](security-threat-model-v1.md) — `docs/security-threat-model-v1.md`
+- [Security](security.md) — `docs/security.md`
+- [Source documentation audit](source-documentation-audit.md) — `docs/source-documentation-audit.md`
+- [Wire Specification Decisions](specification-decisions.md) — `docs/specification-decisions.md`
+- [Troubleshooting](troubleshooting.md) — `docs/troubleshooting.md`
+
 ## Source: docs/quickstart.md
 
 # Quickstart
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Install
 
@@ -399,9 +438,14 @@ field order; `M` map order is intentionally unspecified.
 Use `errors.As(err, &wireError)` to inspect `Kind`, `Format`, `Op`, and the
 underlying cause.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/adoption.md
 
 # Adoption guide
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## 1. Identify the boundary
 
@@ -522,9 +566,14 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/api.md
 
 # Public API reference
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 This document describes the published v3 API. Go signatures and
 package comments remain authoritative; use `go doc` for locally installed
@@ -642,6 +691,10 @@ source.
 - `Envelope.Version` is the parsed SOAP version.
 - `Envelope.Fault` is non-nil for a valid fault body.
 - `Envelope.RawXML()`, `HeaderXML()`, and `BodyXML()` return defensive copies.
+  `RawXML` preserves original input bytes; sections and `Fault.Raw`/`Detail`
+  retain lexical UTF-8 XML after charset conversion, without re-encoding markup
+  or adding inherited namespace declarations. Custom converter output and work
+  remain caller-owned; `MaxBytes` limits supplied raw input.
 - `Envelope.DecodeBody(any) error` decodes exactly one body child with inherited
   namespace bindings.
 
@@ -753,9 +806,14 @@ These symbols are stable at v1. Exported names,
 signatures, default limits, error classifications, wire output, and documented
 normalization behavior are SemVer-governed.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/architecture.md
 
 # Architecture
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Package boundaries
 
@@ -858,9 +916,14 @@ charset converter is intentionally small and auditable. Applications needing a
 larger charset registry inject `CharsetReader` rather than forcing every
 consumer to inherit another dependency.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/examples.md
 
 # End-to-end examples
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 These examples keep transport and domain policy outside `wire`. Replace the
 placeholder URLs and DTOs with the peer's documented contract.
@@ -1085,9 +1148,14 @@ return bsonwire.DecodeReader(input, &response, bsonwire.DecodeOptions{})
 Use `D`, structs, or `Raw` when byte order matters. `M` is a Go map and does
 not have stable output order.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/cookbook.md
 
 # Scenario cookbook
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Reject additive JSON fields
 
@@ -1297,9 +1365,14 @@ err := bsonwire.Decode(payload, &document, bsonwire.DecodeOptions{
 
 Use ordered `D`; decoding duplicates into `M` loses information.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/faq.md
 
 # Frequently asked questions
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Why not call `encoding/json` or `encoding/xml` directly?
 
@@ -1403,9 +1476,14 @@ explicit opt-in.
 `bsonwire.M` is a Go map. Use a struct, ordered `bsonwire.D`, or validated
 `bsonwire.Raw` when stable field order or exact bytes matter.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/troubleshooting.md
 
 # Troubleshooting
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Start with classification
 
@@ -1572,9 +1650,14 @@ go tool cover -func=coverage.out
 Add behavior-focused tests for the missing branch. Do not add assertions that
 only execute a line without proving its contract.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/migration.md
 
 # Migration notes
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## From v2 to v3
 
@@ -1817,9 +1900,14 @@ Major upgrades will document:
 Never infer migration requirements only from compiler errors; wire behavior can
 change without a signature change.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/compatibility.md
 
 # Versioning and release guide
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Compatibility contract
 
@@ -1915,9 +2003,14 @@ privately, run the complete gate, then publish the advisory, patch release, and
 changelog entry together. Do not disclose exploit details in a public issue
 before users can upgrade.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/performance.md
 
 # Performance and allocation policy
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 Benchmarks are smoke evidence and comparison tools, not pass/fail latency
 contracts. Run them with:
@@ -1964,9 +2057,14 @@ when comparing samples. Do not turn single-run nanosecond or allocation samples
 into correctness gates; investigate statistically meaningful regressions with
 multiple runs and `benchstat` outside the release gate.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/hardening.md
 
 # Security and interoperability hardening audit
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 Audit date: 2026-07-14. The audited tree preceded v1.0.0. This historical
 report does not qualify a later release or identify affected published
@@ -2097,9 +2195,14 @@ Residual dependency risks remain the YAML v4 release candidate and the
 MessagePack v5 codec; wrapper limits and fuzzing reduce but cannot eliminate
 upstream parser risk.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/security.md
 
 # Security
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Trust Boundary
 
@@ -2116,13 +2219,12 @@ is shallow, so the package validates every entered container before decoding.
 Post-encoding validation does not bound driver buffering or custom codec work;
 pre-encoding allocation protection remains separate work.
 
-SOAP raw extraction indexes original input using post-charset decoder offsets.
-Length-changing conversion can return incorrect captured sections or panic when
-an offset exceeds the original slice capacity. A windows-1252 envelope with 32
-`0x80` body bytes demonstrates both outcomes depending on payload capacity;
-matching-declaration UTF-8 input avoids that observed mismatch. Supply UTF-8 XML
-with a matching declaration (or none); charset availability is not a raw-capture
-safety guarantee. Coordinate ownership needs a separate behavioral repair.
+SOAP extraction captures the lexical stream counted by decoder offsets,
+including length-changing charset conversion. The complete `RawXML` source
+remains byte-exact; Header, Body and Fault sections are UTF-8 after conversion.
+Raw-input quotas do not bound custom converter expansion or execution. Custom
+callbacks remain trusted, caller-owned collaborators; bound their output and
+work before using them with hostile inputs.
 
 XML and SOAP require entity and nesting discipline. YAML aliases and recursive
 structures require limits. Binary formats require byte, depth, collection, and
@@ -2210,9 +2312,14 @@ See [dependencies](dependencies.md) and [formats](formats.md) for boundary
 details. Report
 vulnerabilities through [SECURITY.md](../SECURITY.md).
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/releasing.md
 
 # Releasing
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Preconditions
 
@@ -2245,6 +2352,9 @@ Publish changelog-derived notes with a deterministic source archive and checksum
 bound to the verified main commit. Verify public asset bytes, the public Go
 module and its checksum record, and a clean consumer after publication. A tag
 push alone does not establish a successful release or consumer adoption.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
 
 ## Source: CONTRIBUTING.md
 
@@ -2356,6 +2466,15 @@ require an explicit purpose, ownership boundary, dependency review, package
 catalog entry, full quality gates, documentation, changelog, license, security
 policy, compatibility plan, and release dry-run.
 
+## Source Documentation
+
+Install the checksum-pinned public verifier declared in `.golib.yaml`.
+`make source-docs-check` validates objective Go comment, marker, link and
+generated-producer structure; `make check`, `make check-full` and `make ci`
+require it before their existing checks. Shared CI runs the same strict
+contract and includes its result in Required. This is structural enforcement,
+not a substitute for source-truth review or behavioral verification.
+
 ## Source: SECURITY.md
 
 # Security Policy
@@ -2457,14 +2576,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve SOAP Header, Body and Fault lexical XML through length-changing
+  charset conversion without source-coordinate corruption or exact-capacity
+  panics. Captured sections are UTF-8 after conversion; `RawXML` remains the
+  exact original envelope. UTF-8 inputs and public signatures are unchanged.
+
 ### Documentation
 
 - Clarify codec ownership, partial target/write failures, callback and reader
   lifecycle, phase-specific limits and deterministic-versus-canonical output.
 - Document JSON normalization's default output quota and XML root inspection
   scope while preserving executable behavior and pinned protocol inputs.
-- State the existing SOAP raw-capture corruption/panic boundary for
-  length-changing charset conversion and the UTF-8 input alternative.
 
 ## [3.0.1] - 2026-10-08
 
@@ -2878,6 +3002,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Codec dependencies
 
+[Documentation index](README.md) · [Repository entry](../README.md)
+
 The standard library remains the implementation for JSON and XML. SOAP is
 built on `encoding/xml`. The five additional formats use focused codecs rather
 than incomplete local parsers.
@@ -2907,9 +3033,14 @@ graph are selected by dependencies and are not imported by production package
 code; `govulncheck ./...` reported no reachable vulnerabilities. This is a
 point-in-time result, not a permanent safety claim.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/evidence.md
 
 # Audit evidence and traceability
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 This ledger maps the 2026-07-14 hardening mission to implementation and test
 evidence. Test names are stable evidence pointers; source and `go doc` remain
@@ -2976,9 +3107,14 @@ fuzz targets, representative and adversarial benchmarks, documentation checks,
 dependency review, and `govulncheck`. Exact final commands and results belong
 in the final audit handoff and must not be copied from an older run.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/formats.md
 
 # Supported formats and behavior matrix
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Format support
 
@@ -3061,10 +3197,11 @@ document.
 
 ### SOAP
 
-- Length-changing charset conversion can corrupt raw section capture or panic
-  because decoder offsets index the original payload. Supply UTF-8 XML with a
-  matching declaration (or none); supported charset conversion is not a raw
-  preservation guarantee. See [security](security.md).
+- `RawXML` preserves the complete original source. Header, Body and Fault
+  sections preserve lexical XML from the parser's UTF-8 stream after charset
+  conversion, including authored prefixes, quotes, comments and CDATA. They do
+  not add inherited namespace declarations. UTF-8 inputs remain byte-exact.
+  Custom converters own their output and work bounds; `MaxBytes` caps raw input.
 
 - Envelope parsing applies the same configurable 1,000-element XML token-depth
   default before structural extraction.
@@ -3157,9 +3294,14 @@ document.
 - Automatic YAML/TOML/binary detection, queues, persistence, and business
   mapping are out of scope.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/go-safety-and-concurrency.md
 
 # Go Safety And Concurrency
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 Baseline: `GO-SAFETY-1`
 
@@ -3302,9 +3444,44 @@ be described as an equivalent type-system guarantee.
   `jsonapi`, `jsonrpc`, `queue`, `wire`, `tabular`,
   and the monorepo Go standard.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
+## Source: docs/package-map.md
+
+# Package map
+
+[Documentation index](README.md) · [Repository entry](../README.md)
+
+This map follows the current source modules, not a synchronized release.
+Use the repository README for published installation versions; an unpublished
+source major is not installable merely because its package appears here.
+Internal packages and non-releasable fixtures are intentionally excluded.
+
+## github.com/faustbrian/go-wire/v3
+
+`wire` provides explicit, auditable JSON, XML, SOAP, YAML, TOML, MessagePack, CBOR, and BSON interoperability boundaries with bounded read and write APIs.
+
+| Import path | Responsibility |
+| --- | --- |
+| [`github.com/faustbrian/go-wire/v3`](../doc.go) | Use for shared format identifiers, stable error categories, and explicit JSON-or-XML detection. |
+| [`github.com/faustbrian/go-wire/v3/bsonwire`](../bsonwire/doc.go) | Use for bounded BSON document encoding and decoding with explicit duplicate-key and numeric policies. |
+| [`github.com/faustbrian/go-wire/v3/cborwire`](../cborwire/doc.go) | Use for bounded CBOR processing with explicit deterministic profiles, tag policy, and structural limits. |
+| [`github.com/faustbrian/go-wire/v3/jsonwire`](../jsonwire/doc.go) | Use for bounded JSON encoding, decoding, and deterministic normalization with explicit strictness options. |
+| [`github.com/faustbrian/go-wire/v3/msgpackwire`](../msgpackwire/doc.go) | Use for bounded MessagePack encoding and decoding with explicit map, extension, and numeric policies. |
+| [`github.com/faustbrian/go-wire/v3/soap`](../soap/doc.go) | Use for bounded SOAP 1.1 and 1.2 envelope, body, and fault processing independent of HTTP policy. |
+| [`github.com/faustbrian/go-wire/v3/tomlwire`](../tomlwire/doc.go) | Use for bounded TOML document encoding and decoding with native datetime and strict-field options. |
+| [`github.com/faustbrian/go-wire/v3/xmlwire`](../xmlwire/doc.go) | Use for bounded XML document encoding and decoding with namespace, charset, and depth policy. |
+| [`github.com/faustbrian/go-wire/v3/yamlwire`](../yamlwire/doc.go) | Use for bounded YAML document encoding and decoding with explicit alias, merge, and duplicate-key policy. |
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/repository-standards.md
 
 # Repository Standards
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 This repository follows the shared maintenance baseline used by the
 `faustbrian/go-*` OSS packages.
@@ -3371,9 +3548,14 @@ security guidance are expected to differ. Shared policy wording and automation
 structure must not drift without updating this contract across all affected
 repositories.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/security-threat-model-v1.md
 
 # Wire threat model
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 - Model: `WIRE-THREAT-MODEL-1.0.0`
 - Applies to: `github.com/faustbrian/go-wire/v3` v3.0.0 and v3.0.1
@@ -3492,9 +3674,14 @@ historical finding label.
 Review this model after changes to format admission, projection, dependencies,
 errors, I/O ownership, cancellation, release tooling, or public guarantees.
 
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/source-documentation-audit.md
 
 # Source documentation audit
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 ## Scope and initial plan
 
@@ -3687,9 +3874,23 @@ MessagePack projected-key coverage, XML document-profile tightening, SOAP charse
 source coordinates and checked release-version arithmetic require separate scope.
 No new canonicalization, conformance, interoperability, benchmark or release claim.
 
+## Objective Enforcement
+
+The checksum-pinned public Tools v2.4.0 verifier now supplies
+`make source-docs-check` as a prerequisite of the existing local and CI Make
+routes. Ordinary shared CI selects strict source-documentation checking and
+requires its result. Native prerequisites, operation budgets, security and
+release controls are retained. Hosted exact-head evidence is recorded by the
+coordination ledger; configuration alone does not establish green delivery.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.
+
 ## Source: docs/specification-decisions.md
 
 # Wire Specification Decisions
+
+[Documentation index](README.md) · [Repository entry](../README.md)
 
 Version 2.0.0 implements the retained BSON-admission and diagnostic-privacy
 decisions. Prospective major-release wording in the rendered decision records
@@ -4009,8 +4210,11 @@ Additional authoritative source: `{"id":"soap11-source","version":"SOAP 1.1","ur
   The namespace selects exactly SOAP
   1.1 or 1.2. Header is optional and precedes one required Body; unexpected
   envelope children or text fail. Typed body decoding requires exactly one
-  child; raw sections remain copied bytes with inherited namespaces preserved
-  for decoding. A valid fault returns both the envelope and `*FaultError`, with
+  child; raw sections remain copied lexical bytes from the decoder's UTF-8
+  stream after charset conversion, with inherited namespaces preserved for
+  decoding. `RawXML` alone retains the complete original-encoding source;
+  custom converter expansion and work remain caller-owned. A valid fault
+  returns both the envelope and `*FaultError`, with
   version-specific code, reasons, subcodes, actor/node/role, and Detail. HTTP,
   SOAPAction, header processing, WSDL, WS-* and application mapping are outside
   this package.
@@ -4018,7 +4222,9 @@ Additional authoritative source: `{"id":"soap11-source","version":"SOAP 1.1","ur
   `TestParseSOAP11EnvelopePreservesRawSections`,
   `TestParseSOAP12FaultReturnsTypedErrorAndEnvelope`,
   `TestParseRejectsInvalidEnvelopeStructure`,
-  `TestDecodeBodyRetainsInheritedNamespaces`, and
+  `TestDecodeBodyRetainsInheritedNamespaces`,
+  `TestParseCharsetSectionsUseConvertedCoordinates`,
+  `TestParseCharsetFaultCapture`, `TestParseCustomCharsetCoordinates`, and
   `TestMarshalFaultRoundTripsBothVersions` cover `soap`. Reconsider for a new
   separately specified processing profile, not by weakening this one.
 
@@ -4437,3 +4643,6 @@ registration, validation of incoming CBOR deterministic form, BSON scalar
 encoding, HTTP policy, WSDL/XSD, schema validation, signatures, compression,
 and application mapping are outside the current claim. Adding one requires a
 new decision before runtime implementation.
+
+Choose the next guide in the [documentation index](README.md)
+or return to the [repository entry](../README.md) for installation and ownership.

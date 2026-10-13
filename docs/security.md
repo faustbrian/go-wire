@@ -17,13 +17,12 @@ is shallow, so the package validates every entered container before decoding.
 Post-encoding validation does not bound driver buffering or custom codec work;
 pre-encoding allocation protection remains separate work.
 
-SOAP raw extraction indexes original input using post-charset decoder offsets.
-Length-changing conversion can return incorrect captured sections or panic when
-an offset exceeds the original slice capacity. A windows-1252 envelope with 32
-`0x80` body bytes demonstrates both outcomes depending on payload capacity;
-matching-declaration UTF-8 input avoids that observed mismatch. Supply UTF-8 XML
-with a matching declaration (or none); charset availability is not a raw-capture
-safety guarantee. Coordinate ownership needs a separate behavioral repair.
+SOAP extraction captures the lexical stream counted by decoder offsets,
+including length-changing charset conversion. The complete `RawXML` source
+remains byte-exact; Header, Body and Fault sections are UTF-8 after conversion.
+Raw-input quotas do not bound custom converter expansion or execution. Custom
+callbacks remain trusted, caller-owned collaborators; bound their output and
+work before using them with hostile inputs.
 
 XML and SOAP require entity and nesting discipline. YAML aliases and recursive
 structures require limits. Binary formats require byte, depth, collection, and
