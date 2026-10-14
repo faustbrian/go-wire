@@ -8,6 +8,9 @@ authoritative for signatures.
 
 ## Inventory
 
+Codec versions below reflect the current [`go.mod`](../go.mod) selections,
+not the dependency versions used by the historical audit.
+
 | Format | Read APIs | Write APIs | Primary limits and modes | Codec | Fuzz and benchmark evidence |
 | --- | --- | --- | --- | --- | --- |
 | JSON | `Decode`, `DecodeReader`, `Normalize` | `Encode`, `EncodeWriter` | 1 MiB input/output, strict fields, indentation, HTML escaping | Go `encoding/json` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
@@ -16,8 +19,8 @@ authoritative for signatures.
 | YAML | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, depth/alias plugins, unique/single document, alias/merge/field modes | `go.yaml.in/yaml/v4 v4.0.0-rc.6` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 | TOML | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, strict fields, indentation | `github.com/BurntSushi/toml v1.6.0` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 | MessagePack | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, 32 levels, 131,072 array items, 65,536 map pairs, unique keys | `github.com/vmihailenco/msgpack/v5 v5.4.1` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
-| CBOR | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB; dependency nesting/collection limits; tag, indefinite, Canonical/Core/CTAP2 modes | `github.com/fxamacker/cbor/v2 v2.9.2` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
-| BSON | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, exact document length, recursive unique keys, explicit lossy conversions | `go.mongodb.org/mongo-driver/v2 v2.8.0` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
+| CBOR | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB; dependency nesting/collection limits; tag, indefinite, Canonical/Core/CTAP2 modes | `github.com/fxamacker/cbor/v2 v2.9.4` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
+| BSON | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, exact document length, recursive unique keys, explicit lossy conversions | `go.mongodb.org/mongo-driver/v2 v2.9.1` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
