@@ -168,6 +168,9 @@ func TestReplaceInvalidUTF8MatchesEncodingJSON(t *testing.T) {
 	if err := json.Unmarshal(payload, &want); err != nil {
 		t.Fatalf("json.Unmarshal(struct) error = %v", err)
 	}
+	if want.Bad != "y" {
+		t.Fatalf("json.Unmarshal(struct).Bad = %q, want the replaced name to match the field", want.Bad)
+	}
 	if err := jsonwire.Decode(payload, &got, jsonwire.DecodeOptions{ReplaceInvalidUTF8: true}); err != nil || got != want {
 		t.Fatalf("Decode(struct) = %#v, %v; json.Unmarshal = %#v", got, err, want)
 	}
