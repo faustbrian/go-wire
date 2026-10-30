@@ -65,8 +65,10 @@ and binary-format examples.
 
 JSON decoding rejects invalid UTF-8 by default. For third-party payloads that
 cannot meet RFC 8259, `DecodeOptions.ReplaceInvalidUTF8` reproduces
-encoding/json's U+FFFD replacement, and `MaxNestedLevels` bounds nesting before
-assignment; see the [cookbook](docs/cookbook.md).
+encoding/json's U+FFFD replacement in decoded strings, while raw-message and
+`json.Unmarshaler` targets still receive the original bytes, and
+`MaxNestedLevels` bounds nesting before assignment; see the
+[cookbook](docs/cookbook.md).
 
 ## Package Guarantees
 

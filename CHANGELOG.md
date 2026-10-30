@@ -21,10 +21,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   third-party payloads that replaces each invalid UTF-8 byte inside a string
   with U+FFFD exactly as encoding/json does, instead of rejecting the payload.
   Invalid bytes outside strings remain parse failures and the default still
-  rejects invalid UTF-8.
+  rejects invalid UTF-8. `json.RawMessage` and `json.Unmarshaler` targets
+  receive the original invalid bytes.
 - Add `jsonwire.DecodeOptions.MaxNestedLevels`, an optional cap on nested
   arrays and objects checked before assignment, with refusals matching
-  `wire.ErrSizeLimit`. Zero keeps the existing behavior.
+  `wire.ErrSizeLimit`. Zero keeps the existing behavior; values above
+  encoding/json's 10,000-level cap are rejected as invalid options.
+
+### Fixed
+
+- The duplicate-name preflight no longer refuses numbers outside the float64
+  range, such as `1e400`, that a `json.Number` target accepts.
+
+### Documentation
+
+- Duplicate-name rejection compares names exactly, while struct decoding
+  matches names case-insensitively; the security decision now says it stops
+  exact-name smuggling only.
+
+### Compatibility
+
+- `DecodeOptions` gains fields, so unkeyed `DecodeOptions{...}` literals must
+  become keyed literals.
 
 ## [3.0.2] - 2026-10-13
 

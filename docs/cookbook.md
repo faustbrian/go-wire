@@ -30,9 +30,11 @@ err := jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
 ```
 
 Each invalid byte inside a string becomes U+FFFD, exactly as encoding/json
-replaces it, so `"p\xe4iv\xe4"` decodes as `"p\uFFFDiv\uFFFD"`. An invalid byte
-outside a string is still `wire.ErrParse`, and nesting beyond
-`MaxNestedLevels` is `wire.ErrSizeLimit` before the target is touched.
+replaces it, so `"p\xe4iv\xe4"` decodes as `"p\uFFFDiv\uFFFD"`. A
+`json.RawMessage` or `json.Unmarshaler` target receives the original invalid
+bytes, because no string is decoded for it. An invalid byte outside a string
+is still `wire.ErrParse`, and nesting beyond `MaxNestedLevels` (at most
+10,000) is `wire.ErrSizeLimit` before the target is touched.
 
 ## Preserve JSON decimal spelling during normalization
 
