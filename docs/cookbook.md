@@ -15,6 +15,25 @@ err := jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
 
 An unknown field is `wire.ErrValidation`, not a syntax error.
 
+## Decode a third-party response that is not always valid UTF-8
+
+Use this only for a producer you cannot hold to RFC 8259, such as a carrier
+API that occasionally sends a Latin-1 byte in free text:
+
+```go
+err := jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
+	MaxBytes:               maximumResponseBytes,
+	DisallowDuplicateNames: true,
+	MaxNestedLevels:        64,
+	ReplaceInvalidUTF8:     true,
+})
+```
+
+Each invalid byte inside a string becomes U+FFFD, exactly as encoding/json
+replaces it, so `"p\xe4iv\xe4"` decodes as `"p\uFFFDiv\uFFFD"`. An invalid byte
+outside a string is still `wire.ErrParse`, and nesting beyond
+`MaxNestedLevels` is `wire.ErrSizeLimit` before the target is touched.
+
 ## Preserve JSON decimal spelling during normalization
 
 ```go

@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `jsonwire.DecodeOptions.ReplaceInvalidUTF8`, an opt-in mode for
+  third-party payloads that replaces each invalid UTF-8 byte inside a string
+  with U+FFFD exactly as encoding/json does, instead of rejecting the payload.
+  Invalid bytes outside strings remain parse failures and the default still
+  rejects invalid UTF-8.
+- Add `jsonwire.DecodeOptions.MaxNestedLevels`, an optional cap on nested
+  arrays and objects checked before assignment, with refusals matching
+  `wire.ErrSizeLimit`. Zero keeps the existing behavior.
+
 ## [3.0.2] - 2026-10-13
 
 This entry records a prepared patch; adopt it only after the public v3.0.2 tag

@@ -30,6 +30,15 @@ type DecodeOptions struct {
 	// DisallowDuplicateNames rejects recursively repeated object names before target decoding;
 	// default retains encoding/json replacement/merge behavior.
 	DisallowDuplicateNames bool
+	// MaxNestedLevels caps nested arrays and objects before target decoding; a
+	// root array or object is level one. Zero retains encoding/json's own nesting
+	// limit; negative values fail. Refusals match wire.ErrSizeLimit.
+	MaxNestedLevels int
+	// ReplaceInvalidUTF8 admits invalid UTF-8 inside strings and replaces each
+	// invalid byte with U+FFFD, as encoding/json does, instead of rejecting the
+	// payload. Invalid bytes outside strings remain malformed JSON. Use it only
+	// for third-party input whose producer cannot be held to RFC 8259.
+	ReplaceInvalidUTF8 bool
 }
 
 // EncodeOptions controls JSON encoding behavior.
@@ -52,30 +61,35 @@ type NormalizeOptions struct {
 // Decode borrows payload until return and decodes exactly one UTF-8 JSON value
 // into a non-nil pointer. Untyped numbers follow encoding/json float64 mapping;
 // choose typed numeric destinations when that representation is insufficient.
-// Duplicate rejection is opt-in and failed targets are indeterminate.
+// Duplicate rejection, nesting budgets and invalid UTF-8 replacement are opt-in
+// and failed targets are indeterminate.
 func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
 // DecodeReader buffers borrowed input through EOF or a size refusal and decodes
 // exactly one UTF-8 JSON value into a non-nil pointer. It never closes reader.
-// Duplicate preflight, when enabled, precedes assignment; other errors, including
-// trailing values, can leave target mutated. Blocking/custom codec work is not
-// cancellable through this API. Size refusals match wire.ErrSizeLimit.
+// Duplicate and nesting preflight, when enabled, precedes assignment; other
+// errors, including trailing values, can leave target mutated. Blocking/custom
+// codec work is not cancellable through this API. Size and nesting refusals
+// match wire.ErrSizeLimit.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return &wire.Error{Kind: wire.ErrorKindTarget, Format: wire.FormatJSON, Op: "decode", Err: err}
 	}
 
+	if options.MaxNestedLevels < 0 {
+		return validationError("decode", errors.New("max nested levels must not be negative"))
+	}
 	payload, err := readBounded(reader, options.MaxBytes)
 	if err != nil {
 		return err
 	}
-	if !utf8.Valid(payload) {
+	if !options.ReplaceInvalidUTF8 && !utf8.Valid(payload) {
 		return parseError("decode", errors.New("JSON text is not valid UTF-8"))
 	}
-	if options.DisallowDuplicateNames {
-		if err := validateUniqueNames(payload); err != nil {
+	if options.DisallowDuplicateNames || options.MaxNestedLevels > 0 {
+		if err := validateStructure(payload, options); err != nil {
 			return err
 		}
 	}
@@ -94,15 +108,17 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
-func validateUniqueNames(payload []byte) error {
+// validateStructure walks the payload once before assignment, refusing
+// repeated object names and nesting beyond the configured level budget.
+func validateStructure(payload []byte, options DecodeOptions) error {
 	decoder := json.NewDecoder(bytes.NewReader(payload))
-	if err := validateUniqueValue(decoder); err != nil {
+	if err := validateValue(decoder, options, 0); err != nil {
 		return err
 	}
 	return requireEOF(decoder)
 }
 
-func validateUniqueValue(decoder *json.Decoder) error {
+func validateValue(decoder *json.Decoder, options DecodeOptions, level int) error {
 	token, err := decoder.Token()
 	if err != nil {
 		return decodeError(err)
@@ -110,6 +126,13 @@ func validateUniqueValue(decoder *json.Decoder) error {
 	delimiter, ok := token.(json.Delim)
 	if !ok {
 		return nil
+	}
+	level++
+	if options.MaxNestedLevels > 0 && level > options.MaxNestedLevels {
+		return &wire.Error{
+			Kind: wire.ErrorKindSizeLimit, Format: wire.FormatJSON, Op: "decode",
+			Err: fmt.Errorf("JSON nesting exceeds %d levels", options.MaxNestedLevels),
+		}
 	}
 	switch delimiter {
 	case '{':
@@ -120,11 +143,13 @@ func validateUniqueValue(decoder *json.Decoder) error {
 				return decodeError(err)
 			}
 			name := token.(string) // encoding/json guarantees object names are strings.
-			if _, exists := names[name]; exists {
-				return validationError("decode", errors.New("duplicate JSON object name"))
+			if options.DisallowDuplicateNames {
+				if _, exists := names[name]; exists {
+					return validationError("decode", errors.New("duplicate JSON object name"))
+				}
+				names[name] = struct{}{}
 			}
-			names[name] = struct{}{}
-			if err := validateUniqueValue(decoder); err != nil {
+			if err := validateValue(decoder, options, level); err != nil {
 				return err
 			}
 		}
@@ -134,7 +159,7 @@ func validateUniqueValue(decoder *json.Decoder) error {
 	// A delimiter returned at the beginning of a JSON value can only be '[' or
 	// '{'; the object case is handled above.
 	for decoder.More() {
-		if err := validateUniqueValue(decoder); err != nil {
+		if err := validateValue(decoder, options, level); err != nil {
 			return err
 		}
 	}

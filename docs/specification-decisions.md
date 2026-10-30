@@ -227,14 +227,19 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
   Security, resource, compatibility, and wire consequences are included in
   the selected behavior below.
   Decode requires valid UTF-8 and one
-  value. Duplicate-name rejection is explicit and recursive through
-  `DisallowDuplicateNames`; compatibility default retains Go's last-value
-  behavior. Typed decoding follows Go numeric conversion. `Normalize` alone
+  value unless `ReplaceInvalidUTF8` explicitly selects encoding/json's
+  per-byte U+FFFD replacement inside strings for third-party input; invalid
+  bytes outside strings stay malformed. Duplicate-name rejection is explicit
+  and recursive through `DisallowDuplicateNames`; compatibility default
+  retains Go's last-value behavior. `MaxNestedLevels` optionally refuses
+  deeper array and object nesting before assignment as a structural budget. Typed decoding follows Go numeric conversion. `Normalize` alone
   strips an initial UTF-8 BOM, preserves number lexemes, compacts whitespace,
   orders object keys, and does not silently enable duplicate rejection.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestDuplicateNameValidationDefinesEveryJSONShape`,
   `TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary`,
+  `TestDecodeCanReplaceInvalidUTF8LikeEncodingJSON`,
+  `TestDecodeCanBoundNestedLevels`,
   `TestDecodeRejectsMalformedAndTrailingValues`, and
   `TestNormalizeMakesVendorJSONCanonical` cover `Decode` and `Normalize`.
   Reconsider duplicate defaults only as a compatibility-governed change.
