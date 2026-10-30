@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   arrays and objects checked before assignment, with refusals matching
   `wire.ErrSizeLimit`. Zero keeps the existing behavior; values above
   encoding/json's 10,000-level cap are rejected as invalid options.
+  WIRE-DEC-003 sha256:89f4f008959bc22e7b879a456d4630b2ad93a7351f5667fffa57381247f75452
 
 ### Fixed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Duplicate-name rejection compares names exactly, while struct decoding
   matches names case-insensitively; the security decision now says it stops
   exact-name smuggling only.
+  WIRE-DEC-005 sha256:72871b50221bd3fd1940373c302ac59b0375046a25a860f1d8125853f8e3392b
 
 ### Compatibility
 

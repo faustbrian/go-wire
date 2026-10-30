@@ -3,9 +3,9 @@
   "entries": [
     {"id":"WIRE-DEC-001","digests":["f1fc52ef8464874e7b8cebcae98161f7c9296128e9a8913fcf918b97fe2f0728"]},
     {"id":"WIRE-DEC-002","digests":["f4dee326c94a5de595cbd5e0aea03414fd8ec444be92fd1ca25adcaef4a46f6d"]},
-    {"id":"WIRE-DEC-003","digests":["1dd67beed03dbeb91bdef10c77f6f8c21cd0c8326720861437f9ce1ae179ee98"]},
+    {"id":"WIRE-DEC-003","digests":["1dd67beed03dbeb91bdef10c77f6f8c21cd0c8326720861437f9ce1ae179ee98","89f4f008959bc22e7b879a456d4630b2ad93a7351f5667fffa57381247f75452"]},
     {"id":"WIRE-DEC-004","digests":["162b1cb67101d82b7732701b50193d49f2702908450227ecae9068777b5c91f5"]},
-    {"id":"WIRE-DEC-005","digests":["74528fbf1f9dae53b31e20152c679fe0614de1d4a3f45c1fa19179b6a99cb620"]},
+    {"id":"WIRE-DEC-005","digests":["74528fbf1f9dae53b31e20152c679fe0614de1d4a3f45c1fa19179b6a99cb620","72871b50221bd3fd1940373c302ac59b0375046a25a860f1d8125853f8e3392b"]},
     {"id":"WIRE-DEC-006","digests":["a283308985c948563734b7f69e182e97ca844068e43e1cc9f5b09fcceb419e98"]},
     {"id":"WIRE-DEC-007","digests":["c781bb6f45e052079ba1b1dbdb37b3184606c72abae012848ab23a1d7cc2d73c"]},
     {"id":"WIRE-DEC-008","digests":["c5ce0457d9c8f828dfebef5c5d4467760836fcd58bb2b4b6291fe4bc76df4953"]},
