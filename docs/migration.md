@@ -98,7 +98,9 @@ Behavior differences:
 
 - the stream is bounded;
 - exactly one JSON value is required;
-- invalid UTF-8 is rejected instead of being replaced with U+FFFD;
+- invalid UTF-8 is rejected instead of being replaced with U+FFFD, unless
+  `ReplaceInvalidUTF8` explicitly selects encoding/json's replacement;
+- `MaxNestedLevels` optionally bounds nesting before assignment;
 - invalid targets use `wire.ErrTarget`, byte limits use `wire.ErrSizeLimit`,
   and type mismatches retain structured validation errors;
 - unknown fields remain accepted unless explicitly rejected;

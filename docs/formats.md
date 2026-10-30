@@ -57,8 +57,13 @@ document.
 
 ### JSON
 
-- Input and normalization reject invalid UTF-8 instead of accepting Go's
-  replacement-character recovery behavior.
+- Input and normalization reject invalid UTF-8 by default instead of
+  accepting Go's replacement-character recovery behavior. Decode offers that
+  recovery only through the explicit `ReplaceInvalidUTF8` option for
+  third-party input; `json.RawMessage` and `json.Unmarshaler` targets then
+  receive the original bytes.
+- Nesting follows encoding/json's 10,000-level cap unless `MaxNestedLevels`
+  selects a smaller budget, checked before assignment.
 - Duplicate object names follow `encoding/json` behavior; later values can
   replace or merge into earlier values depending on the target.
 - No JSON Schema, JSON-RPC, JSON:API, JSON Patch, streaming token facade, or

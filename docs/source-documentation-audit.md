@@ -130,8 +130,9 @@ and ordinary complete final-diff review. No runtime or behavior campaign.
   are not executed in graph preflight. Retained-output quotas do not cap codec
   intermediate buffering, caller graphs, allocations or elapsed callback time.
   Encoding errors publish no returned payload; writer failures can expose a prefix.
-- JSON rejects invalid UTF-8, offers duplicate preflight, otherwise retains the
-  stdlib's replacement/merge semantics. Normalize preserves number lexemes but
+- JSON rejects invalid UTF-8 by default, offers explicit encoding/json-compatible
+  replacement, duplicate preflight and a nesting budget, and otherwise retains
+  the stdlib's merge semantics. Normalize preserves number lexemes but
   re-encodes using the default 1 MiB output limit, independently of input override.
   Neither deterministic output nor normalization is an RFC 8785 signing profile.
 - XML uses two independent charset/token/target passes, one element root and depth

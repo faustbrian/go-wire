@@ -5,15 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 3.0.3 - 2026-10-22
+## [Unreleased]
+
+### Added
+
+- Add `jsonwire.DecodeOptions.ReplaceInvalidUTF8`, an opt-in mode for
+  third-party payloads that replaces each invalid UTF-8 byte inside a string
+  with U+FFFD exactly as encoding/json does, instead of rejecting the payload.
+  Invalid bytes outside strings remain parse failures and the default still
+  rejects invalid UTF-8. `json.RawMessage` and `json.Unmarshaler` targets
+  receive the original invalid bytes.
+- Add `jsonwire.DecodeOptions.MaxNestedLevels`, an optional cap on nested
+  arrays and objects checked before assignment, with refusals matching
+  `wire.ErrSizeLimit`. Zero keeps the existing behavior; values above
+  encoding/json's 10,000-level cap are rejected as invalid options.
+  WIRE-DEC-003 sha256:89f4f008959bc22e7b879a456d4630b2ad93a7351f5667fffa57381247f75452
+
+### Fixed
+
+- The duplicate-name preflight no longer refuses numbers outside the float64
+  range, such as `1e400`, that a `json.Number` target accepts.
+
+### Documentation
+
+- Duplicate-name rejection compares names exactly, while struct decoding
+  matches names case-insensitively; the security decision now says it stops
+  exact-name smuggling only.
+  WIRE-DEC-005 sha256:72871b50221bd3fd1940373c302ac59b0375046a25a860f1d8125853f8e3392b
+
+### Compatibility
+
+- `DecodeOptions` gains fields, so unkeyed `DecodeOptions{...}` literals must
+  become keyed literals.
+
+## [3.0.3] - 2026-10-22
 
 ### Changed
 
 - Publish the current source and documentation with a fresh immutable tag.
 - Build with Go 1.27.3 to address GO-2026-6809 in `crypto/x509`.
   Consumers should use Go 1.27.3 or newer.
-
-## [Unreleased]
 
 ## [3.0.2] - 2026-10-13
 

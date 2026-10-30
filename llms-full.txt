@@ -67,6 +67,13 @@ Each format exposes explicit options and limits. See the
 [quickstart](docs/quickstart.md) for XML namespace validation, SOAP envelopes,
 and binary-format examples.
 
+JSON decoding rejects invalid UTF-8 by default. For third-party payloads that
+cannot meet RFC 8259, `DecodeOptions.ReplaceInvalidUTF8` reproduces
+encoding/json's U+FFFD replacement in decoded strings, while raw-message and
+`json.Unmarshaler` targets still receive the original bytes, and
+`MaxNestedLevels` bounds nesting before assignment; see the
+[cookbook](docs/cookbook.md).
+
 ## Package Guarantees
 
 - bounded decode and encode paths for every supported format
@@ -626,8 +633,13 @@ source.
 
 - `DefaultMaxBytes` is 1 MiB.
 - `ErrPayloadTooLarge` identifies a configured byte-limit violation.
-- `DecodeOptions` contains `MaxBytes`, `DisallowUnknownFields`, and
-  `DisallowDuplicateNames`.
+- `DecodeOptions` contains `MaxBytes`, `DisallowUnknownFields`,
+  `DisallowDuplicateNames`, `MaxNestedLevels`, and `ReplaceInvalidUTF8`.
+  `MaxNestedLevels` caps nested arrays and objects before assignment, with a
+  root array or object at level one; zero keeps encoding/json's own limit and
+  a refusal matches `wire.ErrSizeLimit`. `ReplaceInvalidUTF8` admits invalid
+  UTF-8 inside strings by replacing each invalid byte with U+FFFD, as
+  encoding/json does.
 - `EncodeOptions` contains `MaxBytes`, `Indent`, and `DisableHTMLEscaping`.
 - `NormalizeOptions` contains `MaxBytes`.
 - `Decode([]byte, any, DecodeOptions) error` decodes exactly one value into a
@@ -1182,6 +1194,27 @@ err := jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
 ```
 
 An unknown field is `wire.ErrValidation`, not a syntax error.
+
+## Decode a third-party response that is not always valid UTF-8
+
+Use this only for a producer you cannot hold to RFC 8259, such as a carrier
+API that occasionally sends a Latin-1 byte in free text:
+
+```go
+err := jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
+	MaxBytes:               maximumResponseBytes,
+	DisallowDuplicateNames: true,
+	MaxNestedLevels:        64,
+	ReplaceInvalidUTF8:     true,
+})
+```
+
+Each invalid byte inside a string becomes U+FFFD, exactly as encoding/json
+replaces it, so `"p\xe4iv\xe4"` decodes as `"p\uFFFDiv\uFFFD"`. A
+`json.RawMessage` or `json.Unmarshaler` target receives the original invalid
+bytes, because no string is decoded for it. An invalid byte outside a string
+is still `wire.ErrParse`, and nesting beyond `MaxNestedLevels` (at most
+10,000) is `wire.ErrSizeLimit` before the target is touched.
 
 ## Preserve JSON decimal spelling during normalization
 
@@ -1768,7 +1801,9 @@ Behavior differences:
 
 - the stream is bounded;
 - exactly one JSON value is required;
-- invalid UTF-8 is rejected instead of being replaced with U+FFFD;
+- invalid UTF-8 is rejected instead of being replaced with U+FFFD, unless
+  `ReplaceInvalidUTF8` explicitly selects encoding/json's replacement;
+- `MaxNestedLevels` optionally bounds nesting before assignment;
 - invalid targets use `wire.ErrTarget`, byte limits use `wire.ErrSizeLimit`,
   and type mismatches retain structured validation errors;
 - unknown fields remain accepted unless explicitly rejected;
@@ -2121,7 +2156,7 @@ and final output includes all indentation hints and folding corrections.
 | GW-006 | Low | All encode APIs | Encoders previously buffered output without a configurable byte quota. | Very large caller-owned values could allocate unbounded output buffers. | Fixed. Every typed encoder and every SOAP raw/fault serializer defaults to a 1 MiB output bound, exposes `MaxBytes`, returns `wire.ErrSizeLimit`, and withholds partial results from destination writers. |
 | GW-007 | Medium | MessagePack `Decode*` | The dependency silently accepted repeated map keys and retained the last value. Nested maps behaved the same way. | Parser differentials and overwritten policy-bearing values. | Fixed. Duplicate keys are rejected recursively by default; `AllowDuplicateKeys` is an explicit last-key-wins compatibility mode. |
 | GW-008 | Medium | BSON public API | The package claimed official BSON type interoperability but omitted aliases for Decimal128, binary subtypes, regex, and other standard BSON values. | Callers needed a second import and the documented API inventory was incomplete. | Fixed. Standard driver value types are re-exported and Decimal128/binary-subtype/regex round trips are tested. |
-| GW-009 | Medium | JSON `Decode*`, `Normalize` | Go `encoding/json` accepts invalid UTF-8 in strings and substitutes U+FFFD, while RFC 8259 requires exchanged JSON text to use UTF-8. | Invalid bytes could compare differently across implementations or after normalization. | Fixed. Both paths reject invalid UTF-8 as `wire.ErrParse` before target assignment; the regression is a fuzz seed. |
+| GW-009 | Medium | JSON `Decode*`, `Normalize` | Go `encoding/json` accepts invalid UTF-8 in strings and substitutes U+FFFD, while RFC 8259 requires exchanged JSON text to use UTF-8. | Invalid bytes could compare differently across implementations or after normalization. | Fixed. Both paths reject invalid UTF-8 as `wire.ErrParse` before target assignment by default; the regression is a fuzz seed. Decode's explicit `ReplaceInvalidUTF8` option restores encoding/json's replacement for third-party input, proven equal to `json.Unmarshal` by a differential test and fuzz target. |
 | GW-010 | High | Typed `Encode*` across formats | A self-referential MessagePack map caused a runtime stack overflow; other reflection codecs had the same recursive-value exposure. The regression runs the original crash shape in a subprocess. | Process termination from a caller value, including values assembled from attacker-influenced application state. | Fixed. Every typed encoder performs shared path-local cycle and 1,000-level depth preflight before codec invocation. All eight format paths have classified-error tests at 100% coverage. |
 | GW-011 | Medium | XML and SOAP `Decode*`/`Parse*` | The 1 MiB byte cap still allowed hundreds of thousands of tiny nested XML elements, while no wrapper token-depth policy existed. | Excessive parser stack or heap growth from deeply nested untrusted XML. | Fixed. XML and SOAP now default to 1,000 nested elements, expose `MaxDepth`, reject negative options, and classify excess depth as `wire.ErrSizeLimit`. |
 | GW-012 | Medium | YAML `Encode*` | YAML v4 emitted a multiline string beginning with a tab as an implicit-indentation block scalar, then rejected that output during its own parse. The cross-format round-trip fuzzer found `"\t\n0"`. | The writer could produce bytes that neither `wire` nor other strict YAML parsers accepted. | Fixed. Only actual emitted block headers receive explicit indentation matching their mapping or sequence layout, including root and nested blocks. Plain scalar suffixes, multiline quoted content, and explicit mapping keys remain unchanged; final output stays inside the quota. |
@@ -2158,7 +2193,8 @@ extensions, CBOR tags/indefinite values, and both SOAP fault versions where
 the category applies.
 
 Differential regressions explicitly prove that `encoding/json` replaces the
-invalid UTF-8 rejected by `jsonwire`, MessagePack and CBOR dependency defaults
+invalid UTF-8 rejected by default by `jsonwire`, and that `ReplaceInvalidUTF8`
+reproduces that replacement, MessagePack and CBOR dependency defaults
 retain the last duplicate key, the BSON driver preserves duplicates in `D`,
 and YAML rc.6 rejects its own implicit-indentation tab-leading block output.
 These are pinned dependency observations; wrapper policy is the guarantee.
@@ -2589,7 +2625,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `jsonwire.DecodeOptions.ReplaceInvalidUTF8`, an opt-in mode for
+  third-party payloads that replaces each invalid UTF-8 byte inside a string
+  with U+FFFD exactly as encoding/json does, instead of rejecting the payload.
+  Invalid bytes outside strings remain parse failures and the default still
+  rejects invalid UTF-8. `json.RawMessage` and `json.Unmarshaler` targets
+  receive the original invalid bytes.
+- Add `jsonwire.DecodeOptions.MaxNestedLevels`, an optional cap on nested
+  arrays and objects checked before assignment, with refusals matching
+  `wire.ErrSizeLimit`. Zero keeps the existing behavior; values above
+  encoding/json's 10,000-level cap are rejected as invalid options.
+  WIRE-DEC-003 sha256:89f4f008959bc22e7b879a456d4630b2ad93a7351f5667fffa57381247f75452
+
+### Fixed
+
+- The duplicate-name preflight no longer refuses numbers outside the float64
+  range, such as `1e400`, that a `json.Number` target accepts.
+
+### Documentation
+
+- Duplicate-name rejection compares names exactly, while struct decoding
+  matches names case-insensitively; the security decision now says it stops
+  exact-name smuggling only.
+  WIRE-DEC-005 sha256:72871b50221bd3fd1940373c302ac59b0375046a25a860f1d8125853f8e3392b
+
+### Compatibility
+
+- `DecodeOptions` gains fields, so unkeyed `DecodeOptions{...}` literals must
+  become keyed literals.
+
+## [3.0.3] - 2026-10-22
+
+### Changed
+
+- Publish the current source and documentation with a fresh immutable tag.
+- Build with Go 1.27.3 to address GO-2026-6809 in `crypto/x509`.
+  Consumers should use Go 1.27.3 or newer.
+
 ## [3.0.2] - 2026-10-13
+
+This entry records a prepared patch; adopt it only after the public v3.0.2 tag
+and module artifacts are available.
 
 ### Fixed
 
@@ -2632,6 +2710,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Connect adoption navigation and source-package maps without treating frozen
   ecosystem cohorts as current package-release qualification.
   [5d750e39b4](https://github.com/faustbrian/go-wire/commit/5d750e39b44c439796004f402292255a06ad15d2)
+
+### Maintenance
+
+- Prepare the patch metadata without changing codec APIs or dependency locks.
+  [98b3ad686e](https://github.com/faustbrian/go-wire/commit/98b3ad686e40cd2186a031085aae19b94ede0abd)
+- Add regression coverage for live charset handoff and readers returned with
+  conversion errors, preserving partial-reader ownership and error causes.
+  [74e5359fd6](https://github.com/faustbrian/go-wire/commit/74e5359fd6a036d0c6a751cf4d230d0f105c83c4),
+  [ce691b1e75](https://github.com/faustbrian/go-wire/commit/ce691b1e7522a9a95e5a894a6823c5cb07639690)
+- Reconcile reviewed specification discovery feeds and narrow source-bound
+  mutation dispositions without treating historical failures as passing runs.
+  [b6d7d14cd6](https://github.com/faustbrian/go-wire/commit/b6d7d14cd69771d7188d1723b27e7272857e9d73),
+  [e16e4f032a](https://github.com/faustbrian/go-wire/commit/e16e4f032ab08a6797dfbc6a9d1b46afaa324b3f)
+
+Prepared source accountability covers the 17 non-merge commits from public
+`v3.0.1` (`060791370b0035fcdfd61b3883e13b7d1b2bc1e6`) through
+`ce691b1e7522a9a95e5a894a6823c5cb07639690`, each linked once above. This
+prose-only release alignment is outside that frozen history range.
 
 ## [3.0.1] - 2026-10-08
 
@@ -3091,6 +3187,9 @@ authoritative for signatures.
 
 ## Inventory
 
+Codec versions below reflect the current [`go.mod`](../go.mod) selections,
+not the dependency versions used by the historical audit.
+
 | Format | Read APIs | Write APIs | Primary limits and modes | Codec | Fuzz and benchmark evidence |
 | --- | --- | --- | --- | --- | --- |
 | JSON | `Decode`, `DecodeReader`, `Normalize` | `Encode`, `EncodeWriter` | 1 MiB input/output, strict fields, indentation, HTML escaping | Go `encoding/json` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
@@ -3099,8 +3198,8 @@ authoritative for signatures.
 | YAML | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, depth/alias plugins, unique/single document, alias/merge/field modes | `go.yaml.in/yaml/v4 v4.0.0-rc.6` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 | TOML | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, strict fields, indentation | `github.com/BurntSushi/toml v1.6.0` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 | MessagePack | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, 32 levels, 131,072 array items, 65,536 map pairs, unique keys | `github.com/vmihailenco/msgpack/v5 v5.4.1` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
-| CBOR | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB; dependency nesting/collection limits; tag, indefinite, Canonical/Core/CTAP2 modes | `github.com/fxamacker/cbor/v2 v2.9.2` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
-| BSON | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, exact document length, recursive unique keys, explicit lossy conversions | `go.mongodb.org/mongo-driver/v2 v2.8.0` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
+| CBOR | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB; dependency nesting/collection limits; tag, indefinite, Canonical/Core/CTAP2 modes | `github.com/fxamacker/cbor/v2 v2.9.4` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
+| BSON | `Decode`, `DecodeReader` | `Encode`, `EncodeWriter` | 1 MiB, exact document length, recursive unique keys, explicit lossy conversions | `go.mongodb.org/mongo-driver/v2 v2.9.1` | `FuzzDecode`, `FuzzRoundTrip`, `BenchmarkDecode`, `BenchmarkEncode` |
 
 `TestPublicAPIReferenceInventoriesEveryExport` parses production Go syntax and
 requires every exported symbol and option field to appear in `docs/api.md`.
@@ -3133,7 +3232,7 @@ the Go test gate.
 
 | Format | Specification-sensitive hazards | Focused evidence |
 | --- | --- | --- |
-| JSON | duplicates, precision, fields, one value, BOM/UTF-8, HTML escaping, ordering, depth | `TestDecodeRejectsInvalidUTF8InsteadOfReplacingIt`, `TestDecodeRejectsMalformedAndTrailingValues`, `TestDecodeReaderRejectsUnknownFieldsWhenRequested`, `TestNormalizeMakesVendorJSONCanonical`, `TestEncodeIsDeterministicAndConfigurable` |
+| JSON | duplicates, precision, fields, one value, BOM/UTF-8, HTML escaping, ordering, depth | `TestDecodeRejectsInvalidUTF8InsteadOfReplacingIt`, `TestDecodeCanReplaceInvalidUTF8LikeEncodingJSON`, `TestReplaceInvalidUTF8MatchesEncodingJSON`, `TestReplacedNameCollidesWithLiteralReplacementCharacter`, `TestRawTargetsReceiveInvalidUTF8Unchanged`, `TestDecodeCanBoundNestedLevels`, `TestDecodeRejectsNestedLevelsOutsideEncodingJSONRange`, `TestStructurePreflightAcceptsNumbersOutsideFloat64Range`, `TestNestedLevelsOnlyStillRejectsTrailingValues`, `TestDecodeRejectsMalformedAndTrailingValues`, `TestDecodeReaderRejectsUnknownFieldsWhenRequested`, `TestNormalizeMakesVendorJSONCanonical`, `TestEncodeIsDeterministicAndConfigurable` |
 | XML | strict recovery, namespaces, roots, directives/entities, charset, invalid bytes, depth, multiple roots | `TestDecodeNamespaceAwareFixture`, `TestDecodeCanExplicitlyRecoverNonStrictXML`, `TestDecodeDoesNotExpandDeclaredEntities`, charset tests, `TestDecodeEnforcesTokenDepthLimit`, root tests |
 | SOAP | versions, namespaces/order/cardinality, raw fragments, body count, faults/reasons/subcodes, injection | both version/fault tests, `TestParseRejectsInvalidEnvelopeStructure`, `TestDecodeBodyRetainsInheritedNamespaces`, `TestMarshalFaultEscapesTextAndAttributeValues`, all SOAP output-cutoff tests |
 | YAML | duplicates, documents, aliases/anchors/merges, tags/types, non-JSON keys, expansion/depth, self-readable output | duplicate/document/alias/tag/depth tests, `TestDecodeClassifiesBuiltInResourceProtectionAsSizeLimit`, tab block-scalar and plain-suffix regressions |
@@ -3214,8 +3313,13 @@ document.
 
 ### JSON
 
-- Input and normalization reject invalid UTF-8 instead of accepting Go's
-  replacement-character recovery behavior.
+- Input and normalization reject invalid UTF-8 by default instead of
+  accepting Go's replacement-character recovery behavior. Decode offers that
+  recovery only through the explicit `ReplaceInvalidUTF8` option for
+  third-party input; `json.RawMessage` and `json.Unmarshaler` targets then
+  receive the original bytes.
+- Nesting follows encoding/json's 10,000-level cap unless `MaxNestedLevels`
+  selects a smaller budget, checked before assignment.
 - Duplicate object names follow `encoding/json` behavior; later values can
   replace or merge into earlier values depending on the target.
 - No JSON Schema, JSON-RPC, JSON:API, JSON Patch, streaming token facade, or
@@ -3854,8 +3958,9 @@ and ordinary complete final-diff review. No runtime or behavior campaign.
   are not executed in graph preflight. Retained-output quotas do not cap codec
   intermediate buffering, caller graphs, allocations or elapsed callback time.
   Encoding errors publish no returned payload; writer failures can expose a prefix.
-- JSON rejects invalid UTF-8, offers duplicate preflight, otherwise retains the
-  stdlib's replacement/merge semantics. Normalize preserves number lexemes but
+- JSON rejects invalid UTF-8 by default, offers explicit encoding/json-compatible
+  replacement, duplicate preflight and a nesting budget, and otherwise retains
+  the stdlib's merge semantics. Normalize preserves number lexemes but
   re-encodes using the default 1 MiB output limit, independently of input override.
   Neither deterministic output nor normalization is an RFC 8785 signing profile.
 - XML uses two independent charset/token/target passes, one element root and depth
@@ -4063,7 +4168,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-003","title":"Input, structural, graph, and output limits","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"RFC 7049 and RFC 8949 CBOR","version":"RFC 8949","source_authority":"rfc8949-source","section":"Sections 3 through 5","requirement_strength":"not specified","issue":"The wire formats permit values larger or deeper than a general service can safely process and do not select package resource budgets.","interpretations":["Leave limits to callers or codecs.","Impose only a byte limit.","Enforce finite format-aware input, structure, graph, and output limits."],"peer_behavior":"Maintained codec defaults vary and are not treated as a portable shared limit contract.","selected_behavior":"Use finite defaults, validate negative limits, preflight format structure, and complete output within quota before writing.","rationale":"Bounded work and all-or-error output are required at an untrusted serialization boundary.","security_consequences":"Forged lengths, deep graphs, and oversized output are rejected before disproportionate work or partial emission.","resource_consequences":"The default input and output budget is 1 MiB with explicit format-aware structural limits.","compatibility_consequences":"Callers may select stricter or documented larger limits without changing format semantics.","wire_consequences":"Limit failures emit no partial encoded document.","executable_evidence":["TestEveryReaderStopsAtOneByteBeyondLimit","TestEveryEncoderHonorsExactNegativeAndMaximumOutputLimits","TestEncodeWriterDoesNotExceedOutputLimit","TestForgedBinaryLengthsHaveBoundedAllocationCounts"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["All bounded decode and encode APIs"],"documentation":["docs/specification-decisions.md","docs/security.md"],"upstream_status":"Resource budgets remain package policy rather than CBOR or cross-format requirements.","reconsider_when":"Measured service constraints justify a compatibility-reviewed default change."}
+{"id":"WIRE-DEC-003","title":"Input, structural, graph, and output limits","status":"resolved","owner":"wire maintainers","classification":"omission","decision_scope":"defensive","specification":"RFC 7049 and RFC 8949 CBOR","version":"RFC 8949","source_authority":"rfc8949-source","section":"Sections 3 through 5","requirement_strength":"not specified","issue":"The wire formats permit values larger or deeper than a general service can safely process and do not select package resource budgets.","interpretations":["Leave limits to callers or codecs.","Impose only a byte limit.","Enforce finite format-aware input, structure, graph, and output limits."],"peer_behavior":"Maintained codec defaults vary and are not treated as a portable shared limit contract.","selected_behavior":"Use finite defaults, validate negative limits, preflight format structure including an optional JSON nesting budget, and complete output within quota before writing.","rationale":"Bounded work and all-or-error output are required at an untrusted serialization boundary.","security_consequences":"Forged lengths, deep graphs, and oversized output are rejected before disproportionate work or partial emission.","resource_consequences":"The default input and output budget is 1 MiB with explicit format-aware structural limits.","compatibility_consequences":"Callers may select stricter or documented larger limits without changing format semantics.","wire_consequences":"Limit failures emit no partial encoded document.","executable_evidence":["TestEveryReaderStopsAtOneByteBeyondLimit","TestEveryEncoderHonorsExactNegativeAndMaximumOutputLimits","TestEncodeWriterDoesNotExceedOutputLimit","TestForgedBinaryLengthsHaveBoundedAllocationCounts","TestDecodeCanBoundNestedLevels"],"fixture_evidence":[],"fuzz_evidence":[],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["All bounded decode and encode APIs"],"documentation":["docs/specification-decisions.md","docs/security.md"],"upstream_status":"Resource budgets remain package policy rather than CBOR or cross-format requirements.","reconsider_when":"Measured service constraints justify a compatibility-reviewed default change."}
 ```
 
 Authority URL: https://www.rfc-editor.org/rfc/rfc8949.txt
@@ -4086,8 +4191,9 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8949.txt
   Zero selects a 1 MiB input and
   output default. Negative limits fail validation. Readers consume at most one
   detection byte beyond the limit, with `MaxInt64` handled without overflow.
-  XML/SOAP depth, YAML alias/depth, MessagePack depth/collection, and CBOR
-  dependency limits remain explicit. Every typed or raw encoder completes
+  XML/SOAP depth, YAML alias/depth, MessagePack depth/collection, CBOR
+  dependency limits and the optional JSON `MaxNestedLevels` budget (zero keeps
+  encoding/json's 10,000 levels) remain explicit. Every typed or raw encoder completes
   within a quota before writing, so limit failures emit no partial output.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestEveryReaderStopsAtOneByteBeyondLimit`,
@@ -4138,7 +4244,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc9110.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-005","title":"JSON names, numbers, Unicode, and normalization","status":"resolved","owner":"wire maintainers","classification":"interoperability policy","decision_scope":"recommended","specification":"RFC 8259 JSON","version":"RFC 8259","source_authority":"rfc8259-source","section":"Sections 4, 6, and 8.1","requirement_strength":"SHOULD","issue":"RFC 8259 recommends unique names, permits number-range variation, and requires UTF-8 on open ecosystems while Go accepts duplicate names and invalid UTF-8.","interpretations":["Reject duplicate names unconditionally.","Preserve first or last duplicate values.","Expose compatibility defaults with explicit strictness."],"peer_behavior":"Go encoding/json replaces invalid UTF-8 and uses last-value duplicate handling, which deliberately differs from strict package options.","selected_behavior":"Require valid UTF-8, preserve Go numeric conversion, retain last-value duplicate compatibility by default, and provide recursive duplicate rejection explicitly.","rationale":"The default preserves established Go compatibility while exposing a bounded strict boundary for ambiguous objects.","security_consequences":"Strict mode prevents duplicate-member smuggling and invalid UTF-8 parser differentials.","resource_consequences":"Duplicate detection and normalization remain bounded by input limits.","compatibility_consequences":"Existing last-value behavior remains available while strict consumers can reject duplicates before destination mutation.","wire_consequences":"Normalize preserves number lexemes, orders keys, compacts whitespace, and strips only an initial UTF-8 BOM.","executable_evidence":["TestDuplicateNameValidationDefinesEveryJSONShape","TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary","TestDecodeRejectsMalformedAndTrailingValues","TestNormalizeMakesVendorJSONCanonical"],"fixture_evidence":["jsonwire/testdata/valid.json","jsonwire/testdata/malformed.json"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["jsonwire.Decode","jsonwire.Normalize"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"RFC 8259 errata are monitored; no stricter duplicate-name requirement is adopted.","reconsider_when":"A compatibility-governed profile changes the duplicate-name default or JSON source authority."}
+{"id":"WIRE-DEC-005","title":"JSON names, numbers, Unicode, and normalization","status":"resolved","owner":"wire maintainers","classification":"interoperability policy","decision_scope":"recommended","specification":"RFC 8259 JSON","version":"RFC 8259","source_authority":"rfc8259-source","section":"Sections 4, 6, and 8.1","requirement_strength":"SHOULD","issue":"RFC 8259 recommends unique names, permits number-range variation, and requires UTF-8 on open ecosystems while Go accepts duplicate names and invalid UTF-8.","interpretations":["Reject duplicate names unconditionally.","Preserve first or last duplicate values.","Expose compatibility defaults with explicit strictness."],"peer_behavior":"Go encoding/json replaces invalid UTF-8 and uses last-value duplicate handling, which deliberately differs from strict package options.","selected_behavior":"Require valid UTF-8 by default, offer explicit encoding/json-compatible U+FFFD replacement for third-party input, preserve Go numeric conversion, retain last-value duplicate compatibility by default, provide recursive exact-name duplicate rejection explicitly, and offer an optional nesting budget checked before assignment.","rationale":"The default preserves established Go compatibility while exposing a bounded strict boundary for ambiguous objects.","security_consequences":"Strict mode rejects exact-name duplicate members and invalid UTF-8 parser differentials. Duplicate rejection compares names exactly, while struct decoding matches field names case-insensitively, so case-variant names are not rejected. Replacement mode deliberately accepts encoding/json's invalid UTF-8 recovery; raw targets still receive the original bytes.","resource_consequences":"Duplicate detection and normalization remain bounded by input limits.","compatibility_consequences":"Existing last-value behavior remains available while strict consumers can reject duplicates before destination mutation.","wire_consequences":"Normalize preserves number lexemes, orders keys, compacts whitespace, and strips only an initial UTF-8 BOM.","executable_evidence":["TestDuplicateNameValidationDefinesEveryJSONShape","TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary","TestDecodeRejectsMalformedAndTrailingValues","TestNormalizeMakesVendorJSONCanonical","TestDecodeCanReplaceInvalidUTF8LikeEncodingJSON","TestReplaceInvalidUTF8MatchesEncodingJSON","TestReplacedNameCollidesWithLiteralReplacementCharacter","TestRawTargetsReceiveInvalidUTF8Unchanged","TestDecodeCanBoundNestedLevels","TestStructurePreflightAcceptsNumbersOutsideFloat64Range"],"fixture_evidence":["jsonwire/testdata/valid.json","jsonwire/testdata/malformed.json"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":["specification/interoperability.tsv"],"public_apis":["jsonwire.Decode","jsonwire.Normalize"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"RFC 8259 errata are monitored; no stricter duplicate-name requirement is adopted.","reconsider_when":"A compatibility-governed profile changes the duplicate-name default or JSON source authority."}
 ```
 
 Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
@@ -4160,14 +4266,28 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
   Security, resource, compatibility, and wire consequences are included in
   the selected behavior below.
   Decode requires valid UTF-8 and one
-  value. Duplicate-name rejection is explicit and recursive through
-  `DisallowDuplicateNames`; compatibility default retains Go's last-value
-  behavior. Typed decoding follows Go numeric conversion. `Normalize` alone
+  value unless `ReplaceInvalidUTF8` explicitly selects encoding/json's
+  per-byte U+FFFD replacement inside strings for third-party input; invalid
+  bytes outside strings stay malformed. Duplicate-name rejection is explicit
+  and recursive through `DisallowDuplicateNames`; compatibility default
+  retains Go's last-value behavior. Duplicate rejection compares names
+  exactly, while struct decoding matches names case-insensitively, so it
+  stops exact-name smuggling only; case-variant names are not rejected.
+  Replacement mode gives `json.RawMessage` and `json.Unmarshaler` targets the
+  original bytes. `MaxNestedLevels` optionally refuses deeper array and object
+  nesting before assignment as a structural budget, up to encoding/json's
+  10,000-level cap. Typed decoding follows Go numeric conversion. `Normalize` alone
   strips an initial UTF-8 BOM, preserves number lexemes, compacts whitespace,
   orders object keys, and does not silently enable duplicate rejection.
 - **Evidence, public surface, upstream, and reconsideration:**
   `TestDuplicateNameValidationDefinesEveryJSONShape`,
   `TestJSONRejectsInvalidUTF8AcceptedByStandardLibrary`,
+  `TestDecodeCanReplaceInvalidUTF8LikeEncodingJSON`,
+  `TestReplaceInvalidUTF8MatchesEncodingJSON`,
+  `TestReplacedNameCollidesWithLiteralReplacementCharacter`,
+  `TestRawTargetsReceiveInvalidUTF8Unchanged`,
+  `TestDecodeCanBoundNestedLevels`,
+  `TestStructurePreflightAcceptsNumbersOutsideFloat64Range`,
   `TestDecodeRejectsMalformedAndTrailingValues`, and
   `TestNormalizeMakesVendorJSONCanonical` cover `Decode` and `Normalize`.
   Reconsider duplicate defaults only as a compatibility-governed change.

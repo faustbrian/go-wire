@@ -40,8 +40,13 @@ source.
 
 - `DefaultMaxBytes` is 1 MiB.
 - `ErrPayloadTooLarge` identifies a configured byte-limit violation.
-- `DecodeOptions` contains `MaxBytes`, `DisallowUnknownFields`, and
-  `DisallowDuplicateNames`.
+- `DecodeOptions` contains `MaxBytes`, `DisallowUnknownFields`,
+  `DisallowDuplicateNames`, `MaxNestedLevels`, and `ReplaceInvalidUTF8`.
+  `MaxNestedLevels` caps nested arrays and objects before assignment, with a
+  root array or object at level one; zero keeps encoding/json's own limit and
+  a refusal matches `wire.ErrSizeLimit`. `ReplaceInvalidUTF8` admits invalid
+  UTF-8 inside strings by replacing each invalid byte with U+FFFD, as
+  encoding/json does.
 - `EncodeOptions` contains `MaxBytes`, `Indent`, and `DisableHTMLEscaping`.
 - `NormalizeOptions` contains `MaxBytes`.
 - `Decode([]byte, any, DecodeOptions) error` decodes exactly one value into a

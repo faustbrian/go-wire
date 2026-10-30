@@ -2,10 +2,12 @@ package jsonwire_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -285,6 +287,8 @@ func FuzzDecode(f *testing.F) {
 	f.Add([]byte(`{"id":42,"label":"carrier"}`))
 	f.Add(readFixture(f, "malformed.json"))
 	f.Add([]byte{'{', '"', 'v', '"', ':', '"', 0xff, '"', '}'})
+	f.Add([]byte("{\"v\":\"\xed\xa0\x80\xc0\x80\xe2\x82\"}"))
+	f.Add([]byte(`{"n":1e400}`))
 	f.Add([]byte{})
 	f.Add([]byte(" \t\r\n"))
 	f.Add([]byte("\xef\xbb\xbf{\"bom\":true}"))
@@ -300,6 +304,21 @@ func FuzzDecode(f *testing.F) {
 			MaxBytes:               64 << 10,
 			DisallowDuplicateNames: true,
 		})
+		_ = jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
+			MaxBytes: 64 << 10, DisallowDuplicateNames: true, MaxNestedLevels: 64,
+		})
+		// Replacement must decode exactly what encoding/json decodes whenever
+		// encoding/json accepts the payload.
+		var want any
+		if json.Unmarshal(payload, &want) != nil || len(payload) > 64<<10 {
+			return
+		}
+		var got any
+		if err := jsonwire.Decode(payload, &got, jsonwire.DecodeOptions{
+			MaxBytes: 64 << 10, ReplaceInvalidUTF8: true,
+		}); err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("Decode(ReplaceInvalidUTF8) = %#v, %v; json.Unmarshal = %#v", got, err, want)
+		}
 	})
 }
 
