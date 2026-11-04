@@ -150,16 +150,18 @@ func customUnmarshaling(kind reflect.Type) bool {
 		pointer.Implements(xmlUnmarshalerType) || pointer.Implements(textUnmarshalerType)
 }
 
-// nilReference reports a nil pointer or interface, which encoding/xml encodes
-// as nothing at all.
+// nilReference reports a nil pointer or interface at any depth, such as an
+// interface holding a nil pointer or a pointer to a nil pointer. encoding/xml
+// steps through the same chain and encodes a nil anywhere in it as nothing.
 func nilReference[T any](value T) bool {
 	reference := reflect.ValueOf(&value).Elem()
-	switch reference.Kind() {
-	case reflect.Pointer, reflect.Interface:
-		return reference.IsNil()
-	default:
-		return false
+	for reference.Kind() == reflect.Pointer || reference.Kind() == reflect.Interface {
+		if reference.IsNil() {
+			return true
+		}
+		reference = reference.Elem()
 	}
+	return false
 }
 
 func scalarKind(kind reflect.Type) bool {

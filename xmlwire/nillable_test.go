@@ -131,6 +131,27 @@ func TestNillableRefusesToEncodeAPresentNilPointerAsAbsent(t *testing.T) {
 	if err != nil || string(encoded) != `<r><d>2.5</d></r>` {
 		t.Fatalf("Encode(present pointer) = %s, %v", encoded, err)
 	}
+
+	type interfaceRecord struct {
+		XMLName xml.Name              `xml:"r"`
+		Value   xmlwire.Nillable[any] `xml:"v"`
+	}
+	encoded, err = xmlwire.Encode(interfaceRecord{Value: xmlwire.Nillable[any]{Present: true, Value: (*float64)(nil)}}, xmlwire.EncodeOptions{})
+	assertKind(t, err, wire.ErrValidation)
+	if encoded != nil {
+		t.Fatalf("Encode(any holding nil pointer) wrote %s", encoded)
+	}
+
+	type doublePointerRecord struct {
+		XMLName  xml.Name                    `xml:"r"`
+		Distance xmlwire.Nillable[**float64] `xml:"d"`
+	}
+	var innerNil *float64
+	encoded, err = xmlwire.Encode(doublePointerRecord{Distance: xmlwire.Nillable[**float64]{Present: true, Value: &innerNil}}, xmlwire.EncodeOptions{})
+	assertKind(t, err, wire.ErrValidation)
+	if encoded != nil {
+		t.Fatalf("Encode(pointer to nil pointer) wrote %s", encoded)
+	}
 }
 
 func TestNillableRejectsEmptyNumericAndBooleanContent(t *testing.T) {

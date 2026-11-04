@@ -2673,8 +2673,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   absent, `xsi:nil` and value states of an optional element distinct and
   rejects empty content for numeric and boolean values that have no XML or
   text unmarshaler of their own; encoding refuses a present value whose
-  `Value` is a nil pointer instead of writing it as absent.
+  `Value` is a nil pointer, at any depth, instead of writing it as absent.
   WIRE-DEC-006 sha256:6995db76cb90264e72c962e1e6710bda1a42f837f940976daa7d4a45d7221b62
+
+### Compatibility
+
+- `jsonwire.DecodeOptions` and `xmlwire.EncodeOptions` gain fields, so unkeyed
+  literals of them must become keyed literals.
 
 ## [3.1.0] - 2026-10-30
 
