@@ -53,6 +53,10 @@ document.
 | Windows-1252 / CP1252 | Built in | Built in | Undefined bytes are rejected |
 | Other declared charset | Inject reader | Inject reader | No guessing or fallback |
 
+`xmlwire.EncodeOptions.Charset` writes the same built-in single-byte encodings.
+A character the selected encoding cannot represent fails without output; it is
+never replaced or written as a character reference. SOAP encoding stays UTF-8.
+
 ## Intentional limitations
 
 ### JSON
@@ -63,7 +67,11 @@ document.
   third-party input; `json.RawMessage` and `json.Unmarshaler` targets then
   receive the original bytes.
 - Nesting follows encoding/json's 10,000-level cap unless `MaxNestedLevels`
-  selects a smaller budget, checked before assignment.
+  selects a smaller budget, checked before assignment. `MaxValues`,
+  `MaxObjectMembers` and `MaxNumberBytes` are further optional budgets checked
+  at the same point. `Validate` checks a payload under the same policy without
+  a target, and `UseNumber` keeps exact number text in interface-typed
+  destinations.
 - Duplicate object names follow `encoding/json` behavior; later values can
   replace or merge into earlier values depending on the target.
 - No JSON Schema, JSON-RPC, JSON:API, JSON Patch, streaming token facade, or

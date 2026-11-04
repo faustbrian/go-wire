@@ -54,7 +54,13 @@ type EncodeOptions struct {
 	// Indent selects encoding/xml indentation, not canonical XML.
 	Indent string
 	// IncludeHeader prepends the XML declaration and counts it toward MaxBytes.
+	// With a Charset, the declaration names that encoding.
 	IncludeHeader bool
+	// Charset selects the output encoding: UTF-8 when empty, or one of the
+	// labels CharsetReader accepts (UTF-8, US-ASCII, ISO-8859-1 and
+	// Windows-1252 with their aliases). A character the encoding cannot
+	// represent fails as wire.ErrValidation; nothing is replaced or escaped.
+	Charset string
 }
 
 // Decode parses one complete XML document into target.
@@ -121,12 +127,38 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 	if err := valuecheck.Validate(value); err != nil {
 		return nil, validationError("encode", err)
 	}
-	output, err := outputlimit.New(options.MaxBytes, DefaultMaxBytes)
+	encoding, err := outputEncoding(options.Charset)
+	if err != nil {
+		return nil, validationError("encode options", err)
+	}
+	if options.MaxBytes < 0 {
+		return nil, validationError("encode options", errors.New("max bytes must not be negative"))
+	}
+	maxBytes := options.MaxBytes
+	if maxBytes == 0 {
+		maxBytes = DefaultMaxBytes
+	}
+	// MaxBytes caps the returned bytes. A supported single-byte character takes
+	// at most three UTF-8 bytes (the Windows-1252 typographic range), so the
+	// UTF-8 form is admitted up to three times the limit and the converted
+	// output is checked against the limit itself.
+	utf8Limit := maxBytes
+	if encoding.encode != nil {
+		utf8Limit = maxBytes * 3
+		if maxBytes > math.MaxInt64/3 {
+			utf8Limit = math.MaxInt64
+		}
+	}
+	output, err := outputlimit.New(utf8Limit, DefaultMaxBytes)
 	if err != nil {
 		return nil, validationError("encode options", err)
 	}
 	if options.IncludeHeader {
-		if _, err := output.Write([]byte(xml.Header)); err != nil {
+		header := xml.Header
+		if encoding.name != "UTF-8" {
+			header = `<?xml version="1.0" encoding="` + encoding.name + `"?>` + "\n"
+		}
+		if _, err := output.Write([]byte(header)); err != nil {
 			return nil, encodeSizeError(err)
 		}
 	}
@@ -140,8 +172,99 @@ func Encode(value any, options EncodeOptions) ([]byte, error) {
 		}
 		return nil, validationError("encode", err)
 	}
-	return output.Bytes(), nil
+	if encoding.encode == nil {
+		return output.Bytes(), nil
+	}
+	encoded, err := encoding.encode(output.Bytes())
+	if err != nil {
+		return nil, validationError("encode", err)
+	}
+	if exceedsLimit(len(encoded), maxBytes) {
+		return nil, encodeSizeError(outputlimit.ErrLimit)
+	}
+	return encoded, nil
 }
+
+// outputCharset names an output encoding and converts UTF-8 to it; a nil
+// encode keeps UTF-8 bytes unchanged.
+type outputCharset struct {
+	name   string
+	encode func([]byte) ([]byte, error)
+}
+
+func outputEncoding(label string) (outputCharset, error) {
+	if len(label) > 64 {
+		return outputCharset{}, errors.New("charset label exceeds size limit")
+	}
+	switch strings.ToLower(strings.TrimSpace(label)) {
+	case "", "utf-8", "utf8":
+		return outputCharset{name: "UTF-8"}, nil
+	case "us-ascii", "ascii":
+		return outputCharset{name: "US-ASCII", encode: func(payload []byte) ([]byte, error) {
+			return encodeSingleByte(payload, "US-ASCII", asciiByte)
+		}}, nil
+	case "iso-8859-1", "latin1", "latin-1":
+		return outputCharset{name: "ISO-8859-1", encode: func(payload []byte) ([]byte, error) {
+			return encodeSingleByte(payload, "ISO-8859-1", latin1Byte)
+		}}, nil
+	case "windows-1252", "cp1252":
+		return outputCharset{name: "windows-1252", encode: func(payload []byte) ([]byte, error) {
+			return encodeSingleByte(payload, "windows-1252", windows1252Byte)
+		}}, nil
+	default:
+		return outputCharset{}, errors.New("unsupported charset")
+	}
+}
+
+// encodeSingleByte maps each UTF-8 sequence to one output byte. Mappings read
+// the sequence bytes so no rune is narrowed to a byte.
+func encodeSingleByte(payload []byte, name string, mapping func(rune, []byte) (byte, bool)) ([]byte, error) {
+	encoded := make([]byte, 0, len(payload))
+	for index := 0; index < len(payload); {
+		character, size := utf8.DecodeRune(payload[index:])
+		value, ok := mapping(character, payload[index:index+size])
+		if !ok {
+			return nil, fmt.Errorf("character U+%04X is not representable in %s", character, name)
+		}
+		encoded = append(encoded, value)
+		index += size
+	}
+	return encoded, nil
+}
+
+func asciiByte(_ rune, sequence []byte) (byte, bool) {
+	return sequence[0], len(sequence) == 1 && sequence[0] < utf8.RuneSelf
+}
+
+// latin1Byte maps U+0000-U+00FF, whose UTF-8 form is one byte or a 0xC2/0xC3
+// lead byte carrying the top two bits of the Latin-1 value.
+func latin1Byte(character rune, sequence []byte) (byte, bool) {
+	if len(sequence) == 1 {
+		return sequence[0], sequence[0] < utf8.RuneSelf
+	}
+	if character > 0xff || len(sequence) != 2 {
+		return 0, false
+	}
+	return (sequence[0]&0x03)<<6 | sequence[1]&0x3f, true
+}
+
+// windows1252Byte maps a character to Windows-1252, where 0x80-0x9F hold
+// typographic characters instead of C1 controls and five positions are unused.
+func windows1252Byte(character rune, sequence []byte) (byte, bool) {
+	if character < 0x80 || character >= 0xa0 && character <= 0xff {
+		return latin1Byte(character, sequence)
+	}
+	value, ok := windows1252Bytes[character]
+	return value, ok
+}
+
+var windows1252Bytes = func() map[rune]byte {
+	reverse := make(map[rune]byte, len(windows1252))
+	for value, character := range windows1252 {
+		reverse[character] = value
+	}
+	return reverse
+}()
 
 func encodeSizeError(err error) error {
 	return &wire.Error{

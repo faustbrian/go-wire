@@ -41,12 +41,18 @@ source.
 - `DefaultMaxBytes` is 1 MiB.
 - `ErrPayloadTooLarge` identifies a configured byte-limit violation.
 - `DecodeOptions` contains `MaxBytes`, `DisallowUnknownFields`,
-  `DisallowDuplicateNames`, `MaxNestedLevels`, and `ReplaceInvalidUTF8`.
+  `DisallowDuplicateNames`, `MaxNestedLevels`, `ReplaceInvalidUTF8`,
+  `MaxValues`, `MaxObjectMembers`, `MaxNumberBytes`, and `UseNumber`.
   `MaxNestedLevels` caps nested arrays and objects before assignment, with a
   root array or object at level one; zero keeps encoding/json's own limit and
   a refusal matches `wire.ErrSizeLimit`. `ReplaceInvalidUTF8` admits invalid
   UTF-8 inside strings by replacing each invalid byte with U+FFFD, as
-  encoding/json does.
+  encoding/json does. `MaxValues` caps all values in the payload (object names
+  excluded), `MaxObjectMembers` caps the members of each object and
+  `MaxNumberBytes` caps the text of each number; zero disables each cap and a
+  refusal matches `wire.ErrSizeLimit` before assignment. `UseNumber` decodes
+  numbers in interface-typed destinations as `json.Number` with their exact
+  text; typed numbers and `json.Unmarshaler` targets are unaffected.
 - `EncodeOptions` contains `MaxBytes`, `Indent`, and `DisableHTMLEscaping`.
 - `NormalizeOptions` contains `MaxBytes`.
 - `Decode([]byte, any, DecodeOptions) error` decodes exactly one value into a
@@ -58,6 +64,10 @@ source.
   deterministic JSON document.
 - `Normalize([]byte, NormalizeOptions) ([]byte, error)` validates and emits
   compact key-ordered JSON while preserving number lexemes.
+- `Validate([]byte, DecodeOptions) error` checks that the payload is exactly one
+  JSON value within the byte and structural options, without a target.
+  `DisallowUnknownFields` and `UseNumber` do not apply to it.
+- `ValidateReader(io.Reader, DecodeOptions) error` adds bounded stream reading.
 
 ## Package `xmlwire`
 
@@ -67,7 +77,12 @@ source.
 - `ErrPayloadTooLarge` identifies a configured byte-limit violation.
 - `DecodeOptions` contains `MaxBytes`, `MaxDepth`, `AllowNonStrict`,
   `ExpectedRoot`, and an injectable `CharsetReader`.
-- `EncodeOptions` contains `MaxBytes`, `Indent`, and `IncludeHeader`.
+- `EncodeOptions` contains `MaxBytes`, `Indent`, `IncludeHeader`, and
+  `Charset`. `Charset` writes UTF-8 when empty or US-ASCII, ISO-8859-1 or
+  Windows-1252 under the labels `CharsetReader` accepts; the optional header
+  names the selected encoding, `MaxBytes` caps the converted bytes, and a
+  character the encoding cannot represent fails as `wire.ErrValidation`
+  without output.
 - `Decode([]byte, any, DecodeOptions) error` validates and decodes one complete
   XML document.
 - `DecodeReader(io.Reader, any, DecodeOptions) error` adds bounded stream
@@ -78,6 +93,14 @@ source.
   `encoding/xml`.
 - `EncodeWriter(io.Writer, any, EncodeOptions) error` writes the same complete
   XML document.
+- `SchemaInstanceNamespace` is the XML Schema instance namespace that owns
+  `xsi:nil`.
+- `Nillable[T]` holds `Present`, `Null` and `Value` for an optional nillable
+  element. Decoding honors `xsi:nil` only in `SchemaInstanceNamespace`,
+  rejects a nil element with child elements or non-whitespace text, and
+  rejects empty content for numeric and boolean values; encoding omits an
+  absent value and writes a `nil="true"` attribute in that namespace for a nil
+  one, with a prefix `encoding/xml` chooses.
 - `CharsetReader(string, io.Reader) (io.Reader, error)` converts UTF-8,
   US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8 with a 1 MiB raw-input quota.
 - `CharsetReaderWithLimit(string, io.Reader, int64) (io.Reader, error)` selects

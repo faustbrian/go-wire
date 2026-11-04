@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `jsonwire.DecodeOptions.MaxValues`, `MaxObjectMembers` and
+  `MaxNumberBytes`, optional budgets on the total number of JSON values, the
+  members of each object and the text of each number. They are checked before
+  assignment, refusals match `wire.ErrSizeLimit` and zero keeps the existing
+  behavior. WIRE-DEC-003 sha256:e509a6920e3fafa106e91fbd722253a7d3b681c050ea6266e0f2dcbeeac1b010
+- Add `jsonwire.DecodeOptions.UseNumber`, which decodes numbers in
+  interface-typed destinations as `json.Number` with their exact text instead
+  of float64, and `jsonwire.Validate` and `jsonwire.ValidateReader`, which
+  check one JSON value under the same byte, UTF-8, duplicate-name and budget
+  policy without a target. WIRE-DEC-005 sha256:b9ba2d6bf779734bbe87731cb34cccbc88bc29c460bf1c532e3086509a7c379e
+- Add `xmlwire.EncodeOptions.Charset`, which writes US-ASCII, ISO-8859-1 or
+  Windows-1252 (with a matching declaration when `IncludeHeader` is set) and
+  fails without output on a character the encoding cannot represent;
+  `MaxBytes` caps the converted bytes. Add `xmlwire.Nillable`, which keeps
+  absent, `xsi:nil` and value states of an optional element distinct and
+  rejects empty content for numeric and boolean values that have no XML or
+  text unmarshaler of their own.
+  WIRE-DEC-006 sha256:b392288852037a06aa7d9e0ef8dc8f5a74bca338d27019171e3c1f65640baf9a
+
 ## [3.1.0] - 2026-10-30
 
 ### Added

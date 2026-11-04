@@ -376,9 +376,42 @@ func FuzzDecode(f *testing.F) {
 	f.Add([]byte("<!DOCTYPE root [<!ENTITY x 'expanded'>]><root>&x;</root>"))
 	f.Add([]byte(strings.Repeat("<a>", xmlwire.DefaultMaxDepth+1) + strings.Repeat("</a>", xmlwire.DefaultMaxDepth+1)))
 
+	f.Add([]byte(`<r xmlns:i="http://www.w3.org/2001/XMLSchema-instance"><v i:nil="true"/></r>`))
+	f.Add([]byte("H\xc3\xa4meenlinna \xe2\x82\xac"))
+
 	f.Fuzz(func(t *testing.T, payload []byte) {
 		var target any
 		_ = xmlwire.Decode(payload, &target, xmlwire.DecodeOptions{MaxBytes: 64 << 10})
+		var nillable struct {
+			Value xmlwire.Nillable[string] `xml:"v"`
+		}
+		if xmlwire.Decode(payload, &nillable, xmlwire.DecodeOptions{MaxBytes: 64 << 10}) == nil && nillable.Value.Null && nillable.Value.Value != "" {
+			t.Fatalf("nil element retained value %q", nillable.Value.Value)
+		}
+		// A Latin-1 encoding succeeds exactly when every character fits and
+		// then decodes back to the same text.
+		text := string(payload)
+		type record struct {
+			XMLName xml.Name `xml:"r"`
+			Text    string   `xml:"t"`
+		}
+		plain, err := xmlwire.Encode(record{Text: text}, xmlwire.EncodeOptions{})
+		var roundTrip record
+		if err != nil || xmlwire.Decode(plain, &roundTrip, xmlwire.DecodeOptions{}) != nil || roundTrip.Text != text {
+			return
+		}
+		fits := true
+		for _, character := range text {
+			fits = fits && character <= 0xff
+		}
+		latin1, err := xmlwire.Encode(record{Text: text}, xmlwire.EncodeOptions{Charset: "iso-8859-1", IncludeHeader: true})
+		if (err == nil) != fits {
+			t.Fatalf("Encode(ISO-8859-1, %q) error = %v, fits = %v", text, err, fits)
+		}
+		var decoded record
+		if err == nil && (xmlwire.Decode(latin1, &decoded, xmlwire.DecodeOptions{}) != nil || decoded.Text != text) {
+			t.Fatalf("ISO-8859-1 round trip of %q = %q", text, decoded.Text)
+		}
 	})
 }
 
