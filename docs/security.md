@@ -87,7 +87,7 @@ Review these residual boundaries before claiming aggregate memory, CPU-time,
 or cancellation protection beyond the admitted preflight operations.
 
 The new option fields and finite aggregate admission shipped in v3.0.0 and
-remain in v3.0.1. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
+remain in later v3 releases. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
 literals; named limit overrides may be needed for accepted larger workloads.
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
