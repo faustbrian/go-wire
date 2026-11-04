@@ -20,17 +20,18 @@ write APIs.
 
 ## Status
 
-The latest published stable release is v3.0.1, using
+The latest published stable release is v3.1.0, using
 `github.com/faustbrian/go-wire/v3` for the v3 MessagePack admission and
 projection contract. Version 2 remains available for consumers not migrating,
 but does not include those narrowed controls. See the
 [versioned threat model](docs/security-threat-model-v1.md) before adoption.
 
-This source tree prepares the v3.0.2 patch release, fixing lexical SOAP section
-capture after length-changing charset conversion. Its dated changelog and
+This source tree prepares the v3.2.0 minor release, adding optional jsonwire
+decode budgets, exact numbers for untyped targets and target-free validation,
+and xmlwire single-byte output charsets and `Nillable`. Its dated changelog and
 module version identify a release candidate, not completed publication. Adopt
-v3.0.2 only after its immutable release tag is published; the installation
-command below intentionally selects the already-published v3.0.1 release.
+v3.2.0 only after its immutable release tag is published; the installation
+command below intentionally selects the already-published v3.1.0 release.
 
 ## Requirements
 
@@ -39,7 +40,7 @@ command below intentionally selects the already-published v3.0.1 release.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.0.1
+go get github.com/faustbrian/go-wire/v3@v3.1.0
 ```
 
 Import format packages explicitly, such as
@@ -220,7 +221,7 @@ the same major; keep all imports within it. Existing v2 consumers remain on
 their selected version until deliberately migrated.
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.0.1
+go get github.com/faustbrian/go-wire/v3@v3.1.0
 ```
 
 The module supports Go 1.27.0 and newer. The
@@ -579,12 +580,11 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
-The prepared v3.0.2 candidate repairs lexical SOAP Header, Body and Fault XML
-capture when charset conversion changes byte length; published v3.0.1 does not
-include this repair. Adopt the v3.0.2 tag after publication. Captured sections
-are UTF-8 after conversion, while `RawXML` remains the original envelope bytes.
-UTF-8 inputs and v3 public signatures remain compatible; no major-import change
-is required for this patch.
+The prepared v3.2.0 candidate adds opt-in jsonwire budgets, `UseNumber` and
+`Validate`, and xmlwire output charsets and `Nillable`; published v3.1.0 does
+not include them. Adopt the v3.2.0 tag after publication. Zero-valued options
+keep v3.1.0 behavior and no major-import change is required, but unkeyed
+`jsonwire.DecodeOptions` and `xmlwire.EncodeOptions` literals must become keyed.
 
 Choose the next guide in the [documentation index](README.md)
 or return to the [repository entry](../README.md) for installation and ownership.
@@ -2654,6 +2654,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-11-04
+
 ### Added
 
 - Add `jsonwire.DecodeOptions.MaxValues`, `MaxObjectMembers` and
@@ -3189,7 +3191,8 @@ prose-only release alignment is outside that frozen history range.
 - The final hardening verdict records Go 1.25 compatibility, symmetric bounded
   APIs, current direct codec dependencies, and the remaining upstream risks.
 
-[Unreleased]: https://github.com/faustbrian/go-wire/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/faustbrian/go-wire/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/faustbrian/go-wire/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/faustbrian/go-wire/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/faustbrian/go-wire/compare/v3.0.2...v3.0.3
 [3.0.2]: https://github.com/faustbrian/go-wire/compare/v3.0.1...v3.0.2
