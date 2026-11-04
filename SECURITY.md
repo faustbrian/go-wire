@@ -3,7 +3,7 @@
 ## Supported Versions
 
 The latest published stable major is
-[`github.com/faustbrian/go-wire/v3` v3.0.1](https://github.com/faustbrian/go-wire/releases/tag/v3.0.1).
+[`github.com/faustbrian/go-wire/v3` v3.2.0](https://github.com/faustbrian/go-wire/releases/tag/v3.2.0).
 V2.0.0 remains available at its separate module path, without v3's narrowed
 MessagePack admission and projection contract. The original v1 default-error
 rendering is not the categorical error contract introduced in v2; do not

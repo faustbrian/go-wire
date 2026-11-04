@@ -20,18 +20,15 @@ write APIs.
 
 ## Status
 
-The latest published stable release is v3.1.0, using
+The latest published stable release is v3.2.0, using
 `github.com/faustbrian/go-wire/v3` for the v3 MessagePack admission and
 projection contract. Version 2 remains available for consumers not migrating,
 but does not include those narrowed controls. See the
 [versioned threat model](docs/security-threat-model-v1.md) before adoption.
 
-This source tree prepares the v3.2.0 minor release, adding optional jsonwire
-decode budgets, exact numbers for untyped targets and target-free validation,
-and xmlwire single-byte output charsets and `Nillable`. Its dated changelog and
-module version identify a release candidate, not completed publication. Adopt
-v3.2.0 only after its immutable release tag is published; the installation
-command below intentionally selects the already-published v3.1.0 release.
+The v3.2.0 minor release adds optional jsonwire decode budgets, exact numbers
+for untyped targets and target-free validation, and xmlwire single-byte output
+charsets and `Nillable`. The installation command below selects it.
 
 ## Requirements
 
@@ -40,7 +37,7 @@ command below intentionally selects the already-published v3.1.0 release.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.1.0
+go get github.com/faustbrian/go-wire/v3@v3.2.0
 ```
 
 Import format packages explicitly, such as
@@ -221,7 +218,7 @@ the same major; keep all imports within it. Existing v2 consumers remain on
 their selected version until deliberately migrated.
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.1.0
+go get github.com/faustbrian/go-wire/v3@v3.2.0
 ```
 
 The module supports Go 1.27.0 and newer. The
@@ -580,11 +577,11 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
-The prepared v3.2.0 candidate adds opt-in jsonwire budgets, `UseNumber` and
-`Validate`, and xmlwire output charsets and `Nillable`; published v3.1.0 does
-not include them. Adopt the v3.2.0 tag after publication. Zero-valued options
-keep v3.1.0 behavior and no major-import change is required, but unkeyed
-`jsonwire.DecodeOptions` and `xmlwire.EncodeOptions` literals must become keyed.
+Published v3.2.0 adds opt-in jsonwire budgets, `UseNumber` and `Validate`,
+and xmlwire output charsets and `Nillable`; v3.1.0 does not include them.
+Zero-valued options keep v3.1.0 behavior and no major-import change is
+required, but unkeyed `jsonwire.DecodeOptions` and `xmlwire.EncodeOptions`
+literals must become keyed.
 
 Choose the next guide in the [documentation index](README.md)
 or return to the [repository entry](../README.md) for installation and ownership.
@@ -2367,7 +2364,7 @@ Review these residual boundaries before claiming aggregate memory, CPU-time,
 or cancellation protection beyond the admitted preflight operations.
 
 The new option fields and finite aggregate admission shipped in v3.0.0 and
-remain in v3.0.1. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
+remain in later v3 releases. Callers using unkeyed `DecodeOptions` literals must migrate to keyed
 literals; named limit overrides may be needed for accepted larger workloads.
 
 Ordinary `wire.Error` and `soap.FaultError` text exposes classifications only
@@ -2560,7 +2557,7 @@ not a substitute for source-truth review or behavioral verification.
 ## Supported Versions
 
 The latest published stable major is
-[`github.com/faustbrian/go-wire/v3` v3.0.1](https://github.com/faustbrian/go-wire/releases/tag/v3.0.1).
+[`github.com/faustbrian/go-wire/v3` v3.2.0](https://github.com/faustbrian/go-wire/releases/tag/v3.2.0).
 V2.0.0 remains available at its separate module path, without v3's narrowed
 MessagePack admission and projection contract. The original v1 default-error
 rendering is not the categorical error contract introduced in v2; do not

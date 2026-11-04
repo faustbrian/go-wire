@@ -121,11 +121,11 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
-The prepared v3.2.0 candidate adds opt-in jsonwire budgets, `UseNumber` and
-`Validate`, and xmlwire output charsets and `Nillable`; published v3.1.0 does
-not include them. Adopt the v3.2.0 tag after publication. Zero-valued options
-keep v3.1.0 behavior and no major-import change is required, but unkeyed
-`jsonwire.DecodeOptions` and `xmlwire.EncodeOptions` literals must become keyed.
+Published v3.2.0 adds opt-in jsonwire budgets, `UseNumber` and `Validate`,
+and xmlwire output charsets and `Nillable`; v3.1.0 does not include them.
+Zero-valued options keep v3.1.0 behavior and no major-import change is
+required, but unkeyed `jsonwire.DecodeOptions` and `xmlwire.EncodeOptions`
+literals must become keyed.
 
 Choose the next guide in the [documentation index](README.md)
 or return to the [repository entry](../README.md) for installation and ownership.

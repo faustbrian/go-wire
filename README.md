@@ -16,18 +16,15 @@ write APIs.
 
 ## Status
 
-The latest published stable release is v3.1.0, using
+The latest published stable release is v3.2.0, using
 `github.com/faustbrian/go-wire/v3` for the v3 MessagePack admission and
 projection contract. Version 2 remains available for consumers not migrating,
 but does not include those narrowed controls. See the
 [versioned threat model](docs/security-threat-model-v1.md) before adoption.
 
-This source tree prepares the v3.2.0 minor release, adding optional jsonwire
-decode budgets, exact numbers for untyped targets and target-free validation,
-and xmlwire single-byte output charsets and `Nillable`. Its dated changelog and
-module version identify a release candidate, not completed publication. Adopt
-v3.2.0 only after its immutable release tag is published; the installation
-command below intentionally selects the already-published v3.1.0 release.
+The v3.2.0 minor release adds optional jsonwire decode budgets, exact numbers
+for untyped targets and target-free validation, and xmlwire single-byte output
+charsets and `Nillable`. The installation command below selects it.
 
 ## Requirements
 
@@ -36,7 +33,7 @@ command below intentionally selects the already-published v3.1.0 release.
 ## Installation
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.1.0
+go get github.com/faustbrian/go-wire/v3@v3.2.0
 ```
 
 Import format packages explicitly, such as
