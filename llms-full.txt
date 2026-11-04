@@ -691,9 +691,11 @@ source.
 - `Nillable[T]` holds `Present`, `Null` and `Value` for an optional nillable
   element. Decoding honors `xsi:nil` only in `SchemaInstanceNamespace`,
   rejects a nil element with child elements or non-whitespace text, and
-  rejects empty content for numeric and boolean values; encoding omits an
-  absent value and writes a `nil="true"` attribute in that namespace for a nil
-  one, with a prefix `encoding/xml` chooses.
+  rejects empty content for numeric and boolean values, also behind pointers,
+  unless the value type has its own XML or text unmarshaler; encoding omits an
+  absent value, writes a `nil="true"` attribute in that namespace for a nil
+  one, with a prefix `encoding/xml` chooses, and refuses a present non-nil
+  value whose `Value` is a nil pointer or interface.
 - `CharsetReader(string, io.Reader) (io.Reader, error)` converts UTF-8,
   US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8 with a 1 MiB raw-input quota.
 - `CharsetReaderWithLimit(string, io.Reader, int64) (io.Reader, error)` selects
@@ -1826,7 +1828,11 @@ Behavior differences:
 - exactly one JSON value is required;
 - invalid UTF-8 is rejected instead of being replaced with U+FFFD, unless
   `ReplaceInvalidUTF8` explicitly selects encoding/json's replacement;
-- `MaxNestedLevels` optionally bounds nesting before assignment;
+- `MaxNestedLevels` optionally bounds nesting before assignment, and
+  `MaxValues`, `MaxObjectMembers` and `MaxNumberBytes` optionally bound the
+  value count, object size and number length;
+- `UseNumber` replaces `json.Decoder.UseNumber()` and keeps exact
+  `json.Number` text in interface-typed destinations;
 - invalid targets use `wire.ErrTarget`, byte limits use `wire.ErrSizeLimit`,
   and type mismatches retain structured validation errors;
 - unknown fields remain accepted unless explicitly rejected;
@@ -2666,8 +2672,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MaxBytes` caps the converted bytes. Add `xmlwire.Nillable`, which keeps
   absent, `xsi:nil` and value states of an optional element distinct and
   rejects empty content for numeric and boolean values that have no XML or
-  text unmarshaler of their own.
-  WIRE-DEC-006 sha256:b392288852037a06aa7d9e0ef8dc8f5a74bca338d27019171e3c1f65640baf9a
+  text unmarshaler of their own; encoding refuses a present value whose
+  `Value` is a nil pointer instead of writing it as absent.
+  WIRE-DEC-006 sha256:6995db76cb90264e72c962e1e6710bda1a42f837f940976daa7d4a45d7221b62
 
 ## [3.1.0] - 2026-10-30
 
@@ -4357,7 +4364,8 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
   `TestDecodeRejectsMalformedAndTrailingValues`,
   `TestDecodeCanKeepExactNumbersInUntypedTargets`,
   `TestValidateChecksOneValueWithoutATarget`,
-  `TestValidateReaderMatchesValidate`, and
+  `TestValidateReaderMatchesValidate`,
+  `TestValidateCapsNestingLikeDecode`, and
   `TestNormalizeMakesVendorJSONCanonical` cover `Decode`, `Validate` and
   `Normalize`.
   Reconsider duplicate defaults only as a compatibility-governed change.
@@ -4368,7 +4376,7 @@ Authority URL: https://www.rfc-editor.org/rfc/rfc8259.txt
 <summary>Machine-auditable bindings</summary>
 
 ```json
-{"id":"WIRE-DEC-006","title":"XML strictness, namespaces, entities, and charsets","status":"resolved","owner":"wire maintainers","classification":"implementation-defined behavior","decision_scope":"defensive","specification":"XML 1.0 Fifth Edition and Namespaces in XML 1.0 Third Edition","version":"XML 1.0 Fifth Edition","source_authority":"xml10-source","section":"XML sections 2 through 4 and Namespaces sections 2 through 6","requirement_strength":"not specified","issue":"Go exposes recovery and charset hooks while XML and Namespaces define syntax and expanded names without selecting this package's safe profile.","interpretations":["Recover malformed markup by default.","Compare lexical prefixes.","Use strict resolved names and explicit charset conversion."],"peer_behavior":"Maintained-peer recovery, DTD, and charset behavior has not been assessed as a package interoperability guarantee.","selected_behavior":"Use strict parsing, one root, resolved namespace names, finite depth, no declared entity expansion, an explicit bounded charset allowlist for both decoding and optional single-byte encoding that fails on unrepresentable characters with MaxBytes capping the converted output and a matching declaration only when IncludeHeader is set, and xsi:nil recognized only in the XML Schema instance namespace for an explicit nillable value type that rejects empty content for numeric and boolean values without their own unmarshaler.","rationale":"Resolved names and explicit decoding avoid prefix, entity, and charset ambiguity at service boundaries.","security_consequences":"DTD entity expansion and unbounded recovery are not enabled by default.","resource_consequences":"Token depth and input bytes are bounded before recursive work.","compatibility_consequences":"Non-strict recovery and custom charset readers remain explicit opt-ins.","wire_consequences":"Output follows encoding/xml traversal and does not claim XML canonicalization or lexical prefix preservation.","executable_evidence":["TestDecodeNamespaceAwareFixture","TestDecodeCanExplicitlyRecoverNonStrictXML","TestDecodeDoesNotExpandDeclaredEntities","TestCharsetReaderContract","TestEncodeIsDeterministicAndConfigurable","TestEncodeCanWriteLatin1WithAMatchingDeclaration","TestEncodeCanWriteWindows1252","TestEncodeRejectsCharactersOutsideTheCharset","TestEncodeCharsetLabelsAndDefaults","TestNillableDistinguishesAbsentNilEmptyAndValue","TestNillableIgnoresNilOutsideTheSchemaInstanceNamespace","TestNillableRejectsContentInANilElementAndBadMarkers","TestNillableEncodesValueNilAndAbsence","TestNillableRejectsEmptyNumericAndBooleanContent","TestNillableTreatsOnlyXMLWhitespaceAsSpace","TestNillableLeavesEmptyContentToCustomUnmarshalers","TestNillableRejectsEmptyContentBehindPointers","TestEncodeCharsetMaxBytesCapsReturnedBytes","TestEncodeWindows1252RoundTripsEveryDefinedByte","TestEncodeWriterAndHeaderlessCharsetOutput"],"fixture_evidence":["xmlwire/testdata/shipment.xml","xmlwire/testdata/malformed.xml"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["xmlwire.Decode","xmlwire.Encode","xmlwire.Root","xmlwire.Nillable","xmlwire.EncodeOptions.Charset"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The dated XML and Namespaces editions are pinned and monitored independently.","reconsider_when":"The Go XML contract, required charset set, or supported XML edition changes."}
+{"id":"WIRE-DEC-006","title":"XML strictness, namespaces, entities, and charsets","status":"resolved","owner":"wire maintainers","classification":"implementation-defined behavior","decision_scope":"defensive","specification":"XML 1.0 Fifth Edition and Namespaces in XML 1.0 Third Edition","version":"XML 1.0 Fifth Edition","source_authority":"xml10-source","section":"XML sections 2 through 4 and Namespaces sections 2 through 6","requirement_strength":"not specified","issue":"Go exposes recovery and charset hooks while XML and Namespaces define syntax and expanded names without selecting this package's safe profile.","interpretations":["Recover malformed markup by default.","Compare lexical prefixes.","Use strict resolved names and explicit charset conversion."],"peer_behavior":"Maintained-peer recovery, DTD, and charset behavior has not been assessed as a package interoperability guarantee.","selected_behavior":"Use strict parsing, one root, resolved namespace names, finite depth, no declared entity expansion, an explicit bounded charset allowlist for both decoding and optional single-byte encoding that fails on unrepresentable characters with MaxBytes capping the converted output and a matching declaration only when IncludeHeader is set, and xsi:nil recognized only in the XML Schema instance namespace for an explicit nillable value type that rejects empty content for numeric and boolean values without their own unmarshaler.","rationale":"Resolved names and explicit decoding avoid prefix, entity, and charset ambiguity at service boundaries.","security_consequences":"DTD entity expansion and unbounded recovery are not enabled by default.","resource_consequences":"Token depth and input bytes are bounded before recursive work.","compatibility_consequences":"Non-strict recovery and custom charset readers remain explicit opt-ins.","wire_consequences":"Output follows encoding/xml traversal and does not claim XML canonicalization or lexical prefix preservation.","executable_evidence":["TestDecodeNamespaceAwareFixture","TestDecodeCanExplicitlyRecoverNonStrictXML","TestDecodeDoesNotExpandDeclaredEntities","TestCharsetReaderContract","TestEncodeIsDeterministicAndConfigurable","TestEncodeCanWriteLatin1WithAMatchingDeclaration","TestEncodeCanWriteWindows1252","TestEncodeRejectsCharactersOutsideTheCharset","TestEncodeCharsetLabelsAndDefaults","TestNillableDistinguishesAbsentNilEmptyAndValue","TestNillableIgnoresNilOutsideTheSchemaInstanceNamespace","TestNillableRejectsContentInANilElementAndBadMarkers","TestNillableEncodesValueNilAndAbsence","TestNillableRefusesToEncodeAPresentNilPointerAsAbsent","TestNillableRejectsEmptyNumericAndBooleanContent","TestNillableTreatsOnlyXMLWhitespaceAsSpace","TestNillableLeavesEmptyContentToCustomUnmarshalers","TestNillableRejectsEmptyContentBehindPointers","TestEncodeCharsetMaxBytesCapsReturnedBytes","TestEncodeWindows1252RoundTripsEveryDefinedByte","TestEncodeWriterAndHeaderlessCharsetOutput"],"fixture_evidence":["xmlwire/testdata/shipment.xml","xmlwire/testdata/malformed.xml"],"fuzz_evidence":["FuzzDecode"],"interoperability_evidence":[],"differential_evidence":[],"public_apis":["xmlwire.Decode","xmlwire.Encode","xmlwire.Root","xmlwire.Nillable","xmlwire.EncodeOptions.Charset"],"documentation":["docs/specification-decisions.md","docs/formats.md"],"upstream_status":"The dated XML and Namespaces editions are pinned and monitored independently.","reconsider_when":"The Go XML contract, required charset set, or supported XML edition changes."}
 ```
 
 Authority URL: https://www.w3.org/TR/2008/REC-xml-20081126/

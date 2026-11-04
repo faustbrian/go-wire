@@ -98,9 +98,11 @@ source.
 - `Nillable[T]` holds `Present`, `Null` and `Value` for an optional nillable
   element. Decoding honors `xsi:nil` only in `SchemaInstanceNamespace`,
   rejects a nil element with child elements or non-whitespace text, and
-  rejects empty content for numeric and boolean values; encoding omits an
-  absent value and writes a `nil="true"` attribute in that namespace for a nil
-  one, with a prefix `encoding/xml` chooses.
+  rejects empty content for numeric and boolean values, also behind pointers,
+  unless the value type has its own XML or text unmarshaler; encoding omits an
+  absent value, writes a `nil="true"` attribute in that namespace for a nil
+  one, with a prefix `encoding/xml` chooses, and refuses a present non-nil
+  value whose `Value` is a nil pointer or interface.
 - `CharsetReader(string, io.Reader) (io.Reader, error)` converts UTF-8,
   US-ASCII, ISO-8859-1, or Windows-1252 to UTF-8 with a 1 MiB raw-input quota.
 - `CharsetReaderWithLimit(string, io.Reader, int64) (io.Reader, error)` selects

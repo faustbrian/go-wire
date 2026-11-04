@@ -100,7 +100,11 @@ Behavior differences:
 - exactly one JSON value is required;
 - invalid UTF-8 is rejected instead of being replaced with U+FFFD, unless
   `ReplaceInvalidUTF8` explicitly selects encoding/json's replacement;
-- `MaxNestedLevels` optionally bounds nesting before assignment;
+- `MaxNestedLevels` optionally bounds nesting before assignment, and
+  `MaxValues`, `MaxObjectMembers` and `MaxNumberBytes` optionally bound the
+  value count, object size and number length;
+- `UseNumber` replaces `json.Decoder.UseNumber()` and keeps exact
+  `json.Number` text in interface-typed destinations;
 - invalid targets use `wire.ErrTarget`, byte limits use `wire.ErrSizeLimit`,
   and type mismatches retain structured validation errors;
 - unknown fields remain accepted unless explicitly rejected;

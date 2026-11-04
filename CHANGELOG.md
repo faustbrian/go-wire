@@ -25,8 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MaxBytes` caps the converted bytes. Add `xmlwire.Nillable`, which keeps
   absent, `xsi:nil` and value states of an optional element distinct and
   rejects empty content for numeric and boolean values that have no XML or
-  text unmarshaler of their own.
-  WIRE-DEC-006 sha256:b392288852037a06aa7d9e0ef8dc8f5a74bca338d27019171e3c1f65640baf9a
+  text unmarshaler of their own; encoding refuses a present value whose
+  `Value` is a nil pointer instead of writing it as absent.
+  WIRE-DEC-006 sha256:6995db76cb90264e72c962e1e6710bda1a42f837f940976daa7d4a45d7221b62
 
 ## [3.1.0] - 2026-10-30
 

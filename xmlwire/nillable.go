@@ -3,6 +3,7 @@ package xmlwire
 import (
 	"encoding"
 	"encoding/xml"
+	"errors"
 	"reflect"
 	"strings"
 )
@@ -16,12 +17,16 @@ const SchemaInstanceNamespace = "http://www.w3.org/2001/XMLSchema-instance"
 // value. Decoding honors xsi:nil only in SchemaInstanceNamespace; a nil element
 // must have no child elements and no text other than XML whitespace. A
 // non-nil element decodes through encoding/xml, except that empty content for
-// a numeric or boolean T is rejected instead of becoming zero or false, so a
-// blank value cannot pass as a real one; string types keep empty content.
+// a numeric or boolean T, also behind pointers, is rejected instead of becoming
+// zero or false, so a blank value cannot pass as a real one. String types keep
+// empty content, and a T that has its own XML or text unmarshaler (on T or *T)
+// decides what empty content means.
 // Encoding writes nothing when Present is false, writes an empty element whose
 // nil attribute is in SchemaInstanceNamespace (encoding/xml chooses the
 // prefix) when Null is true, and otherwise encodes Value with the element's
-// name.
+// name. A present, non-nil value whose Value is a nil pointer or interface is
+// an encoding error, because encoding/xml would write nothing and turn the
+// present value into an absent one.
 type Nillable[T any] struct {
 	// Present reports that the element appeared.
 	Present bool
@@ -81,6 +86,9 @@ func (value Nillable[T]) MarshalXML(encoder *xml.Encoder, start xml.StartElement
 		return nil
 	}
 	if !value.Null {
+		if nilReference(value.Value) {
+			return errors.New("xmlwire: present non-nil " + start.Name.Local + " has a nil value")
+		}
 		return encoder.EncodeElement(value.Value, start)
 	}
 	start.Attr = append(start.Attr, xml.Attr{Name: xml.Name{Space: SchemaInstanceNamespace, Local: "nil"}, Value: "true"})
@@ -140,6 +148,18 @@ func customUnmarshaling(kind reflect.Type) bool {
 	pointer := reflect.PointerTo(kind)
 	return kind.Implements(xmlUnmarshalerType) || kind.Implements(textUnmarshalerType) ||
 		pointer.Implements(xmlUnmarshalerType) || pointer.Implements(textUnmarshalerType)
+}
+
+// nilReference reports a nil pointer or interface, which encoding/xml encodes
+// as nothing at all.
+func nilReference[T any](value T) bool {
+	reference := reflect.ValueOf(&value).Elem()
+	switch reference.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		return reference.IsNil()
+	default:
+		return false
+	}
 }
 
 func scalarKind(kind reflect.Type) bool {
