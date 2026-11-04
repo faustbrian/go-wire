@@ -9,7 +9,7 @@ the same major; keep all imports within it. Existing v2 consumers remain on
 their selected version until deliberately migrated.
 
 ```sh
-go get github.com/faustbrian/go-wire/v3@v3.0.1
+go get github.com/faustbrian/go-wire/v3@v3.1.0
 ```
 
 The module supports Go 1.27.0 and newer. The

@@ -121,12 +121,11 @@ bytes, and error classification are compatibility-sensitive even if function
 signatures do not change. Dependency upgrades receive the same
 wire-compatibility review as first-party changes.
 
-The prepared v3.0.2 candidate repairs lexical SOAP Header, Body and Fault XML
-capture when charset conversion changes byte length; published v3.0.1 does not
-include this repair. Adopt the v3.0.2 tag after publication. Captured sections
-are UTF-8 after conversion, while `RawXML` remains the original envelope bytes.
-UTF-8 inputs and v3 public signatures remain compatible; no major-import change
-is required for this patch.
+The prepared v3.2.0 candidate adds opt-in jsonwire budgets, `UseNumber` and
+`Validate`, and xmlwire output charsets and `Nillable`; published v3.1.0 does
+not include them. Adopt the v3.2.0 tag after publication. Zero-valued options
+keep v3.1.0 behavior and no major-import change is required, but unkeyed
+`jsonwire.DecodeOptions` and `xmlwire.EncodeOptions` literals must become keyed.
 
 Choose the next guide in the [documentation index](README.md)
 or return to the [repository entry](../README.md) for installation and ownership.
