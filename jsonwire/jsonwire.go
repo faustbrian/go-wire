@@ -46,6 +46,24 @@ type DecodeOptions struct {
 	// remain malformed JSON. Use it only for third-party input whose producer
 	// cannot be held to RFC 8259.
 	ReplaceInvalidUTF8 bool
+	// MaxValues caps every JSON value in the payload, counting each object,
+	// array, string, number, boolean and null but not object names, before
+	// target decoding. Zero disables the cap; negative values fail. Refusals
+	// match wire.ErrSizeLimit.
+	MaxValues int
+	// MaxObjectMembers caps the members of each object, not the payload total,
+	// before target decoding. Zero disables the cap; negative values fail.
+	// Refusals match wire.ErrSizeLimit.
+	MaxObjectMembers int
+	// MaxNumberBytes caps the text of each number token before target decoding.
+	// Zero disables the cap; negative values fail. Refusals match
+	// wire.ErrSizeLimit.
+	MaxNumberBytes int
+	// UseNumber decodes numbers in interface-typed destinations, such as any or
+	// map[string]any, as json.Number with their exact text instead of float64.
+	// Typed numeric destinations and json.Unmarshaler implementations, including
+	// their own inner decoding, are unaffected.
+	UseNumber bool
 }
 
 // EncodeOptions controls JSON encoding behavior.
@@ -67,35 +85,30 @@ type NormalizeOptions struct {
 
 // Decode borrows payload until return and by default decodes exactly one
 // UTF-8 JSON value into a non-nil pointer. Untyped numbers follow encoding/json
-// float64 mapping; choose typed numeric destinations when that representation
-// is insufficient. Duplicate rejection, nesting budgets and invalid UTF-8
-// replacement are opt-in and failed targets are indeterminate.
+// float64 mapping unless UseNumber keeps their exact text. Duplicate rejection,
+// structural budgets and invalid UTF-8 replacement are opt-in and failed
+// targets are indeterminate.
 func Decode(payload []byte, target any, options DecodeOptions) error {
 	return DecodeReader(bytes.NewReader(payload), target, options)
 }
 
 // DecodeReader buffers borrowed input through EOF or a size refusal and by
 // default decodes exactly one UTF-8 JSON value into a non-nil pointer. It never
-// closes reader. Duplicate and nesting preflight, when enabled, precedes
-// assignment; other errors, including trailing values, can leave target
-// mutated. Blocking/custom codec work is not cancellable through this API.
-// Size and nesting refusals match wire.ErrSizeLimit.
+// closes reader. Duplicate-name and structural-budget preflight, when enabled,
+// precedes assignment; other errors, including trailing values, can leave
+// target mutated. Blocking/custom codec work is not cancellable through this
+// API. Size and budget refusals match wire.ErrSizeLimit.
 func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	if err := validateTarget(target); err != nil {
 		return &wire.Error{Kind: wire.ErrorKindTarget, Format: wire.FormatJSON, Op: "decode", Err: err}
 	}
 
-	if options.MaxNestedLevels < 0 || options.MaxNestedLevels > maxNestedLevelsLimit {
-		return validationError("decode", errors.New("max nested levels must be between 0 and 10000"))
-	}
-	payload, err := readBounded(reader, options.MaxBytes)
+	payload, err := admit(reader, options, "decode")
 	if err != nil {
 		return err
 	}
-	if !options.ReplaceInvalidUTF8 && !utf8.Valid(payload) {
-		return parseError("decode", errors.New("JSON text is not valid UTF-8"))
-	}
-	if options.DisallowDuplicateNames || options.MaxNestedLevels > 0 {
+	if options.DisallowDuplicateNames || options.MaxNestedLevels > 0 || options.MaxValues > 0 ||
+		options.MaxObjectMembers > 0 || options.MaxNumberBytes > 0 {
 		if err := validateStructure(payload, options); err != nil {
 			return err
 		}
@@ -104,6 +117,9 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	if options.DisallowUnknownFields {
 		decoder.DisallowUnknownFields()
+	}
+	if options.UseNumber {
+		decoder.UseNumber()
 	}
 	if err := decoder.Decode(target); err != nil {
 		return decodeError(err)
@@ -115,54 +131,127 @@ func DecodeReader(reader io.Reader, target any, options DecodeOptions) error {
 	return nil
 }
 
+// Validate checks that payload is exactly one UTF-8 JSON value within
+// MaxBytes and the structural options, without decoding into a target. It
+// applies DisallowDuplicateNames, MaxNestedLevels, MaxValues,
+// MaxObjectMembers, MaxNumberBytes and ReplaceInvalidUTF8;
+// DisallowUnknownFields and UseNumber only affect target decoding and are
+// ignored. Numbers outside the float64 range are valid JSON and are accepted.
+func Validate(payload []byte, options DecodeOptions) error {
+	return ValidateReader(bytes.NewReader(payload), options)
+}
+
+// ValidateReader buffers borrowed input through EOF or a size refusal and
+// applies Validate. It never closes reader.
+func ValidateReader(reader io.Reader, options DecodeOptions) error {
+	payload, err := admit(reader, options, "validate")
+	if err != nil {
+		return err
+	}
+	return validationStructure(payload, options)
+}
+
+// admit validates options and reads bounded UTF-8 input shared by decoding
+// and validation; op labels the caller's diagnostics.
+func admit(reader io.Reader, options DecodeOptions, op string) ([]byte, error) {
+	if options.MaxNestedLevels < 0 || options.MaxNestedLevels > maxNestedLevelsLimit {
+		return nil, validationError(op, errors.New("max nested levels must be between 0 and 10000"))
+	}
+	if options.MaxValues < 0 || options.MaxObjectMembers < 0 || options.MaxNumberBytes < 0 {
+		return nil, validationError(op, errors.New("structural budgets must not be negative"))
+	}
+	payload, err := readBounded(reader, options.MaxBytes)
+	if err != nil {
+		return nil, err
+	}
+	if !options.ReplaceInvalidUTF8 && !utf8.Valid(payload) {
+		return nil, parseError(op, errors.New("JSON text is not valid UTF-8"))
+	}
+	return payload, nil
+}
+
+// structure carries the configured budgets and the running value count
+// through one walk of the payload.
+type structure struct {
+	options DecodeOptions
+	values  int
+}
+
 // validateStructure walks the payload once before assignment, refusing
-// repeated object names and nesting beyond the configured level budget.
+// repeated object names and values beyond the configured budgets.
 func validateStructure(payload []byte, options DecodeOptions) error {
 	decoder := json.NewDecoder(bytes.NewReader(payload))
-	// Numbers are only skipped here; json.Number avoids refusing a value such
+	// Numbers are only measured here; json.Number avoids refusing a value such
 	// as 1e400 that the target itself may accept.
 	decoder.UseNumber()
-	if err := validateValue(decoder, options, 0); err != nil {
+	walk := &structure{options: options}
+	if err := walk.value(decoder, 0); err != nil {
 		return err
 	}
 	return requireEOF(decoder)
 }
 
-func validateValue(decoder *json.Decoder, options DecodeOptions, level int) error {
+// validationStructure applies the walk for Validate with its own operation
+// label so diagnostics distinguish validation from decoding.
+func validationStructure(payload []byte, options DecodeOptions) error {
+	err := validateStructure(payload, options)
+	var wireErr *wire.Error
+	if errors.As(err, &wireErr) {
+		wireErr.Op = "validate"
+	}
+	return err
+}
+
+func (walk *structure) value(decoder *json.Decoder, level int) error {
 	token, err := decoder.Token()
 	if err != nil {
 		return decodeError(err)
 	}
+	walk.values++
+	if walk.options.MaxValues > 0 && walk.values > walk.options.MaxValues {
+		return sizeLimitError(fmt.Errorf("JSON payload exceeds %d values", walk.options.MaxValues))
+	}
 	delimiter, ok := token.(json.Delim)
 	if !ok {
+		if number, isNumber := token.(json.Number); isNumber && walk.options.MaxNumberBytes > 0 &&
+			len(number) > walk.options.MaxNumberBytes {
+			return sizeLimitError(fmt.Errorf("JSON number exceeds %d bytes", walk.options.MaxNumberBytes))
+		}
 		return nil
 	}
 	level++
-	if options.MaxNestedLevels > 0 && level > options.MaxNestedLevels {
-		return &wire.Error{
-			Kind: wire.ErrorKindSizeLimit, Format: wire.FormatJSON, Op: "decode",
-			Err: fmt.Errorf("JSON nesting exceeds %d levels", options.MaxNestedLevels),
-		}
+	if walk.options.MaxNestedLevels > 0 && level > walk.options.MaxNestedLevels {
+		return sizeLimitError(fmt.Errorf("JSON nesting exceeds %d levels", walk.options.MaxNestedLevels))
+	}
+	// Decode always stops at encoding/json's own cap. The token walk enforces it
+	// too, because Decoder.Token has no depth cap without the JSONv2 baseline.
+	if level > maxNestedLevelsLimit {
+		return parseError("decode", fmt.Errorf("JSON nesting exceeds %d levels", maxNestedLevelsLimit))
 	}
 	switch delimiter {
 	case '{':
 		var names map[string]struct{}
-		if options.DisallowDuplicateNames {
+		if walk.options.DisallowDuplicateNames {
 			names = make(map[string]struct{})
 		}
+		members := 0
 		for decoder.More() {
 			token, err := decoder.Token()
 			if err != nil {
 				return decodeError(err)
 			}
+			members++
+			if walk.options.MaxObjectMembers > 0 && members > walk.options.MaxObjectMembers {
+				return sizeLimitError(fmt.Errorf("JSON object exceeds %d members", walk.options.MaxObjectMembers))
+			}
 			name := token.(string) // encoding/json guarantees object names are strings.
-			if options.DisallowDuplicateNames {
+			if walk.options.DisallowDuplicateNames {
 				if _, exists := names[name]; exists {
 					return validationError("decode", errors.New("duplicate JSON object name"))
 				}
 				names[name] = struct{}{}
 			}
-			if err := validateValue(decoder, options, level); err != nil {
+			if err := walk.value(decoder, level); err != nil {
 				return err
 			}
 		}
@@ -172,12 +261,16 @@ func validateValue(decoder *json.Decoder, options DecodeOptions, level int) erro
 	// A delimiter returned at the beginning of a JSON value can only be '[' or
 	// '{'; the object case is handled above.
 	for decoder.More() {
-		if err := validateValue(decoder, options, level); err != nil {
+		if err := walk.value(decoder, level); err != nil {
 			return err
 		}
 	}
 	_, err = decoder.Token()
 	return decodeError(err)
+}
+
+func sizeLimitError(err error) error {
+	return &wire.Error{Kind: wire.ErrorKindSizeLimit, Format: wire.FormatJSON, Op: "decode", Err: err}
 }
 
 // Encode borrows a stable acyclic value, orders built-in map keys using encoding/json

@@ -307,6 +307,22 @@ func FuzzDecode(f *testing.F) {
 		_ = jsonwire.Decode(payload, &target, jsonwire.DecodeOptions{
 			MaxBytes: 64 << 10, DisallowDuplicateNames: true, MaxNestedLevels: 64,
 		})
+		// Validation accepts exactly what exact-number decoding accepts.
+		var exact any
+		decodeErr := jsonwire.Decode(payload, &exact, jsonwire.DecodeOptions{MaxBytes: 64 << 10, UseNumber: true})
+		if validateErr := jsonwire.Validate(payload, jsonwire.DecodeOptions{MaxBytes: 64 << 10}); (validateErr == nil) != (decodeErr == nil) {
+			t.Fatalf("Validate = %v but Decode(UseNumber) = %v", validateErr, decodeErr)
+		}
+		// Budgets refuse exactly the payloads an independent tree count exceeds.
+		// Duplicate names merge in the tree, so only distinct-name payloads apply.
+		budgets := jsonwire.DecodeOptions{MaxBytes: 64 << 10, MaxValues: 8, MaxObjectMembers: 3, MaxNumberBytes: 6}
+		if decodeErr == nil && jsonwire.Validate(payload, jsonwire.DecodeOptions{MaxBytes: 64 << 10, DisallowDuplicateNames: true}) == nil {
+			values, members, numberBytes := measureJSON(exact)
+			within := values <= budgets.MaxValues && members <= budgets.MaxObjectMembers && numberBytes <= budgets.MaxNumberBytes
+			if err := jsonwire.Validate(payload, budgets); (err == nil) != within {
+				t.Fatalf("Validate(budgets) = %v for values=%d members=%d numberBytes=%d", err, values, members, numberBytes)
+			}
+		}
 		// Replacement must decode exactly what encoding/json decodes whenever
 		// encoding/json accepts the payload.
 		var want any
@@ -320,6 +336,32 @@ func FuzzDecode(f *testing.F) {
 			t.Fatalf("Decode(ReplaceInvalidUTF8) = %#v, %v; json.Unmarshal = %#v", got, err, want)
 		}
 	})
+}
+
+// measureJSON counts values, the largest object and the longest number text in
+// an exact-number decoded tree, independently of the streaming budget walk.
+func measureJSON(value any) (values, members, numberBytes int) {
+	values = 1
+	switch value := value.(type) {
+	case map[string]any:
+		members = len(value)
+		for _, child := range value {
+			childValues, childMembers, childNumber := measureJSON(child)
+			values += childValues
+			members = max(members, childMembers)
+			numberBytes = max(numberBytes, childNumber)
+		}
+	case []any:
+		for _, child := range value {
+			childValues, childMembers, childNumber := measureJSON(child)
+			values += childValues
+			members = max(members, childMembers)
+			numberBytes = max(numberBytes, childNumber)
+		}
+	case json.Number:
+		numberBytes = len(value)
+	}
+	return values, members, numberBytes
 }
 
 // BenchmarkDecode buffers and decodes the fixed JSON message fixture using default
